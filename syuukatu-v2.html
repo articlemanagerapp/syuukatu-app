@@ -24,7 +24,7 @@
         .memo-clickable:hover { color: #0d6efd; text-decoration: underline; }
         .sync-status { font-size: 0.85rem; padding: 4px 8px; border-radius: 4px; }
         
-        /* ★スマホ向け・本格的レスポンシブデザイン（ここが大幅進化！）★ */
+        /* ★スマホ向け・アコーディオン式レスポンシブデザイン★ */
         @media (max-width: 768px) {
             body { padding: 10px 5px; }
             h2 { font-size: 1.4rem; font-weight: bold; margin-bottom: 10px !important; }
@@ -37,7 +37,7 @@
 
             /* タブメニューを丸型スワイプボタン風に */
             .nav-tabs { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; white-space: nowrap; border-bottom: none; -webkit-overflow-scrolling: touch; padding-bottom: 10px; margin-bottom: 15px; }
-            .nav-tabs::-webkit-scrollbar { display: none; } /* スクロールバー隠す */
+            .nav-tabs::-webkit-scrollbar { display: none; }
             .nav-tabs .nav-link { padding: 0.6rem 1rem; font-size: 0.95rem; border: 1px solid #dee2e6; border-radius: 30px; margin-right: 8px; background: white; color: #495057; font-weight: bold; }
             .nav-tabs .nav-link.active { background: #0d6efd; color: white; border-color: #0d6efd; }
 
@@ -45,23 +45,86 @@
             input, select, textarea { font-size: 16px !important; } 
             .btn { font-size: 0.95rem; padding: 0.5rem 0.8rem; margin-bottom: 3px; }
 
-            /* ★ テーブルの「カード型」表示化 ★ */
-            .top-scrollbar-wrapper { display: none; } /* スマホでは上のスクロールバー不要 */
+            /* ★ テーブルの「プルダウン・アコーディオン型」表示化 ★ */
+            .top-scrollbar-wrapper { display: none; } 
             .table-wrapper { background: transparent; padding: 0; box-shadow: none; overflow: visible; }
             
             table.table { display: block; border: none; }
-            table.table thead { display: none; } /* 見出し行を隠す */
+            table.table thead { display: none; } 
             table.table tbody { display: block; width: 100%; }
-            table.table tr { display: block; background: white; margin-bottom: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e9ecef; overflow: hidden; }
-            table.table td { display: flex; justify-content: space-between; align-items: center; border: none; border-bottom: 1px solid #f1f3f5; padding: 12px 15px; font-size: 0.95rem; text-align: right; white-space: normal; }
-            table.table td:last-child { border-bottom: none; background: #f8f9fa; justify-content: flex-end; }
             
-            /* CSSの魔法で左側に見出しを自動表示 */
-            table.table td::before { content: attr(data-label); font-weight: bold; color: #868e96; text-align: left; padding-right: 15px; min-width: 90px; }
+            /* カード（行）の基本設定：タップ可能にする */
+            table.table tr { display: block; background: white; margin-bottom: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e9ecef; overflow: hidden; cursor: pointer; transition: background-color 0.2s; }
+            table.table tr:active { background-color: #f1f7fe; }
+
+            /* 初期状態：企業名（最初のtd）以外はすべて非表示にする */
+            table.table tr td { display: none !important; }
             
-            /* カード型の社名部分を強調 */
-            table.table td:first-child { background: #f1f7fe; border-bottom: 2px solid #0d6efd; padding-top: 15px; padding-bottom: 15px; }
-            table.table td:first-child::before { color: #0d6efd; }
+            /* 【タップされて展開（is-openクラスあり）】の時のスタイル：縦並びで全表示 */
+            table.table tr.is-open td { 
+                display: flex !important; 
+                flex-direction: column; 
+                align-items: flex-start; 
+                border: none; 
+                border-bottom: 1px solid #f1f3f5; 
+                padding: 12px 15px; 
+                font-size: 0.95rem; 
+                text-align: left; 
+                white-space: normal; 
+                width: 100%;
+            }
+            /* ボタンが並ぶ最後のtdだけは背景を変えて右寄せ横並びにする */
+            table.table tr.is-open td:last-child { 
+                border-bottom: none; 
+                background: #f8f9fa; 
+                flex-direction: row;
+                justify-content: flex-end; 
+                align-items: center;
+                gap: 5px;
+            }
+            
+            /* 展開時：項目見出しをテキストの上部に自動表示（改行対策） */
+            table.table tr.is-open td::before { 
+                content: attr(data-label); 
+                font-weight: bold; 
+                color: #868e96; 
+                text-align: left; 
+                padding-bottom: 4px; 
+                min-width: unset; 
+                display: block;
+            }
+            /* 操作セルの見出しは不要なので非表示 */
+            table.table tr.is-open td:last-child::before { content: none; }
+            
+            /* 最初のtd（企業名ヘッダー）：常に表示し、横いっぱいにデザイン */
+            table.table tr td:first-child { 
+                display: flex !important; 
+                flex-direction: row !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+                background: #f1f7fe; 
+                border-bottom: 2px solid #0d6efd; 
+                padding: 15px 15px !important; 
+                font-size: 1.1rem !important;
+                color: #0d6efd;
+                font-weight: bold;
+                width: 100%;
+            }
+            table.table tr td:first-child::before { content: none; } /* 「社名」という余計な見出しを消す */
+            
+            /* 右端にプルダウンの状態を表す矢印アイコンを設置 */
+            table.table tr td:first-child::after {
+                content: '▼';
+                font-size: 0.8rem;
+                color: #0d6efd;
+                transition: transform 0.2s;
+                margin-left: auto;
+                padding-left: 10px;
+            }
+            table.table tr.is-open td:first-child::after {
+                content: '▲';
+            }
+            table.table tr.is-open td:first-child { border-bottom: 1px solid #dee2e6; }
         }
     </style>
 </head>
@@ -495,6 +558,17 @@
         }
         displayList.forEach(data => {
             const tr = document.createElement('tr');
+            
+            // スマホでのタップ開閉（アコーディオン）イベントを追加
+            tr.addEventListener('click', function(e) {
+                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.classList.contains('memo-clickable')) {
+                    return; // ボタンやメモ文字自体のクリック時はアコーディオンを閉じない
+                }
+                if (window.innerWidth <= 768) {
+                    this.classList.toggle('is-open');
+                }
+            });
+
             let dates = data.internDates || []; let periodHtml = dates.length > 0 ? dates.map(d => { let t = d.title ? `<span class="badge bg-secondary me-1">${d.title}</span>` : ''; let s = d.start || '', e = d.end || ''; let p = (s && e) ? `${s} 〜 ${e}` : (s ? s : e); return p ? `${t}${p}` : ''; }).filter(v => v).join('<br>') : '';
             const checkMark = (isChecked) => isChecked ? '✅' : 'ー';
             let mypageCell = data.mypageUrl ? `<button class="btn btn-sm btn-success" onclick="openMypage('${data.mypageUrl}')">🔗</button>` : (data.mypage ? '✅ 開設済' : 'ー');
@@ -503,7 +577,6 @@
             let gCalBtn = `<button class="btn btn-sm btn-outline-info text-dark me-1" onclick="exportToGoogleCalendar('${data.id}')" title="Googleカレンダーに追加">📅</button>`;
             let memoCell = `<span class="text-truncate memo-clickable" title="クリックして編集\n\n${data.sessionMemo || ''}" onclick="editData('${data.id}')">${data.sessionMemo || '（空欄）'}</span>`;
             
-            // ★ 新たに data-label を追加して、スマホ時に項目名を表示させる ★
             tr.innerHTML = `
                 <td data-label="社名" class="fw-bold sticky-col fs-5 text-primary">${data.company}</td>
                 <td data-label="インターン">${periodHtml}</td>
@@ -533,7 +606,17 @@
         const tbody = document.getElementById('mypageTableBody'); tbody.innerHTML = '';
         window.shukatsuData.forEach((data) => {
             const tr = document.createElement('tr');
-            // ここもスマホ表示用の data-label を追加
+            
+            // アカウント管理テーブルも同様にスマホではアコーディオン化
+            tr.addEventListener('click', function(e) {
+                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.tagName === 'INPUT') {
+                    return;
+                }
+                if (window.innerWidth <= 768) {
+                    this.classList.toggle('is-open');
+                }
+            });
+
             tr.innerHTML = `
                 <td data-label="社名" class="fw-bold text-primary">${data.company}</td>
                 <td data-label="マイページ">${data.mypageUrl ? `<button class="btn btn-sm btn-success" onclick="openMypage('${data.mypageUrl}')">🔗 開く</button>` : 'ー'}</td>
