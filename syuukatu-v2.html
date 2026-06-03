@@ -15,7 +15,20 @@
         th, td { white-space: nowrap; vertical-align: middle; font-size: 0.9rem; }
         .sticky-col { position: sticky; left: 0; background-color: white !important; z-index: 2; box-shadow: 3px 0 6px rgba(0,0,0,0.08); }
         th.sticky-col { z-index: 3; background-color: #f8f9fa !important; }
-        #calendar { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        
+        /* ★カレンダーのカスタマイズ（セルサイズ固定＆日付コンパクト化）★ */
+        #calendar { background: white; padding: 12px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        /* 日付の数字を右上に小さく格納し、イベント用のスペースを最大化 */
+        .fc .fc-daygrid-day-top { padding: 2px 4px !important; justify-content: flex-end !important; flex-direction: row !important; }
+        .fc .fc-daygrid-day-number { font-size: 0.75rem !important; color: #868e96; font-weight: bold; text-decoration: none !important; padding: 0 !important; }
+        /* 曜日ヘッダーをコンパクトに */
+        .fc .fc-col-header-cell-cushion { font-size: 0.8rem !important; padding: 4px 0 !important; text-decoration: none !important; color: #495057; }
+        /* イベント（予定）の文字サイズと余白を詰めて、見づらさを解消 */
+        .fc-event { padding: 1px 3px !important; font-size: 0.72rem !important; border-radius: 3px !important; margin-bottom: 2px !important; border: none !important; }
+        .fc-event-title { font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        /* 「+他○件」の表示も小さくスマートに */
+        .fc-daygrid-more-link { font-size: 0.7rem !important; font-weight: bold; color: #0d6efd !important; text-decoration: none !important; padding-left: 2px; }
+
         .drop-zone { border: 2px dashed #0d6efd; border-radius: 8px; padding: 30px; text-align: center; background: #f1f7fe; color: #0d6efd; cursor: pointer; transition: background 0.3s; margin-bottom: 20px; font-weight: bold; }
         .drop-zone.dragover { background: #e1eefd; border-color: #0a58ca; }
         .nav-tabs .nav-item { cursor: grab; }
@@ -29,23 +42,19 @@
             body { padding: 10px 5px; }
             h2 { font-size: 1.4rem; font-weight: bold; margin-bottom: 10px !important; }
             
-            /* 上部ヘッダーの調整 */
             .d-flex.justify-content-between { flex-direction: column; align-items: flex-start !important; gap: 10px; }
             .d-flex.justify-content-between > div { width: 100%; text-align: left; }
             #cloudStatus { margin-bottom: 5px; font-size: 0.8rem; }
             .text-md-end { display: flex; gap: 8px; }
 
-            /* タブメニューを丸型スワイプボタン風に */
             .nav-tabs { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; white-space: nowrap; border-bottom: none; -webkit-overflow-scrolling: touch; padding-bottom: 10px; margin-bottom: 15px; }
             .nav-tabs::-webkit-scrollbar { display: none; }
             .nav-tabs .nav-link { padding: 0.6rem 1rem; font-size: 0.95rem; border: 1px solid #dee2e6; border-radius: 30px; margin-right: 8px; background: white; color: #495057; font-weight: bold; }
             .nav-tabs .nav-link.active { background: #0d6efd; color: white; border-color: #0d6efd; }
 
-            /* 入力フォームのiOSズーム防止＆操作性向上 */
             input, select, textarea { font-size: 16px !important; } 
             .btn { font-size: 0.95rem; padding: 0.5rem 0.8rem; margin-bottom: 3px; }
 
-            /* ★ テーブルの「プルダウン・アコーディオン型」表示化 ★ */
             .top-scrollbar-wrapper { display: none; } 
             .table-wrapper { background: transparent; padding: 0; box-shadow: none; overflow: visible; }
             
@@ -53,14 +62,11 @@
             table.table thead { display: none; } 
             table.table tbody { display: block; width: 100%; }
             
-            /* カード（行）の基本設定：タップ可能にする */
             table.table tr { display: block; background: white; margin-bottom: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e9ecef; overflow: hidden; cursor: pointer; transition: background-color 0.2s; }
             table.table tr:active { background-color: #f1f7fe; }
 
-            /* 初期状態：企業名（最初のtd）以外はすべて非表示にする */
             table.table tr td { display: none !important; }
             
-            /* 【タップされて展開（is-openクラスあり）】の時のスタイル：縦並びで全表示 */
             table.table tr.is-open td { 
                 display: flex !important; 
                 flex-direction: column; 
@@ -73,7 +79,6 @@
                 white-space: normal; 
                 width: 100%;
             }
-            /* ボタンが並ぶ最後のtdだけは背景を変えて右寄せ横並びにする */
             table.table tr.is-open td:last-child { 
                 border-bottom: none; 
                 background: #f8f9fa; 
@@ -83,7 +88,6 @@
                 gap: 5px;
             }
             
-            /* 展開時：項目見出しをテキストの上部に自動表示（改行対策） */
             table.table tr.is-open td::before { 
                 content: attr(data-label); 
                 font-weight: bold; 
@@ -93,10 +97,8 @@
                 min-width: unset; 
                 display: block;
             }
-            /* 操作セルの見出しは不要なので非表示 */
             table.table tr.is-open td:last-child::before { content: none; }
             
-            /* 最初のtd（企業名ヘッダー）：常に表示し、横いっぱいにデザイン */
             table.table tr td:first-child { 
                 display: flex !important; 
                 flex-direction: row !important;
@@ -110,9 +112,8 @@
                 font-weight: bold;
                 width: 100%;
             }
-            table.table tr td:first-child::before { content: none; } /* 「社名」という余計な見出しを消す */
+            table.table tr td:first-child::before { content: none; } 
             
-            /* 右端にプルダウンの状態を表す矢印アイコンを設置 */
             table.table tr td:first-child::after {
                 content: '▼';
                 font-size: 0.8rem;
@@ -457,7 +458,8 @@
     function initCalendar() {
         let isMobile = window.innerWidth <= 768;
         calendar = new FullCalendar.Calendar(document.getElementById('calendar'), { 
-            initialView: 'dayGridMonth', locale: 'ja', height: isMobile ? 500 : 600, 
+            initialView: 'dayGridMonth', locale: 'ja', height: isMobile ? 480 : 650, 
+            dayMaxEvents: true, // ★ 各セルの高さを完全固定し、はみ出た予定はポップアップ格納にする
             headerToolbar: { left: 'prev,next', center: 'title', right: isMobile ? 'dayGridMonth,timeGridWeek' : 'dayGridMonth,timeGridWeek,multiMonthFourMonth' }, 
             views: { multiMonthFourMonth: { type: 'multiMonth', duration: { months: 4 }, buttonText: '4ヶ月' } }, 
             events: getCalendarEvents() 
@@ -559,10 +561,9 @@
         displayList.forEach(data => {
             const tr = document.createElement('tr');
             
-            // スマホでのタップ開閉（アコーディオン）イベントを追加
             tr.addEventListener('click', function(e) {
                 if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.classList.contains('memo-clickable')) {
-                    return; // ボタンやメモ文字自体のクリック時はアコーディオンを閉じない
+                    return; 
                 }
                 if (window.innerWidth <= 768) {
                     this.classList.toggle('is-open');
@@ -607,7 +608,6 @@
         window.shukatsuData.forEach((data) => {
             const tr = document.createElement('tr');
             
-            // アカウント管理テーブルも同様にスマホではアコーディオン化
             tr.addEventListener('click', function(e) {
                 if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.tagName === 'INPUT') {
                     return;
