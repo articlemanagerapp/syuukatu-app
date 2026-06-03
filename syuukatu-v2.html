@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>就活・インターン管理アプリ（クラウド版）</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
@@ -23,12 +23,28 @@
         .memo-clickable { cursor: pointer; color: #6c757d; max-width: 150px; display: inline-block; }
         .memo-clickable:hover { color: #0d6efd; text-decoration: underline; }
         .sync-status { font-size: 0.85rem; padding: 4px 8px; border-radius: 4px; }
+        
+        /* ★スマホ・タブレット向けのレスポンシブデザイン調整★ */
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            h2 { font-size: 1.3rem; margin-bottom: 10px !important; }
+            .nav-tabs { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; white-space: nowrap; border-bottom: 1px solid #dee2e6; -webkit-overflow-scrolling: touch; }
+            .nav-tabs .nav-link { padding: 0.5rem 0.8rem; font-size: 0.85rem; border: none; }
+            .nav-tabs .nav-link.active { border-bottom: 3px solid #0d6efd; font-weight: bold; }
+            .btn { font-size: 0.85rem; padding: 0.3rem 0.6rem; margin-bottom: 5px; }
+            .table-wrapper { padding: 10px; }
+            th, td { font-size: 0.8rem; }
+            /* スマホで横並びのレイアウトを縦並びに */
+            .d-flex.justify-content-between { flex-direction: column; align-items: flex-start !important; gap: 10px; }
+            .d-flex.justify-content-between > div { width: 100%; text-align: left; }
+            #cloudStatus { margin-bottom: 5px; }
+        }
     </style>
 </head>
 <body>
 
 <div id="loginOverlay" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; justify-content: center; align-items: center;">
-    <div class="card p-4" style="max-width: 400px; width: 100%;">
+    <div class="card p-4" style="max-width: 400px; width: 90%;">
         <h3 class="text-center mb-3 fw-bold text-primary">就活クラウド<br><span style="font-size:1rem;color:#666;">ログイン</span></h3>
         <div id="loginError" class="text-danger mb-2 text-center" style="font-size:0.9rem;"></div>
         <label class="form-label text-secondary fw-bold mb-0">メールアドレス</label>
@@ -41,26 +57,24 @@
 </div>
 
 <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-            <h2 class="mb-1">就活・インターン予定管理</h2>
+            <h2 class="mb-1 fw-bold">就活・インターン管理</h2>
             <div id="cloudStatus" class="sync-status d-inline-block bg-secondary text-white">🔄 アカウント確認中...</div>
             <button class="btn btn-sm btn-outline-danger ms-2" onclick="logoutUser()">ログアウト</button>
         </div>
-        <div>
-            <button class="btn btn-outline-secondary me-1" onclick="downloadTXTBackup()" title="メモ帳で開ける全データバックアップ">📥 バックアップ</button>
-            <button class="btn btn-outline-secondary me-2" onclick="downloadCSVBackup()" title="Excel等で開けるES一覧">📥 ES一覧出力</button>
+        <div class="text-md-end">
+            <button class="btn btn-outline-secondary me-1" onclick="downloadTXTBackup()">📥 バックアップ</button>
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal" onclick="prepareAdd()">＋ 新規企業を追加</button>
         </div>
     </div>
 
     <ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
-        <li class="nav-item" role="presentation"><button class="nav-link active" id="table-tab" data-bs-toggle="tab" data-bs-target="#table-view" type="button" role="tab">一覧表（テーブル）</button></li>
-        <li class="nav-item" role="presentation"><button class="nav-link" id="calendar-tab" data-bs-toggle="tab" data-bs-target="#calendar-view" type="button" role="tab">カレンダー</button></li>
+        <li class="nav-item" role="presentation"><button class="nav-link active" id="table-tab" data-bs-toggle="tab" data-bs-target="#table-view" type="button" role="tab">📊 一覧表</button></li>
+        <li class="nav-item" role="presentation"><button class="nav-link" id="calendar-tab" data-bs-toggle="tab" data-bs-target="#calendar-view" type="button" role="tab">🗓️ カレンダー</button></li>
         <li class="nav-item" role="presentation"><button class="nav-link" id="es-tab" data-bs-toggle="tab" data-bs-target="#es-view" type="button" role="tab">📝 ES設問管理</button></li>
-        <li class="nav-item" role="presentation"><button class="nav-link" id="mypage-tab" data-bs-toggle="tab" data-bs-target="#mypage-view" type="button" role="tab">マイページ管理</button></li>
-        <li class="nav-item" role="presentation"><button class="nav-link" id="interview-tab" data-bs-toggle="tab" data-bs-target="#interview-view" type="button" role="tab">面接・ES管理</button></li>
-        <li class="nav-item" role="presentation"><button class="nav-link" id="files-tab" data-bs-toggle="tab" data-bs-target="#files-view" type="button" role="tab">資料管理(※ブラウザ保存)</button></li>
+        <li class="nav-item" role="presentation"><button class="nav-link" id="mypage-tab" data-bs-toggle="tab" data-bs-target="#mypage-view" type="button" role="tab">🔐 アカウント一覧</button></li>
+        <li class="nav-item" role="presentation"><button class="nav-link" id="interview-tab" data-bs-toggle="tab" data-bs-target="#interview-view" type="button" role="tab">🗣️ 面接対策</button></li>
     </ul>
 
     <div class="tab-content" id="myTabContent">
@@ -100,11 +114,11 @@
                 <div class="col-md-9">
                     <div id="esDetailArea" class="table-wrapper" style="display:none;">
                         <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
-                            <h4 id="esTargetCompany" class="text-primary mb-0">企業名</h4>
+                            <h4 id="esTargetCompany" class="text-primary mb-0 fw-bold">企業名</h4>
                             <input type="hidden" id="esTargetId">
                             <div>
-                                <button class="btn btn-outline-primary me-2" onclick="addEsQuestionRow()">＋ 新しい設問を追加</button>
-                                <button class="btn btn-success" onclick="saveEsDetails()">💾 ES情報を保存する</button>
+                                <button class="btn btn-outline-primary me-2" onclick="addEsQuestionRow()">＋ 新しい設問</button>
+                                <button class="btn btn-success fw-bold" onclick="saveEsDetails()">💾 保存</button>
                             </div>
                         </div>
                         <div id="esQuestionsContainer"></div>
@@ -116,7 +130,6 @@
 
         <div class="tab-pane fade" id="mypage-view" role="tabpanel">
             <div class="table-wrapper">
-                <h5>マイページ・アカウント情報一元管理</h5>
                 <table class="table table-hover table-bordered">
                     <thead class="table-light"><tr><th>社名</th><th>マイページURL</th><th>ログインID / 会員番号</th><th>パスワード</th><th>操作</th></tr></thead>
                     <tbody id="mypageTableBody"></tbody>
@@ -132,9 +145,9 @@
                 <div class="col-md-9">
                     <div id="interviewDetailArea" class="table-wrapper" style="display:none;">
                         <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
-                            <h4 id="interviewTargetCompany" class="text-primary mb-0">企業名</h4>
+                            <h4 id="interviewTargetCompany" class="text-primary mb-0 fw-bold">企業名</h4>
                             <input type="hidden" id="interviewTargetId">
-                            <button class="btn btn-success" onclick="saveInterviewDetails()">💾 情報を保存する</button>
+                            <button class="btn btn-success fw-bold" onclick="saveInterviewDetails()">💾 保存</button>
                         </div>
                         <div class="mb-4" style="max-width: 300px;">
                             <label class="form-label fw-bold">🗣️ 面接日時</label>
@@ -155,40 +168,16 @@
                 </div>
             </div>
         </div>
-
-        <div class="tab-pane fade" id="files-view" role="tabpanel">
-            <div class="row">
-                <div class="col-md-4">
-                    <div class="card p-3 mb-3">
-                        <h5>資料の追加</h5>
-                        <div class="mb-3">
-                            <label class="form-label">関連付ける企業 (任意)</label>
-                            <select class="form-select" id="fileCompanySelect"><option value="">選択なし（共通資料）</option></select>
-                        </div>
-                        <div id="dropZone" class="drop-zone">ここにファイルをドラッグ＆ドロップ<br>または クリックしてファイルを選択<input type="file" id="fileInput" multiple style="display: none;"></div>
-                    </div>
-                </div>
-                <div class="col-md-8">
-                    <div class="table-wrapper">
-                        <h5>保存された資料一覧（※ローカルブラウザ保存）</h5>
-                        <table class="table table-hover">
-                            <thead class="table-light"><tr><th>ファイル名</th><th>関連企業</th><th>サイズ</th><th>追加日時</th><th>操作</th></tr></thead>
-                            <tbody id="fileTableBody"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 </div>
 
 <div class="offcanvas offcanvas-end" tabindex="-1" id="accountSidebar">
   <div class="offcanvas-header bg-light border-b">
-    <h5 id="accountSidebarLabel" class="mb-0">🔐 アカウント情報</h5>
-    <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas"></button>
+    <h5 id="accountSidebarLabel" class="mb-0 fw-bold">🔐 アカウント情報</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
   </div>
   <div class="offcanvas-body">
-    <h4 id="sidebarCompanyName" class="text-primary mb-4">企業名</h4>
+    <h4 id="sidebarCompanyName" class="text-primary mb-4 fw-bold">企業名</h4>
     <div class="mb-3">
         <label class="form-label fw-bold">ログインID / 会員番号</label>
         <div class="input-group">
@@ -204,7 +193,7 @@
             <button class="btn btn-outline-secondary" type="button" onclick="copyText('sidebarPassword')">コピー</button>
         </div>
     </div>
-    <div class="d-grid gap-2"><a id="sidebarMypageLink" href="#" target="_blank" class="btn btn-primary">この企業のマイページを開く</a></div>
+    <div class="d-grid gap-2"><a id="sidebarMypageLink" href="#" target="_blank" class="btn btn-primary fw-bold">マイページを開く</a></div>
   </div>
 </div>
 
@@ -212,7 +201,7 @@
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="addModalLabel">企業の追加</h5>
+        <h5 class="modal-title fw-bold" id="addModalLabel">企業の追加</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
@@ -264,7 +253,7 @@
                 <div class="col-md-3 mb-2"><label class="form-label text-secondary">通過状況</label><select class="form-select" id="passStatus" onchange="toggleFormFields()"><option value="結果待ち">結果待ち</option><option value="書類通過">書類通過</option><option value="通過">通過（面接等）</option><option value="お祈り">お祈り</option></select></div>
                 <div id="interviewFields" class="col-md-12 mt-2 pt-2 border-top" style="display: none;"><label class="form-label fw-bold text-primary">🗣️ 次回 面接日時</label><input type="datetime-local" class="form-control" id="modalInterviewDate" style="max-width: 300px;"></div>
             </div>
-            <div class="text-end"><button type="submit" class="btn btn-success px-4">保存する</button></div>
+            <div class="text-end"><button type="submit" class="btn btn-success fw-bold px-4">保存する</button></div>
         </form>
       </div>
     </div>
@@ -276,14 +265,11 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    // FirestoreではなくRealtime Databaseの機能を使います
     import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-    // あなたのデータベース情報をセット！
     const firebaseConfig = {
       apiKey: "AIzaSyB8-VCe66GK77czczFqJKIDqfTaC1jTi8g",
       authDomain: "shukatsu-app-ae30e.firebaseapp.com",
-      // ↓ URLから推測したRealtime DatabaseのURLを追加しています（もし動かなければFirebaseの設定画面のdatabaseURLに書き換えてください）
       databaseURL: "https://shukatsu-app-ae30e-default-rtdb.asia-southeast1.firebasedatabase.app", 
       projectId: "shukatsu-app-ae30e",
       storageBucket: "shukatsu-app-ae30e.firebasestorage.app",
@@ -295,56 +281,37 @@
     const auth = getAuth(app);
     const db = getDatabase(app);
 
-    // ログイン機能
     window.loginUser = async () => {
-        const e = document.getElementById('emailInput').value;
-        const p = document.getElementById('passwordInput').value;
+        const e = document.getElementById('emailInput').value, p = document.getElementById('passwordInput').value;
         document.getElementById('loginError').innerText = '';
-        try { await signInWithEmailAndPassword(auth, e, p); }
-        catch(err) { document.getElementById('loginError').innerText = 'ログイン失敗: アドレスかパスワードが違います'; }
+        try { await signInWithEmailAndPassword(auth, e, p); } catch(err) { document.getElementById('loginError').innerText = 'ログイン失敗: アドレスかパスワードが違います'; }
     };
-
-    // 新規登録機能
     window.registerUser = async () => {
-        const e = document.getElementById('emailInput').value;
-        const p = document.getElementById('passwordInput').value;
+        const e = document.getElementById('emailInput').value, p = document.getElementById('passwordInput').value;
         document.getElementById('loginError').innerText = '';
-        try { await createUserWithEmailAndPassword(auth, e, p); }
-        catch(err) { document.getElementById('loginError').innerText = '登録失敗: パスワードは6文字以上にしてください'; }
+        try { await createUserWithEmailAndPassword(auth, e, p); } catch(err) { document.getElementById('loginError').innerText = '登録失敗: パスワードは6文字以上にしてください'; }
     };
-
-    // ログアウト機能
     window.logoutUser = () => signOut(auth);
 
-    // Firebase (Realtime Database) へ保存する機能
     window.saveToServer = async () => {
         if (!auth.currentUser) return;
         const statusEl = document.getElementById('cloudStatus');
-        statusEl.innerText = '⏳ 保存中...';
-        statusEl.className = 'sync-status d-inline-block bg-warning text-dark';
+        statusEl.innerText = '⏳ 保存中...'; statusEl.className = 'sync-status d-inline-block bg-warning text-dark';
         try {
             await set(ref(db, 'users/' + auth.currentUser.uid), { data: window.shukatsuData });
-            statusEl.innerText = `☁️ ${auth.currentUser.email} (同期済)`;
-            statusEl.className = 'sync-status d-inline-block bg-success text-white';
+            statusEl.innerText = `☁️ ${auth.currentUser.email} (同期済)`; statusEl.className = 'sync-status d-inline-block bg-success text-white';
         } catch (error) {
-            console.error(error);
-            statusEl.innerText = '❌ 保存失敗（管理画面の設定を確認してください）';
-            statusEl.className = 'sync-status d-inline-block bg-danger text-white';
+            console.error(error); statusEl.innerText = '❌ 保存失敗'; statusEl.className = 'sync-status d-inline-block bg-danger text-white';
         }
     };
 
-    // ログイン状態の監視（自動でデータを読み込む）
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             document.getElementById('loginOverlay').style.display = 'none';
             document.getElementById('cloudStatus').innerText = '🔄 データ読み込み中...';
             try {
                 const snapshot = await get(child(ref(db), `users/${user.uid}`));
-                if (snapshot.exists() && snapshot.val().data) {
-                    window.shukatsuData = snapshot.val().data;
-                } else {
-                    window.shukatsuData = [];
-                }
+                window.shukatsuData = (snapshot.exists() && snapshot.val().data) ? snapshot.val().data : [];
                 if(window.refreshAllViews) window.refreshAllViews();
                 document.getElementById('cloudStatus').innerText = `☁️ ${user.email} (同期済)`;
                 document.getElementById('cloudStatus').className = 'sync-status d-inline-block bg-success text-white';
@@ -360,15 +327,11 @@
 <script>
     var shukatsuData = [];
     window.shukatsuData = shukatsuData;
-
-    let calendar; let currentInterviewCompanyId = null; let currentEsCompanyId = null; 
-    let currentSortKey = ''; let currentSortAsc = true; let isSyncingTopScroll = false; let isSyncingTableScroll = false;
-
-    const dbLocal = new Dexie("ShukatsuFilesDB");
-    dbLocal.version(1).stores({ files: 'id, name, size, date, companyName' });
+    let calendar, currentInterviewCompanyId = null, currentEsCompanyId = null, currentSortKey = '', currentSortAsc = true;
+    let isSyncingTopScroll = false, isSyncingTableScroll = false;
 
     document.addEventListener('DOMContentLoaded', async function() {
-        loadTabOrder(); setupTabDragAndDrop(); initCalendar(); loadFilesTable(); setupDragAndDrop(); setupScrollSync(); 
+        loadTabOrder(); setupTabDragAndDrop(); initCalendar(); setupScrollSync(); 
         document.getElementById('table-tab').addEventListener('shown.bs.tab', syncScrollWidth);
         document.getElementById('calendar-tab').addEventListener('shown.bs.tab', () => calendar.render());
         document.getElementById('interview-tab').addEventListener('shown.bs.tab', loadInterviewView);
@@ -376,10 +339,7 @@
         window.addEventListener('resize', syncScrollWidth);
     });
 
-    window.refreshAllViews = function() {
-        loadTable(); loadMypageTable(); loadInterviewView(); loadEsView();
-        if (calendar) updateCalendar();
-    };
+    window.refreshAllViews = function() { loadTable(); loadMypageTable(); loadInterviewView(); loadEsView(); if (calendar) updateCalendar(); };
 
     function toggleFormFields() {
         document.getElementById('mypageFields').style.display = document.getElementById('mypage').checked ? 'flex' : 'none';
@@ -392,7 +352,6 @@
         top.addEventListener('scroll', () => { if (!isSyncingTopScroll) { isSyncingTableScroll = true; bottom.scrollLeft = top.scrollLeft; } isSyncingTopScroll = false; });
         bottom.addEventListener('scroll', () => { if (!isSyncingTableScroll) { isSyncingTopScroll = true; top.scrollLeft = bottom.scrollLeft; } isSyncingTableScroll = false; });
     }
-
     function syncScrollWidth() { const main = document.getElementById('mainTable'), fake = document.getElementById('topScrollFakeContent'); if (main && fake) fake.style.width = main.offsetWidth + 'px'; }
 
     function setupTabDragAndDrop() {
@@ -404,12 +363,17 @@
             item.addEventListener('drop', (e) => { e.preventDefault(); if (item !== draggedItem) { const children = Array.from(tabList.children); if (children.indexOf(draggedItem) < children.indexOf(item)) item.after(draggedItem); else item.before(draggedItem); saveTabOrder(); } });
         });
     }
-
     function saveTabOrder() { localStorage.setItem('tab_order', JSON.stringify(Array.from(document.getElementById('myTab').querySelectorAll('.nav-link')).map(btn => btn.id))); }
     function loadTabOrder() { const order = JSON.parse(localStorage.getItem('tab_order')); if (order) { order.forEach(id => { const btn = document.getElementById(id); if (btn) document.getElementById('myTab').appendChild(btn.closest('.nav-item')); }); } }
 
     function initCalendar() {
-        calendar = new FullCalendar.Calendar(document.getElementById('calendar'), { initialView: 'dayGridMonth', locale: 'ja', height: 600, headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,multiMonthFourMonth' }, views: { multiMonthFourMonth: { type: 'multiMonth', duration: { months: 4 }, buttonText: '4ヶ月' } }, events: getCalendarEvents() });
+        let isMobile = window.innerWidth <= 768;
+        calendar = new FullCalendar.Calendar(document.getElementById('calendar'), { 
+            initialView: 'dayGridMonth', locale: 'ja', height: isMobile ? 500 : 600, 
+            headerToolbar: { left: 'prev,next', center: 'title', right: isMobile ? 'dayGridMonth,timeGridWeek' : 'dayGridMonth,timeGridWeek,multiMonthFourMonth' }, 
+            views: { multiMonthFourMonth: { type: 'multiMonth', duration: { months: 4 }, buttonText: '4ヶ月' } }, 
+            events: getCalendarEvents() 
+        });
         calendar.render();
     }
 
@@ -420,8 +384,8 @@
     };
 
     window.addInternDateRow = function(data = {title: '', start: '', end: ''}) {
-        const c = document.getElementById('internDatesContainer'); const r = document.createElement('div'); r.className = 'row mb-2 intern-date-row';
-        r.innerHTML = `<div class="col-md-4"><input type="text" class="form-control intern-title" placeholder="日程名" value="${data.title}"></div><div class="col-md-3"><input type="date" class="form-control intern-start" value="${data.start}"></div><div class="col-md-1 text-center align-self-center">〜</div><div class="col-md-3"><input type="date" class="form-control intern-end" value="${data.end}"></div><div class="col-md-1 text-end"><button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="this.closest('.intern-date-row').remove()">×</button></div>`;
+        const c = document.getElementById('internDatesContainer'); const r = document.createElement('div'); r.className = 'row mb-2 intern-date-row g-2';
+        r.innerHTML = `<div class="col-12 col-md-4"><input type="text" class="form-control intern-title" placeholder="日程名" value="${data.title}"></div><div class="col-5 col-md-3"><input type="date" class="form-control intern-start" value="${data.start}"></div><div class="col-2 col-md-1 text-center align-self-center">〜</div><div class="col-5 col-md-3"><input type="date" class="form-control intern-end" value="${data.end}"></div><div class="col-12 col-md-1 text-end"><button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="this.closest('.intern-date-row').remove()">×</button></div>`;
         c.appendChild(r);
     };
 
@@ -461,9 +425,43 @@
 
     window.sortTable = function(key) { if (currentSortKey === key) currentSortAsc = !currentSortAsc; else { currentSortKey = key; currentSortAsc = true; } loadTable(); };
 
+    // ★Googleカレンダーへ追加する機能（選択式）★
+    window.exportToGoogleCalendar = function(id) {
+        const data = window.shukatsuData.find(item => item.id === id); if(!data) return;
+        let events = [];
+        if(data.interviewDate) events.push({ title: `[面接] ${data.company}`, date: data.interviewDate, type: 'time' });
+        if(data.esDeadline) events.push({ title: `[ES締切] ${data.company}`, date: data.esDeadline, type: 'time' });
+        if(data.internDates) data.internDates.forEach(d => { if(d.start) events.push({ title: `[ｲﾝﾀｰﾝ] ${data.company} ${d.title}`, date: d.start, end: d.end, type: 'allday' }); });
+        if(events.length === 0) { alert("カレンダーに追加できる予定（面接日やES締切など）が設定されていません。"); return; }
+        
+        let selected = events[0];
+        if(events.length > 1) {
+            let msg = "Googleカレンダーに追加する予定の番号を入力してください：\n";
+            events.forEach((ev, idx) => { msg += `${idx + 1}: ${ev.title} (${ev.date.replace('T',' ')})\n`; });
+            let choice = prompt(msg, "1"); if(choice === null) return;
+            let idx = parseInt(choice) - 1; if(idx >= 0 && idx < events.length) selected = events[idx];
+        }
+
+        let startStr = "", endStr = "";
+        let d = new Date(selected.date);
+        if(selected.type === 'allday') {
+            startStr = d.toISOString().replace(/-|:/g, '').substring(0,8);
+            let dEnd = selected.end ? new Date(selected.end) : new Date(d);
+            dEnd.setDate(dEnd.getDate() + 1); // 終日は翌日を指定する必要がある
+            endStr = dEnd.toISOString().replace(/-|:/g, '').substring(0,8);
+        } else {
+            // GoogleカレンダーのURLはUTC時間(Z)を要求するため、toISOStringで自動変換させる
+            startStr = d.toISOString().replace(/-|:|\.\d\d\d/g, '');
+            let dEnd = new Date(d.getTime() + 60*60*1000); // 面接等はデフォルト1時間後
+            endStr = dEnd.toISOString().replace(/-|:|\.\d\d\d/g, '');
+        }
+        let url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(selected.title)}&dates=${startStr}/${endStr}`;
+        if(data.location) url += `&location=${encodeURIComponent(data.location)}`;
+        window.open(url, '_blank');
+    };
+
     function loadTable() {
-        let displayList = [...window.shukatsuData]; const tbody = document.getElementById('companyTableBody'); const fileSelect = document.getElementById('fileCompanySelect');
-        tbody.innerHTML = ''; fileSelect.innerHTML = '<option value="">選択なし（共通資料）</option>';
+        let displayList = [...window.shukatsuData]; const tbody = document.getElementById('companyTableBody'); tbody.innerHTML = '';
         if (currentSortKey) {
             displayList.sort((a, b) => {
                 let valA = a[currentSortKey], valB = b[currentSortKey];
@@ -475,15 +473,15 @@
             });
         }
         displayList.forEach(data => {
-            const opt = document.createElement('option'); opt.value = data.company; opt.innerText = data.company; fileSelect.appendChild(opt);
             const tr = document.createElement('tr');
             let dates = data.internDates || []; let periodHtml = dates.length > 0 ? dates.map(d => { let t = d.title ? `<span class="badge bg-secondary me-1">${d.title}</span>` : ''; let s = d.start || '', e = d.end || ''; let p = (s && e) ? `${s} 〜 ${e}` : (s ? s : e); return p ? `${t}${p}` : ''; }).filter(v => v).join('<br>') : '';
             const checkMark = (isChecked) => isChecked ? '✅' : 'ー';
-            let mypageCell = data.mypageUrl ? `<button class="btn btn-sm btn-success" onclick="openMypage('${data.mypageUrl}')">🔗 開く</button>` : (data.mypage ? '✅ 開設済' : 'ー');
+            let mypageCell = data.mypageUrl ? `<button class="btn btn-sm btn-success" onclick="openMypage('${data.mypageUrl}')">🔗</button>` : (data.mypage ? '✅ 開設済' : 'ー');
             let accountBtn = `<button class="btn btn-sm ${data.loginId || data.loginPassword || data.mypageUrl ? 'btn-outline-dark' : 'btn-outline-secondary'} me-1" onclick="openAccountSidebar('${data.id}')" title="アカウント情報">🔐</button>`;
             let interviewBtn = `<button class="btn btn-sm btn-outline-warning text-dark me-1" onclick="jumpToInterview('${data.id}')" title="面接・ES対策">🗣️</button>`;
+            let gCalBtn = `<button class="btn btn-sm btn-outline-info text-dark me-1" onclick="exportToGoogleCalendar('${data.id}')" title="Googleカレンダーに予定を追加">📅</button>`;
             let memoCell = `<span class="text-truncate memo-clickable" title="クリックして編集\n\n${data.sessionMemo || ''}" onclick="editData('${data.id}')">${data.sessionMemo || '（空欄）'}</span>`;
-            tr.innerHTML = `<td class="fw-bold sticky-col">${data.company}</td><td>${periodHtml}</td><td>${data.location || ''}</td><td>${checkMark(data.hasSession)}</td><td>${data.sessionStatus}</td><td>${memoCell}</td><td>${mypageCell}</td><td>${data.esProgress}</td><td>${checkMark(data.esSubmitted)}</td><td class="text-danger fw-bold">${data.esDeadline ? data.esDeadline.replace('T', ' ') : ''}</td><td>${data.testStatus}</td><td>${data.passStatus}</td><td>${accountBtn}${interviewBtn}<button class="btn btn-sm btn-outline-primary me-1" onclick="editData('${data.id}')">編集</button><button class="btn btn-sm btn-outline-danger" onclick="deleteData('${data.id}')">削除</button></td>`;
+            tr.innerHTML = `<td class="fw-bold sticky-col">${data.company}</td><td>${periodHtml}</td><td>${data.location || ''}</td><td>${checkMark(data.hasSession)}</td><td>${data.sessionStatus}</td><td>${memoCell}</td><td>${mypageCell}</td><td>${data.esProgress}</td><td>${checkMark(data.esSubmitted)}</td><td class="text-danger fw-bold">${data.esDeadline ? data.esDeadline.replace('T', ' ') : ''}</td><td>${data.testStatus}</td><td>${data.passStatus}</td><td>${accountBtn}${interviewBtn}${gCalBtn}<button class="btn btn-sm btn-outline-primary me-1" onclick="editData('${data.id}')">編集</button><button class="btn btn-sm btn-outline-danger" onclick="deleteData('${data.id}')">削除</button></td>`;
             tbody.appendChild(tr);
         });
         setTimeout(syncScrollWidth, 50);
@@ -491,7 +489,7 @@
 
     function loadMypageTable() {
         const tbody = document.getElementById('mypageTableBody'); tbody.innerHTML = '';
-        window.shukatsuData.forEach((data, i) => {
+        window.shukatsuData.forEach((data) => {
             const tr = document.createElement('tr');
             tr.innerHTML = `<td class="fw-bold">${data.company}</td><td>${data.mypageUrl ? `<button class="btn btn-sm btn-success" onclick="openMypage('${data.mypageUrl}')">🔗 開く</button>` : 'ー'}</td><td>${data.loginId ? `<input type="text" class="form-control form-control-sm" value="${data.loginId}" readonly>` : 'ー'}</td><td>${data.loginPassword ? `<input type="password" class="form-control form-control-sm" value="${data.loginPassword}" readonly>` : 'ー'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="editData('${data.id}')">編集</button></td>`;
             tbody.appendChild(tr);
@@ -506,7 +504,6 @@
         });
         if (currentInterviewCompanyId) selectInterviewCompany(currentInterviewCompanyId);
     }
-
     window.selectInterviewCompany = function(id) {
         currentInterviewCompanyId = id; const data = window.shukatsuData.find(item => item.id === id);
         if (data) {
@@ -515,7 +512,6 @@
             document.getElementById('interviewDetailArea').style.display = 'block'; document.getElementById('interviewEmptyMessage').style.display = 'none';
         }
     };
-
     window.saveInterviewDetails = async function() {
         const id = document.getElementById('interviewTargetId').value; if (!id) return;
         const index = window.shukatsuData.findIndex(item => item.id === id);
@@ -543,14 +539,46 @@
             const questions = data.esQuestions || []; questions.forEach(q => addEsQuestionRow(q));
             if(questions.length === 0) addEsQuestionRow(); 
             document.getElementById('esDetailArea').style.display = 'block'; document.getElementById('esEmptyMessage').style.display = 'none';
+            // 表示直後に文字数をカウントする
+            setTimeout(() => { container.querySelectorAll('.es-q-final').forEach(ta => window.updateCharCount(ta)); }, 50);
         }
     };
 
+    // ★ES文字数カウンター処理★
+    window.updateCharCount = function(textarea) {
+        const count = textarea.value.replace(/\n/g, '').length; // 改行を抜いた文字数をカウント
+        const countSpan = textarea.parentElement.querySelector('.char-count');
+        if(countSpan) countSpan.innerText = count;
+    };
+
+    // ★ESメモ欄と清書欄のUIアップデート★
     window.addEsQuestionRow = function(qData = { id: '', question: '', finalAnswer: '', memoAnswer: '' }) {
         const container = document.getElementById('esQuestionsContainer');
-        const card = document.createElement('div'); card.className = 'card p-3 mb-3 border-secondary es-question-card'; card.dataset.qId = qData.id || 'q_' + Date.now() + Math.random().toString(36).substring(2, 5);
-        card.innerHTML = `<div class="d-flex justify-content-between align-items-center mb-2"><h6 class="fw-bold text-secondary mb-0">📝 設問</h6><button class="btn btn-sm btn-outline-danger" onclick="this.closest('.es-question-card').remove()">削除</button></div><div class="mb-3"><textarea class="form-control es-q-text" rows="2" placeholder="設問内容">${qData.question || ''}</textarea></div><div class="row"><div class="col-md-12 mb-3"><textarea class="form-control es-q-final" rows="8" placeholder="清書欄">${qData.finalAnswer || ''}</textarea></div></div>`;
+        const card = document.createElement('div'); card.className = 'card p-3 mb-3 border-secondary es-question-card shadow-sm'; card.dataset.qId = qData.id || 'q_' + Date.now() + Math.random().toString(36).substring(2, 5);
+        card.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="fw-bold text-secondary mb-0">📝 設問</h6>
+                <button class="btn btn-sm btn-outline-danger" onclick="this.closest('.es-question-card').remove()">削除</button>
+            </div>
+            <div class="mb-3">
+                <textarea class="form-control es-q-text" rows="2" placeholder="設問内容">${qData.question || ''}</textarea>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label text-info fw-bold" style="font-size:0.85rem;">💡 メモ・構成案</label>
+                    <textarea class="form-control es-q-memo" rows="6" placeholder="書きたいポイントや箇条書き">${qData.memoAnswer || ''}</textarea>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="d-flex justify-content-between align-items-end mb-1">
+                        <label class="form-label text-success fw-bold mb-0" style="font-size:0.85rem;">✨ 清書</label>
+                        <span class="text-secondary fw-bold" style="font-size:0.85rem;"><span class="char-count">0</span> 文字</span>
+                    </div>
+                    <textarea class="form-control es-q-final" rows="6" placeholder="清書欄" oninput="updateCharCount(this)">${qData.finalAnswer || ''}</textarea>
+                </div>
+            </div>`;
         container.appendChild(card);
+        // 追加直後にカウント反映
+        window.updateCharCount(card.querySelector('.es-q-final'));
     };
 
     window.saveEsDetails = async function() {
@@ -558,7 +586,14 @@
         const index = window.shukatsuData.findIndex(item => item.id === id);
         if (index !== -1) {
             const esQuestions = [];
-            document.getElementById('esQuestionsContainer').querySelectorAll('.es-question-card').forEach(card => { esQuestions.push({ id: card.dataset.qId, question: card.querySelector('.es-q-text').value, finalAnswer: card.querySelector('.es-q-final').value }); });
+            document.getElementById('esQuestionsContainer').querySelectorAll('.es-question-card').forEach(card => { 
+                esQuestions.push({ 
+                    id: card.dataset.qId, 
+                    question: card.querySelector('.es-q-text').value, 
+                    memoAnswer: card.querySelector('.es-q-memo').value, // メモ欄も保存
+                    finalAnswer: card.querySelector('.es-q-final').value 
+                }); 
+            });
             window.shukatsuData[index].esQuestions = esQuestions; await window.saveToServer(); alert('保存しました！'); loadEsView();
         }
     };
@@ -578,13 +613,6 @@
     function updateCalendar() { if (calendar) { calendar.removeAllEvents(); calendar.addEventSource(getCalendarEvents()); } }
 
     window.downloadTXTBackup = function() { const blob = new Blob([JSON.stringify(window.shukatsuData, null, 2)], { type: 'text/plain;charset=utf-8;' }); const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.setAttribute("download", `就活アプリ_バックアップ_${new Date().toISOString().split('T')[0]}.txt`); document.body.appendChild(link); link.click(); document.body.removeChild(link); };
-    
-    // 【ファイル管理用処理】
-    function setupDragAndDrop() { const dz = document.getElementById('dropZone'), fi = document.getElementById('fileInput'); dz.addEventListener('click', () => fi.click()); fi.addEventListener('change', (e) => handleFiles(e.target.files)); dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('dragover'); }); dz.addEventListener('dragleave', () => dz.classList.remove('dragover')); dz.addEventListener('drop', (e) => { e.preventDefault(); dz.classList.remove('dragover'); handleFiles(e.dataTransfer.files); }); }
-    async function handleFiles(files) { const cn = document.getElementById('fileCompanySelect').value, now = new Date().toLocaleString('ja-JP'); for (let file of files) await dbLocal.files.add({ id: Date.now().toString() + Math.random().toString(36).substring(2, 5), name: file.name, size: file.size, date: now, companyName: cn || '共通資料', blob: file }); loadFilesTable(); }
-    async function loadFilesTable() { const files = await dbLocal.files.toArray(), tbody = document.getElementById('fileTableBody'); tbody.innerHTML = ''; files.forEach(file => { const tr = document.createElement('tr'); tr.innerHTML = `<td class="fw-bold">${file.name}</td><td><span class="badge bg-secondary">${file.companyName}</span></td><td>${(file.size / 1024).toFixed(1)} KB</td><td>${file.date}</td><td><button class="btn btn-sm btn-outline-success me-1" onclick="openFile('${file.id}')">開く</button><button class="btn btn-sm btn-outline-danger" onclick="deleteFile('${file.id}')">削除</button></td>`; tbody.appendChild(tr); }); }
-    window.openFile = async function(id) { const file = await dbLocal.files.get(id); if (file) { const url = URL.createObjectURL(new Blob([file.blob], { type: file.blob.type })); window.open(url, '_blank'); setTimeout(() => URL.revokeObjectURL(url), 10000); } };
-    window.deleteFile = async function(id) { if (confirm('削除しますか？')) { await dbLocal.files.delete(id); loadFilesTable(); } };
 
     window.openAccountSidebar = function(id) { const data = window.shukatsuData.find(item => item.id === id); if (data) { document.getElementById('sidebarCompanyName').innerText = data.company; document.getElementById('sidebarLoginId').value = data.loginId || ''; document.getElementById('sidebarPassword').value = data.loginPassword || ''; bootstrap.Offcanvas.getOrCreateInstance(document.getElementById('accountSidebar')).show(); } };
     window.openMypage = function(url) { if(url) window.open(url, '_blank'); };
