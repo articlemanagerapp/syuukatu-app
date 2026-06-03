@@ -422,7 +422,6 @@
     let isSyncingTopScroll = false, isSyncingTableScroll = false;
 
     document.addEventListener('DOMContentLoaded', async function() {
-        // ★ 自動連携のスイッチ状態を復元 ★
         const isAutoSync = localStorage.getItem('autoCalSync') === 'true';
         const toggleEl = document.getElementById('autoCalSyncToggle');
         if (toggleEl) toggleEl.checked = isAutoSync;
@@ -526,7 +525,6 @@
         }
     };
 
-    // ★Googleカレンダーに自動でタブを開く関数★
     window.autoOpenCalendarTabs = function(location, eventsToSync) {
         eventsToSync.forEach(selected => {
             let startStr = "", endStr = ""; let d = new Date(selected.date);
@@ -561,7 +559,7 @@
             testStatus: document.getElementById('testStatus').value, passStatus: document.getElementById('passStatus').value
         };
 
-        // ★自動連携の処理：前回から「変更・追加」があった予定だけを抽出★
+        // 差分抽出：前回から「変更・追加」があった予定だけを抽出
         let eventsToSync = [];
         if (newData.interviewDate && newData.interviewDate !== existingData.interviewDate) {
             eventsToSync.push({ title: `[面接] ${newData.company}`, date: newData.interviewDate, type: 'time' });
@@ -575,33 +573,17 @@
             });
         }
 
-        if (editId) { const index = window.shukatsuData.findIndex(item => item.id === editId); if (index !== -1) window.shukatsuData[index] = newData; } else { window.shukatsuData.push(newData); }
-        await window.saveToServer(); window.refreshAllViews();
-        bootstrap.Modal.getInstance(document.getElementById('addModal')).hide();
-
-        // トグルがONなら抽出した予定を自動で開く
+        // ★【最重要修正】通信を待つ(await)前に実行することで、ブラウザのポップアップ制限を完全に回避します★
         if (document.getElementById('autoCalSyncToggle').checked && eventsToSync.length > 0) {
             window.autoOpenCalendarTabs(newData.location, eventsToSync);
         }
+
+        if (editId) { const index = window.shukatsuData.findIndex(item => item.id === editId); if (index !== -1) window.shukatsuData[index] = newData; } else { window.shukatsuData.push(newData); }
+        await window.saveToServer(); window.refreshAllViews();
+        bootstrap.Modal.getInstance(document.getElementById('addModal')).hide();
     });
 
     window.sortTable = function(key) { if (currentSortKey === key) currentSortAsc = !currentSortAsc; else { currentSortKey = key; currentSortAsc = true; } loadTable(); };
-
-    // 古い個別追加ボタンの処理（念のため残す）
-    window.exportToGoogleCalendar = function(id) {
-        const data = window.shukatsuData.find(item => item.id === id); if(!data) return;
-        let events = [];
-        if(data.interviewDate) events.push({ title: `[面接] ${data.company}`, date: data.interviewDate, type: 'time' });
-        if(data.esDeadline) events.push({ title: `[ES締切] ${data.company}`, date: data.esDeadline, type: 'time' });
-        if(data.internDates) data.internDates.forEach(d => { if(d.start) events.push({ title: `[ｲﾝﾀｰﾝ] ${data.company} ${d.title}`, date: d.start, end: d.end, type: 'allday' }); });
-        if(events.length === 0) { alert("カレンダーに追加できる予定が設定されていません。"); return; }
-        let selected = events[0];
-        if(events.length > 1) {
-            let msg = "追加する予定の番号を入力してください：\n"; events.forEach((ev, idx) => { msg += `${idx + 1}: ${ev.title} (${ev.date.replace('T',' ')})\n`; });
-            let choice = prompt(msg, "1"); if(choice === null) return; let idx = parseInt(choice) - 1; if(idx >= 0 && idx < events.length) selected = events[idx];
-        }
-        window.autoOpenCalendarTabs(data.location, [selected]);
-    };
 
     function loadTable() {
         let displayList = [...window.shukatsuData]; const tbody = document.getElementById('companyTableBody'); tbody.innerHTML = '';
@@ -685,21 +667,22 @@
         }
     };
     
-    // ★ 面接対策タブでの保存時も、自動連携スイッチがONなら面接日を自動追加する ★
     window.saveInterviewDetails = async function() {
         const id = document.getElementById('interviewTargetId').value; if (!id) return;
         const index = window.shukatsuData.findIndex(item => item.id === id);
         if (index !== -1) {
             const oldDate = window.shukatsuData[index].interviewDate;
             const newDate = document.getElementById('interviewDateInput').value;
+            
+            // ★【最重要修正】通信を待つ(await)前のクリックのタイミングで実行★
+            if (document.getElementById('autoCalSyncToggle').checked && newDate && newDate !== oldDate) {
+                window.autoOpenCalendarTabs(window.shukatsuData[index].location, [{ title: `[面接] ${window.shukatsuData[index].company}`, date: newDate, type: 'time' }]);
+            }
+
             window.shukatsuData[index].interviewDate = newDate;
             window.shukatsuData[index].esText = document.getElementById('esTextInput').value; 
             window.shukatsuData[index].interviewNote = document.getElementById('interviewNoteInput').value;
             await window.saveToServer(); alert('保存しました！'); window.refreshAllViews();
-            
-            if (document.getElementById('autoCalSyncToggle').checked && newDate && newDate !== oldDate) {
-                window.autoOpenCalendarTabs(window.shukatsuData[index].location, [{ title: `[面接] ${window.shukatsuData[index].company}`, date: newDate, type: 'time' }]);
-            }
         }
     };
 
