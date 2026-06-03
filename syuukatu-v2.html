@@ -147,10 +147,14 @@
             <div id="cloudStatus" class="sync-status d-inline-block bg-secondary text-white">🔄 アカウント確認中...</div>
             <button class="btn btn-sm btn-outline-danger ms-2" onclick="logoutUser()">ログアウト</button>
         </div>
-        <div class="text-md-end">
-            <button class="btn btn-outline-info text-dark fw-bold" onclick="downloadICSForGoogleCalendar()">📅 Google一括連携</button>
+        <div class="text-md-end d-flex align-items-center flex-wrap gap-2 justify-content-md-end">
+            <div class="form-check form-switch mb-0 me-1 p-2 bg-white rounded shadow-sm border d-flex align-items-center">
+                <input class="form-check-input mt-0 me-2" type="checkbox" id="autoCalSyncToggle" onchange="localStorage.setItem('autoCalSync', this.checked)">
+                <label class="form-check-label fw-bold text-primary" style="font-size:0.85rem; padding-top:2px;" for="autoCalSyncToggle">📅 カレンダー自動追加</label>
+            </div>
+            <button class="btn btn-outline-info text-dark fw-bold" onclick="downloadICSForGoogleCalendar()" title="既存の全予定をまとめて出力">一括連携</button>
             <button class="btn btn-outline-secondary" onclick="downloadTXTBackup()">📥 バックアップ</button>
-            <button class="btn btn-primary fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addModal" onclick="prepareAdd()">＋ 新規企業を追加</button>
+            <button class="btn btn-primary fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addModal" onclick="prepareAdd()">＋ 新規企業</button>
         </div>
     </div>
 
@@ -418,6 +422,11 @@
     let isSyncingTopScroll = false, isSyncingTableScroll = false;
 
     document.addEventListener('DOMContentLoaded', async function() {
+        // ★ 自動連携のスイッチ状態を復元 ★
+        const isAutoSync = localStorage.getItem('autoCalSync') === 'true';
+        const toggleEl = document.getElementById('autoCalSyncToggle');
+        if (toggleEl) toggleEl.checked = isAutoSync;
+
         loadTabOrder(); setupTabDragAndDrop(); initCalendar(); setupScrollSync(); 
         document.getElementById('table-tab').addEventListener('shown.bs.tab', syncScrollWidth);
         document.getElementById('calendar-tab').addEventListener('shown.bs.tab', () => calendar.render());
@@ -461,7 +470,6 @@
             headerToolbar: { left: 'prev,next', center: 'title', right: isMobile ? 'dayGridMonth,timeGridWeek' : 'dayGridMonth,timeGridWeek,multiMonthFourMonth' }, 
             views: { multiMonthFourMonth: { type: 'multiMonth', duration: { months: 4 }, buttonText: '4ヶ月' } }, 
             events: getCalendarEvents(),
-            // ★予定をクリックした時にGoogleカレンダーに個別登録する機能
             eventClick: function(info) {
                 const props = info.event.extendedProps;
                 if (props && props.companyId) {
@@ -469,9 +477,7 @@
                     if (!data) return;
                     
                     let title = info.event.title;
-                    let startStr = "";
-                    let endStr = "";
-                    let d = new Date(info.event.start);
+                    let startStr = "", endStr = ""; let d = new Date(info.event.start);
                     
                     if (info.event.allDay) {
                         const pad = (n) => String(n).padStart(2, '0');
@@ -484,13 +490,9 @@
                         let dEnd = info.event.end ? new Date(info.event.end) : new Date(d.getTime() + 60*60*1000); 
                         endStr = dEnd.toISOString().replace(/-|:|\.\d\d\d/g, '');
                     }
-                    
                     let url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${startStr}/${endStr}`;
                     if(data.location) url += `&location=${encodeURIComponent(data.location)}`;
-                    
-                    if (confirm(`「${title}」をGoogleカレンダーに個別に登録しますか？\n（別タブでカレンダー作成画面が開きます）`)) {
-                        window.open(url, '_blank');
-                    }
+                    if (confirm(`「${title}」をGoogleカレンダーに個別に登録しますか？\n（別タブでカレンダー作成画面が開きます）`)) { window.open(url, '_blank'); }
                 }
             }
         });
@@ -524,11 +526,31 @@
         }
     };
 
+    // ★Googleカレンダーに自動でタブを開く関数★
+    window.autoOpenCalendarTabs = function(location, eventsToSync) {
+        eventsToSync.forEach(selected => {
+            let startStr = "", endStr = ""; let d = new Date(selected.date);
+            if(selected.type === 'allday') {
+                startStr = d.toISOString().replace(/-|:/g, '').substring(0,8);
+                let dEnd = selected.end ? new Date(selected.end) : new Date(d); dEnd.setDate(dEnd.getDate() + 1); 
+                endStr = dEnd.toISOString().replace(/-|:/g, '').substring(0,8);
+            } else {
+                startStr = d.toISOString().replace(/-|:|\.\d\d\d/g, '');
+                let dEnd = new Date(d.getTime() + 60*60*1000); 
+                endStr = dEnd.toISOString().replace(/-|:|\.\d\d\d/g, '');
+            }
+            let url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(selected.title)}&dates=${startStr}/${endStr}`;
+            if(location) url += `&location=${encodeURIComponent(location)}`;
+            window.open(url, '_blank');
+        });
+    };
+
     document.getElementById('addForm').addEventListener('submit', async function(e) {
         e.preventDefault(); const editId = document.getElementById('editId').value;
         let existingData = window.shukatsuData.find(item => item.id === editId) || {};
         const internDates = [];
         document.querySelectorAll('.intern-date-row').forEach(row => { const title = row.querySelector('.intern-title').value, start = row.querySelector('.intern-start').value, end = row.querySelector('.intern-end').value; if (title || start || end) internDates.push({ title, start, end }); });
+        
         const newData = {
             id: editId ? editId : Date.now().toString(), company: document.getElementById('company').value,
             mypageUrl: document.getElementById('mypageUrl').value, loginId: document.getElementById('loginId').value, loginPassword: document.getElementById('loginPassword').value,
@@ -538,42 +560,47 @@
             mypage: document.getElementById('mypage').checked, esProgress: document.getElementById('esProgress').value, esSubmitted: document.getElementById('esSubmitted').checked, esDeadline: document.getElementById('esDeadline').value,
             testStatus: document.getElementById('testStatus').value, passStatus: document.getElementById('passStatus').value
         };
+
+        // ★自動連携の処理：前回から「変更・追加」があった予定だけを抽出★
+        let eventsToSync = [];
+        if (newData.interviewDate && newData.interviewDate !== existingData.interviewDate) {
+            eventsToSync.push({ title: `[面接] ${newData.company}`, date: newData.interviewDate, type: 'time' });
+        }
+        if (newData.esDeadline && newData.esDeadline !== existingData.esDeadline) {
+            eventsToSync.push({ title: `[ES締切] ${newData.company}`, date: newData.esDeadline, type: 'time' });
+        }
+        if (JSON.stringify(newData.internDates) !== JSON.stringify(existingData.internDates)) {
+            (newData.internDates || []).forEach(d => {
+                if(d.start) eventsToSync.push({ title: `[ｲﾝﾀｰﾝ] ${newData.company} ${d.title}`, date: d.start, end: d.end, type: 'allday' });
+            });
+        }
+
         if (editId) { const index = window.shukatsuData.findIndex(item => item.id === editId); if (index !== -1) window.shukatsuData[index] = newData; } else { window.shukatsuData.push(newData); }
         await window.saveToServer(); window.refreshAllViews();
         bootstrap.Modal.getInstance(document.getElementById('addModal')).hide();
+
+        // トグルがONなら抽出した予定を自動で開く
+        if (document.getElementById('autoCalSyncToggle').checked && eventsToSync.length > 0) {
+            window.autoOpenCalendarTabs(newData.location, eventsToSync);
+        }
     });
 
     window.sortTable = function(key) { if (currentSortKey === key) currentSortAsc = !currentSortAsc; else { currentSortKey = key; currentSortAsc = true; } loadTable(); };
 
+    // 古い個別追加ボタンの処理（念のため残す）
     window.exportToGoogleCalendar = function(id) {
         const data = window.shukatsuData.find(item => item.id === id); if(!data) return;
         let events = [];
         if(data.interviewDate) events.push({ title: `[面接] ${data.company}`, date: data.interviewDate, type: 'time' });
         if(data.esDeadline) events.push({ title: `[ES締切] ${data.company}`, date: data.esDeadline, type: 'time' });
         if(data.internDates) data.internDates.forEach(d => { if(d.start) events.push({ title: `[ｲﾝﾀｰﾝ] ${data.company} ${d.title}`, date: d.start, end: d.end, type: 'allday' }); });
-        if(events.length === 0) { alert("カレンダーに追加できる予定（面接日やES締切など）が設定されていません。"); return; }
-        
+        if(events.length === 0) { alert("カレンダーに追加できる予定が設定されていません。"); return; }
         let selected = events[0];
         if(events.length > 1) {
-            let msg = "Googleカレンダーに追加する予定の番号を入力してください：\n";
-            events.forEach((ev, idx) => { msg += `${idx + 1}: ${ev.title} (${ev.date.replace('T',' ')})\n`; });
-            let choice = prompt(msg, "1"); if(choice === null) return;
-            let idx = parseInt(choice) - 1; if(idx >= 0 && idx < events.length) selected = events[idx];
+            let msg = "追加する予定の番号を入力してください：\n"; events.forEach((ev, idx) => { msg += `${idx + 1}: ${ev.title} (${ev.date.replace('T',' ')})\n`; });
+            let choice = prompt(msg, "1"); if(choice === null) return; let idx = parseInt(choice) - 1; if(idx >= 0 && idx < events.length) selected = events[idx];
         }
-
-        let startStr = "", endStr = ""; let d = new Date(selected.date);
-        if(selected.type === 'allday') {
-            startStr = d.toISOString().replace(/-|:/g, '').substring(0,8);
-            let dEnd = selected.end ? new Date(selected.end) : new Date(d); dEnd.setDate(dEnd.getDate() + 1); 
-            endStr = dEnd.toISOString().replace(/-|:/g, '').substring(0,8);
-        } else {
-            startStr = d.toISOString().replace(/-|:|\.\d\d\d/g, '');
-            let dEnd = new Date(d.getTime() + 60*60*1000); 
-            endStr = dEnd.toISOString().replace(/-|:|\.\d\d\d/g, '');
-        }
-        let url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(selected.title)}&dates=${startStr}/${endStr}`;
-        if(data.location) url += `&location=${encodeURIComponent(data.location)}`;
-        window.open(url, '_blank');
+        window.autoOpenCalendarTabs(data.location, [selected]);
     };
 
     function loadTable() {
@@ -590,22 +617,15 @@
         }
         displayList.forEach(data => {
             const tr = document.createElement('tr');
-            
             tr.addEventListener('click', function(e) {
-                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.classList.contains('memo-clickable')) {
-                    return; 
-                }
-                if (window.innerWidth <= 768) {
-                    this.classList.toggle('is-open');
-                }
+                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.classList.contains('memo-clickable')) { return; }
+                if (window.innerWidth <= 768) { this.classList.toggle('is-open'); }
             });
-
             let dates = data.internDates || []; let periodHtml = dates.length > 0 ? dates.map(d => { let t = d.title ? `<span class="badge bg-secondary me-1">${d.title}</span>` : ''; let s = d.start || '', e = d.end || ''; let p = (s && e) ? `${s} 〜 ${e}` : (s ? s : e); return p ? `${t}${p}` : ''; }).filter(v => v).join('<br>') : '';
             const checkMark = (isChecked) => isChecked ? '✅' : 'ー';
             let mypageCell = data.mypageUrl ? `<button class="btn btn-sm btn-success" onclick="openMypage('${data.mypageUrl}')">🔗</button>` : (data.mypage ? '✅ 開設済' : 'ー');
             let accountBtn = `<button class="btn btn-sm ${data.loginId || data.loginPassword || data.mypageUrl ? 'btn-outline-dark' : 'btn-outline-secondary'} me-1" onclick="openAccountSidebar('${data.id}')" title="アカウント情報">🔐</button>`;
             let interviewBtn = `<button class="btn btn-sm btn-outline-warning text-dark me-1" onclick="jumpToInterview('${data.id}')" title="面接・ES対策">🗣️</button>`;
-            let gCalBtn = `<button class="btn btn-sm btn-outline-info text-dark me-1" onclick="exportToGoogleCalendar('${data.id}')" title="Googleカレンダーに追加">📅</button>`;
             let memoCell = `<span class="text-truncate memo-clickable" title="クリックして編集\n\n${data.sessionMemo || ''}" onclick="editData('${data.id}')">${data.sessionMemo || '（空欄）'}</span>`;
             
             tr.innerHTML = `
@@ -624,7 +644,7 @@
                 <td data-label="適性検査">${data.testStatus}</td>
                 <td data-label="通過状況"><span class="badge ${data.passStatus === '結果待ち' ? 'bg-secondary' : 'bg-info text-dark'}">${data.passStatus}</span></td>
                 <td data-label="操作" class="d-flex flex-wrap gap-1 justify-content-end">
-                    ${accountBtn}${interviewBtn}${gCalBtn}
+                    ${accountBtn}${interviewBtn}
                     <button class="btn btn-sm btn-outline-primary" onclick="editData('${data.id}')">編集</button>
                     <button class="btn btn-sm btn-outline-danger" onclick="deleteData('${data.id}')">削除</button>
                 </td>`;
@@ -637,16 +657,7 @@
         const tbody = document.getElementById('mypageTableBody'); tbody.innerHTML = '';
         window.shukatsuData.forEach((data) => {
             const tr = document.createElement('tr');
-            
-            tr.addEventListener('click', function(e) {
-                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.tagName === 'INPUT') {
-                    return;
-                }
-                if (window.innerWidth <= 768) {
-                    this.classList.toggle('is-open');
-                }
-            });
-
+            tr.addEventListener('click', function(e) { if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.tagName === 'INPUT') { return; } if (window.innerWidth <= 768) { this.classList.toggle('is-open'); } });
             tr.innerHTML = `
                 <td data-label="社名" class="fw-bold text-primary">${data.company}</td>
                 <td data-label="マイページ">${data.mypageUrl ? `<button class="btn btn-sm btn-success" onclick="openMypage('${data.mypageUrl}')">🔗 開く</button>` : 'ー'}</td>
@@ -673,12 +684,22 @@
             document.getElementById('interviewDetailArea').style.display = 'block'; document.getElementById('interviewEmptyMessage').style.display = 'none';
         }
     };
+    
+    // ★ 面接対策タブでの保存時も、自動連携スイッチがONなら面接日を自動追加する ★
     window.saveInterviewDetails = async function() {
         const id = document.getElementById('interviewTargetId').value; if (!id) return;
         const index = window.shukatsuData.findIndex(item => item.id === id);
         if (index !== -1) {
-            window.shukatsuData[index].interviewDate = document.getElementById('interviewDateInput').value; window.shukatsuData[index].esText = document.getElementById('esTextInput').value; window.shukatsuData[index].interviewNote = document.getElementById('interviewNoteInput').value;
+            const oldDate = window.shukatsuData[index].interviewDate;
+            const newDate = document.getElementById('interviewDateInput').value;
+            window.shukatsuData[index].interviewDate = newDate;
+            window.shukatsuData[index].esText = document.getElementById('esTextInput').value; 
+            window.shukatsuData[index].interviewNote = document.getElementById('interviewNoteInput').value;
             await window.saveToServer(); alert('保存しました！'); window.refreshAllViews();
+            
+            if (document.getElementById('autoCalSyncToggle').checked && newDate && newDate !== oldDate) {
+                window.autoOpenCalendarTabs(window.shukatsuData[index].location, [{ title: `[面接] ${window.shukatsuData[index].company}`, date: newDate, type: 'time' }]);
+            }
         }
     };
 
@@ -767,97 +788,35 @@
     }
     function updateCalendar() { if (calendar) { calendar.removeAllEvents(); calendar.addEventSource(getCalendarEvents()); } }
 
-    // ★Googleカレンダー用の一括エクスポート機能 (.ics)
     window.downloadICSForGoogleCalendar = function() {
-        if (!window.shukatsuData || window.shukatsuData.length === 0) {
-            alert("登録されている企業データがありません。");
-            return;
-        }
-        let icsLines = [
-            'BEGIN:VCALENDAR',
-            'VERSION:2.0',
-            'PRODID:-//Syuukatu App//Calendar Export//JA',
-            'CALSCALE:GREGORIAN',
-            'METHOD:PUBLISH'
-        ];
-
+        if (!window.shukatsuData || window.shukatsuData.length === 0) { alert("登録されている企業データがありません。"); return; }
+        let icsLines = [ 'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Syuukatu App//Calendar Export//JA', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH' ];
         const pad = (n) => String(n).padStart(2, '0');
-
         function formatToICSDate(dateStr, isAllDay = false) {
             if (!dateStr) return '';
-            if (isAllDay) {
-                const parts = dateStr.split('-');
-                if (parts.length === 3) return `${parts[0]}${parts[1]}${parts[2]}`;
-                const ld = new Date(dateStr);
-                return `${ld.getFullYear()}${pad(ld.getMonth() + 1)}${pad(ld.getDate())}`;
-            } else {
-                const d = new Date(dateStr);
-                if (isNaN(d.getTime())) return '';
-                return `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`;
-            }
+            if (isAllDay) { const parts = dateStr.split('-'); if (parts.length === 3) return `${parts[0]}${parts[1]}${parts[2]}`; const ld = new Date(dateStr); return `${ld.getFullYear()}${pad(ld.getMonth() + 1)}${pad(ld.getDate())}`; } 
+            else { const d = new Date(dateStr); if (isNaN(d.getTime())) return ''; return `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`; }
         }
-
         function addDayToDateString(dateStr) {
             const parts = dateStr.split('-');
-            if (parts.length === 3) {
-                const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-                d.setDate(d.getDate() + 1);
-                return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-            }
-            const d = new Date(dateStr); d.setDate(d.getDate() + 1);
-            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+            if (parts.length === 3) { const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2])); d.setDate(d.getDate() + 1); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
+            const d = new Date(dateStr); d.setDate(d.getDate() + 1); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
         }
-
-        function escapeICS(str) {
-            if (!str) return '';
-            return str.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
-        }
+        function escapeICS(str) { if (!str) return ''; return str.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n'); }
 
         window.shukatsuData.forEach(data => {
-            if (data.esDeadline) {
-                const start = formatToICSDate(data.esDeadline);
-                const endDate = new Date(new Date(data.esDeadline).getTime() + 30 * 60 * 1000);
-                const end = formatToICSDate(endDate.toISOString());
-                if (start && end) {
-                    icsLines.push('BEGIN:VEVENT', `UID:es_${data.id}@syuukatu.app`, `DTSTART:${start}`, `DTEND:${end}`, `SUMMARY:${escapeICS('締切: ' + data.company)}`);
-                    if (data.location) icsLines.push(`LOCATION:${escapeICS(data.location)}`);
-                    icsLines.push('END:VEVENT');
-                }
-            }
-            if (data.interviewDate) {
-                const start = formatToICSDate(data.interviewDate);
-                const endDate = new Date(new Date(data.interviewDate).getTime() + 60 * 60 * 1000);
-                const end = formatToICSDate(endDate.toISOString());
-                if (start && end) {
-                    icsLines.push('BEGIN:VEVENT', `UID:interview_${data.id}@syuukatu.app`, `DTSTART:${start}`, `DTEND:${end}`, `SUMMARY:${escapeICS('面接: ' + data.company)}`);
-                    if (data.location) icsLines.push(`LOCATION:${escapeICS(data.location)}`);
-                    if (data.interviewNote) icsLines.push(`DESCRIPTION:${escapeICS(data.interviewNote)}`);
-                    icsLines.push('END:VEVENT');
-                }
-            }
-            let dates = data.internDates || [];
-            if (dates.length === 0 && (data.internStart || data.internEnd)) dates = [{ title: '', start: data.internStart, end: data.internEnd }];
+            if (data.esDeadline) { const start = formatToICSDate(data.esDeadline); const end = formatToICSDate(new Date(new Date(data.esDeadline).getTime() + 30 * 60 * 1000).toISOString()); if (start && end) { icsLines.push('BEGIN:VEVENT', `UID:es_${data.id}@syuukatu.app`, `DTSTART:${start}`, `DTEND:${end}`, `SUMMARY:${escapeICS('締切: ' + data.company)}`); if (data.location) icsLines.push(`LOCATION:${escapeICS(data.location)}`); icsLines.push('END:VEVENT'); } }
+            if (data.interviewDate) { const start = formatToICSDate(data.interviewDate); const end = formatToICSDate(new Date(new Date(data.interviewDate).getTime() + 60 * 60 * 1000).toISOString()); if (start && end) { icsLines.push('BEGIN:VEVENT', `UID:interview_${data.id}@syuukatu.app`, `DTSTART:${start}`, `DTEND:${end}`, `SUMMARY:${escapeICS('面接: ' + data.company)}`); if (data.location) icsLines.push(`LOCATION:${escapeICS(data.location)}`); if (data.interviewNote) icsLines.push(`DESCRIPTION:${escapeICS(data.interviewNote)}`); icsLines.push('END:VEVENT'); } }
+            let dates = data.internDates || []; if (dates.length === 0 && (data.internStart || data.internEnd)) dates = [{ title: '', start: data.internStart, end: data.internEnd }];
             dates.forEach((d, idx) => {
-                if (d.start) {
-                    const start = formatToICSDate(d.start, true);
-                    const end = formatToICSDate(addDayToDateString(d.end || d.start), true);
-                    if (start && end) {
-                        icsLines.push('BEGIN:VEVENT', `UID:intern_${data.id}_${idx}@syuukatu.app`, `DTSTART;VALUE=DATE:${start}`, `DTEND;VALUE=DATE:${end}`, `SUMMARY:${escapeICS('ｲﾝﾀｰﾝ: ' + data.company + (d.title ? ' ' + d.title : ''))}`);
-                        if (data.location) icsLines.push(`LOCATION:${escapeICS(data.location)}`);
-                        icsLines.push('END:VEVENT');
-                    }
-                }
+                if (d.start) { const start = formatToICSDate(d.start, true); const end = formatToICSDate(addDayToDateString(d.end || d.start), true); if (start && end) { icsLines.push('BEGIN:VEVENT', `UID:intern_${data.id}_${idx}@syuukatu.app`, `DTSTART;VALUE=DATE:${start}`, `DTEND;VALUE=DATE:${end}`, `SUMMARY:${escapeICS('ｲﾝﾀｰﾝ: ' + data.company + (d.title ? ' ' + d.title : ''))}`); if (data.location) icsLines.push(`LOCATION:${escapeICS(data.location)}`); icsLines.push('END:VEVENT'); } }
             });
         });
-
         icsLines.push('END:VCALENDAR');
-        const blob = new Blob([icsLines.join('\r\n')], { type: 'text/calendar;charset=utf-8;' });
-        const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.setAttribute("download", `就活予定_Google一括連携_${new Date().toISOString().split('T')[0]}.ics`);
-        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        const blob = new Blob([icsLines.join('\r\n')], { type: 'text/calendar;charset=utf-8;' }); const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.setAttribute("download", `就活予定_Google一括連携_${new Date().toISOString().split('T')[0]}.ics`); document.body.appendChild(link); link.click(); document.body.removeChild(link);
     };
 
     window.downloadTXTBackup = function() { const blob = new Blob([JSON.stringify(window.shukatsuData, null, 2)], { type: 'text/plain;charset=utf-8;' }); const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.setAttribute("download", `就活アプリ_バックアップ_${new Date().toISOString().split('T')[0]}.txt`); document.body.appendChild(link); link.click(); document.body.removeChild(link); };
-
     window.openAccountSidebar = function(id) { const data = window.shukatsuData.find(item => item.id === id); if (data) { document.getElementById('sidebarCompanyName').innerText = data.company; document.getElementById('sidebarLoginId').value = data.loginId || ''; document.getElementById('sidebarPassword').value = data.loginPassword || ''; bootstrap.Offcanvas.getOrCreateInstance(document.getElementById('accountSidebar')).show(); } };
     window.openMypage = function(url) { if(url) window.open(url, '_blank'); };
     window.jumpToInterview = function(id) { currentInterviewCompanyId = id; bootstrap.Tab.getOrCreateInstance(document.getElementById('interview-tab')).show(); };
