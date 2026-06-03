@@ -16,17 +16,13 @@
         .sticky-col { position: sticky; left: 0; background-color: white !important; z-index: 2; box-shadow: 3px 0 6px rgba(0,0,0,0.08); }
         th.sticky-col { z-index: 3; background-color: #f8f9fa !important; }
         
-        /* ★カレンダーのカスタマイズ（セルサイズ固定＆日付コンパクト化）★ */
+        /* カレンダーのカスタマイズ（セルサイズ固定＆日付コンパクト化） */
         #calendar { background: white; padding: 12px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        /* 日付の数字を右上に小さく格納し、イベント用のスペースを最大化 */
         .fc .fc-daygrid-day-top { padding: 2px 4px !important; justify-content: flex-end !important; flex-direction: row !important; }
         .fc .fc-daygrid-day-number { font-size: 0.75rem !important; color: #868e96; font-weight: bold; text-decoration: none !important; padding: 0 !important; }
-        /* 曜日ヘッダーをコンパクトに */
         .fc .fc-col-header-cell-cushion { font-size: 0.8rem !important; padding: 4px 0 !important; text-decoration: none !important; color: #495057; }
-        /* イベント（予定）の文字サイズと余白を詰めて、見づらさを解消 */
-        .fc-event { padding: 1px 3px !important; font-size: 0.72rem !important; border-radius: 3px !important; margin-bottom: 2px !important; border: none !important; }
+        .fc-event { padding: 1px 3px !important; font-size: 0.72rem !important; border-radius: 3px !important; margin-bottom: 2px !important; border: none !important; cursor: pointer; }
         .fc-event-title { font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        /* 「+他○件」の表示も小さくスマートに */
         .fc-daygrid-more-link { font-size: 0.7rem !important; font-weight: bold; color: #0d6efd !important; text-decoration: none !important; padding-left: 2px; }
 
         .drop-zone { border: 2px dashed #0d6efd; border-radius: 8px; padding: 30px; text-align: center; background: #f1f7fe; color: #0d6efd; cursor: pointer; transition: background 0.3s; margin-bottom: 20px; font-weight: bold; }
@@ -37,7 +33,7 @@
         .memo-clickable:hover { color: #0d6efd; text-decoration: underline; }
         .sync-status { font-size: 0.85rem; padding: 4px 8px; border-radius: 4px; }
         
-        /* ★スマホ向け・アコーディオン式レスポンシブデザイン★ */
+        /* スマホ向け・アコーディオン式レスポンシブデザイン */
         @media (max-width: 768px) {
             body { padding: 10px 5px; }
             h2 { font-size: 1.4rem; font-weight: bold; margin-bottom: 10px !important; }
@@ -45,7 +41,7 @@
             .d-flex.justify-content-between { flex-direction: column; align-items: flex-start !important; gap: 10px; }
             .d-flex.justify-content-between > div { width: 100%; text-align: left; }
             #cloudStatus { margin-bottom: 5px; font-size: 0.8rem; }
-            .text-md-end { display: flex; gap: 8px; }
+            .text-md-end { display: flex; gap: 6px; flex-wrap: wrap; }
 
             .nav-tabs { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; white-space: nowrap; border-bottom: none; -webkit-overflow-scrolling: touch; padding-bottom: 10px; margin-bottom: 15px; }
             .nav-tabs::-webkit-scrollbar { display: none; }
@@ -53,7 +49,7 @@
             .nav-tabs .nav-link.active { background: #0d6efd; color: white; border-color: #0d6efd; }
 
             input, select, textarea { font-size: 16px !important; } 
-            .btn { font-size: 0.95rem; padding: 0.5rem 0.8rem; margin-bottom: 3px; }
+            .btn { font-size: 0.9rem; padding: 0.4rem 0.7rem; margin-bottom: 3px; }
 
             .top-scrollbar-wrapper { display: none; } 
             .table-wrapper { background: transparent; padding: 0; box-shadow: none; overflow: visible; }
@@ -152,6 +148,7 @@
             <button class="btn btn-sm btn-outline-danger ms-2" onclick="logoutUser()">ログアウト</button>
         </div>
         <div class="text-md-end">
+            <button class="btn btn-outline-info text-dark fw-bold" onclick="downloadICSForGoogleCalendar()">📅 Google一括連携</button>
             <button class="btn btn-outline-secondary" onclick="downloadTXTBackup()">📥 バックアップ</button>
             <button class="btn btn-primary fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addModal" onclick="prepareAdd()">＋ 新規企業を追加</button>
         </div>
@@ -341,6 +338,7 @@
                 <div class="col-md-3 mb-3"><label class="form-label text-secondary">通過状況</label><select class="form-select" id="passStatus" onchange="toggleFormFields()"><option value="結果待ち">結果待ち</option><option value="書類通過">書類通過</option><option value="通過">通過（面接等）</option><option value="お祈り">お祈り</option></select></div>
                 <div id="interviewFields" class="col-md-12 mt-2 pt-3 border-top" style="display: none;"><label class="form-label fw-bold text-primary">🗣️ 次回 面接日時</label><input type="datetime-local" class="form-control border-primary" id="modalInterviewDate" style="max-width: 300px;"></div>
             </div>
+        </form>
       </div>
       <div class="modal-footer bg-light">
           <button type="submit" form="addForm" class="btn btn-success fw-bold px-5 py-2 w-100">💾 企業データを保存する</button>
@@ -459,10 +457,42 @@
         let isMobile = window.innerWidth <= 768;
         calendar = new FullCalendar.Calendar(document.getElementById('calendar'), { 
             initialView: 'dayGridMonth', locale: 'ja', height: isMobile ? 480 : 650, 
-            dayMaxEvents: true, // ★ 各セルの高さを完全固定し、はみ出た予定はポップアップ格納にする
+            dayMaxEvents: true, 
             headerToolbar: { left: 'prev,next', center: 'title', right: isMobile ? 'dayGridMonth,timeGridWeek' : 'dayGridMonth,timeGridWeek,multiMonthFourMonth' }, 
             views: { multiMonthFourMonth: { type: 'multiMonth', duration: { months: 4 }, buttonText: '4ヶ月' } }, 
-            events: getCalendarEvents() 
+            events: getCalendarEvents(),
+            // ★予定をクリックした時にGoogleカレンダーに個別登録する機能
+            eventClick: function(info) {
+                const props = info.event.extendedProps;
+                if (props && props.companyId) {
+                    const data = window.shukatsuData.find(item => item.id === props.companyId);
+                    if (!data) return;
+                    
+                    let title = info.event.title;
+                    let startStr = "";
+                    let endStr = "";
+                    let d = new Date(info.event.start);
+                    
+                    if (info.event.allDay) {
+                        const pad = (n) => String(n).padStart(2, '0');
+                        startStr = d.toISOString().replace(/-|:/g, '').substring(0,8);
+                        let dEnd = info.event.end ? new Date(info.event.end) : new Date(d);
+                        if(!info.event.end) dEnd.setDate(dEnd.getDate() + 1);
+                        endStr = dEnd.toISOString().replace(/-|:/g, '').substring(0,8);
+                    } else {
+                        startStr = d.toISOString().replace(/-|:|\.\d\d\d/g, '');
+                        let dEnd = info.event.end ? new Date(info.event.end) : new Date(d.getTime() + 60*60*1000); 
+                        endStr = dEnd.toISOString().replace(/-|:|\.\d\d\d/g, '');
+                    }
+                    
+                    let url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${startStr}/${endStr}`;
+                    if(data.location) url += `&location=${encodeURIComponent(data.location)}`;
+                    
+                    if (confirm(`「${title}」をGoogleカレンダーに個別に登録しますか？\n（別タブでカレンダー作成画面が開きます）`)) {
+                        window.open(url, '_blank');
+                    }
+                }
+            }
         });
         calendar.render();
     }
@@ -728,14 +758,103 @@
     function getCalendarEvents() {
         let events = [];
         window.shukatsuData.forEach(data => {
-            if (data.esDeadline) events.push({ title: `締切: ${data.company}`, start: data.esDeadline, color: '#dc3545' });
-            if (data.interviewDate) events.push({ title: `面接: ${data.company}`, start: data.interviewDate, color: '#ffc107', textColor: '#000' });
+            if (data.esDeadline) events.push({ id: `es_${data.id}`, title: `締切: ${data.company}`, start: data.esDeadline, color: '#dc3545', extendedProps: { companyId: data.id } });
+            if (data.interviewDate) events.push({ id: `interview_${data.id}`, title: `面接: ${data.company}`, start: data.interviewDate, color: '#ffc107', textColor: '#000', extendedProps: { companyId: data.id } });
             let dates = data.internDates || []; if (dates.length === 0 && (data.internStart || data.internEnd)) dates = [{ title: '', start: data.internStart, end: data.internEnd }];
-            dates.forEach(d => { if (d.start) { let endObj = new Date(d.end || d.start); endObj.setDate(endObj.getDate() + 1); events.push({ title: `ｲﾝﾀｰﾝ: ${data.company}`, start: d.start, end: endObj.toISOString().split('T')[0], color: '#0d6efd', allDay: true }); } });
+            dates.forEach((d, idx) => { if (d.start) { let endObj = new Date(d.end || d.start); endObj.setDate(endObj.getDate() + 1); events.push({ id: `intern_${data.id}_${idx}`, title: `ｲﾝﾀｰﾝ: ${data.company}`, start: d.start, end: endObj.toISOString().split('T')[0], color: '#0d6efd', allDay: true, extendedProps: { companyId: data.id } }); } });
         });
         return events;
     }
     function updateCalendar() { if (calendar) { calendar.removeAllEvents(); calendar.addEventSource(getCalendarEvents()); } }
+
+    // ★Googleカレンダー用の一括エクスポート機能 (.ics)
+    window.downloadICSForGoogleCalendar = function() {
+        if (!window.shukatsuData || window.shukatsuData.length === 0) {
+            alert("登録されている企業データがありません。");
+            return;
+        }
+        let icsLines = [
+            'BEGIN:VCALENDAR',
+            'VERSION:2.0',
+            'PRODID:-//Syuukatu App//Calendar Export//JA',
+            'CALSCALE:GREGORIAN',
+            'METHOD:PUBLISH'
+        ];
+
+        const pad = (n) => String(n).padStart(2, '0');
+
+        function formatToICSDate(dateStr, isAllDay = false) {
+            if (!dateStr) return '';
+            if (isAllDay) {
+                const parts = dateStr.split('-');
+                if (parts.length === 3) return `${parts[0]}${parts[1]}${parts[2]}`;
+                const ld = new Date(dateStr);
+                return `${ld.getFullYear()}${pad(ld.getMonth() + 1)}${pad(ld.getDate())}`;
+            } else {
+                const d = new Date(dateStr);
+                if (isNaN(d.getTime())) return '';
+                return `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`;
+            }
+        }
+
+        function addDayToDateString(dateStr) {
+            const parts = dateStr.split('-');
+            if (parts.length === 3) {
+                const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                d.setDate(d.getDate() + 1);
+                return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+            }
+            const d = new Date(dateStr); d.setDate(d.getDate() + 1);
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+        }
+
+        function escapeICS(str) {
+            if (!str) return '';
+            return str.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+        }
+
+        window.shukatsuData.forEach(data => {
+            if (data.esDeadline) {
+                const start = formatToICSDate(data.esDeadline);
+                const endDate = new Date(new Date(data.esDeadline).getTime() + 30 * 60 * 1000);
+                const end = formatToICSDate(endDate.toISOString());
+                if (start && end) {
+                    icsLines.push('BEGIN:VEVENT', `UID:es_${data.id}@syuukatu.app`, `DTSTART:${start}`, `DTEND:${end}`, `SUMMARY:${escapeICS('締切: ' + data.company)}`);
+                    if (data.location) icsLines.push(`LOCATION:${escapeICS(data.location)}`);
+                    icsLines.push('END:VEVENT');
+                }
+            }
+            if (data.interviewDate) {
+                const start = formatToICSDate(data.interviewDate);
+                const endDate = new Date(new Date(data.interviewDate).getTime() + 60 * 60 * 1000);
+                const end = formatToICSDate(endDate.toISOString());
+                if (start && end) {
+                    icsLines.push('BEGIN:VEVENT', `UID:interview_${data.id}@syuukatu.app`, `DTSTART:${start}`, `DTEND:${end}`, `SUMMARY:${escapeICS('面接: ' + data.company)}`);
+                    if (data.location) icsLines.push(`LOCATION:${escapeICS(data.location)}`);
+                    if (data.interviewNote) icsLines.push(`DESCRIPTION:${escapeICS(data.interviewNote)}`);
+                    icsLines.push('END:VEVENT');
+                }
+            }
+            let dates = data.internDates || [];
+            if (dates.length === 0 && (data.internStart || data.internEnd)) dates = [{ title: '', start: data.internStart, end: data.internEnd }];
+            dates.forEach((d, idx) => {
+                if (d.start) {
+                    const start = formatToICSDate(d.start, true);
+                    const end = formatToICSDate(addDayToDateString(d.end || d.start), true);
+                    if (start && end) {
+                        icsLines.push('BEGIN:VEVENT', `UID:intern_${data.id}_${idx}@syuukatu.app`, `DTSTART;VALUE=DATE:${start}`, `DTEND;VALUE=DATE:${end}`, `SUMMARY:${escapeICS('ｲﾝﾀｰﾝ: ' + data.company + (d.title ? ' ' + d.title : ''))}`);
+                        if (data.location) icsLines.push(`LOCATION:${escapeICS(data.location)}`);
+                        icsLines.push('END:VEVENT');
+                    }
+                }
+            });
+        });
+
+        icsLines.push('END:VCALENDAR');
+        const blob = new Blob([icsLines.join('\r\n')], { type: 'text/calendar;charset=utf-8;' });
+        const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.setAttribute("download", `就活予定_Google一括連携_${new Date().toISOString().split('T')[0]}.ics`);
+        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    };
 
     window.downloadTXTBackup = function() { const blob = new Blob([JSON.stringify(window.shukatsuData, null, 2)], { type: 'text/plain;charset=utf-8;' }); const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.setAttribute("download", `就活アプリ_バックアップ_${new Date().toISOString().split('T')[0]}.txt`); document.body.appendChild(link); link.click(); document.body.removeChild(link); };
 
