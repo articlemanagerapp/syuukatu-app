@@ -46,8 +46,8 @@
            スマホ向けレスポンシブ＆アコーディオン化
         ========================================== */
         @media (max-width: 768px) {
-            /* ★ iPhoneの時刻・バッテリー表示との干渉を防ぐため、ヘッダーの上部余白を約1cm(45px)下に下げる ★ */
-            header { padding-top: max(45px, env(safe-area-inset-top)) !important; }
+            /* ★ iPhoneの時刻表示等との干渉を完全に防ぐため、ヘッダーの上部余白をさらに拡大（60px） ★ */
+            header { padding-top: 60px !important; padding-bottom: 15px !important; }
             
             .sidebar { width: 280px; }
             input, select, textarea { font-size: 16px !important; } 
@@ -485,7 +485,7 @@
                     if(closeBtn) closeBtn.click();
                 }
                 
-                // ★ 確実に暗転(Backdrop)を消して画面を明るくする強制クリーンアップ処理 ★
+                // 確実に暗転(Backdrop)を消して画面を明るくする強制クリーンアップ処理
                 setTimeout(() => {
                     document.querySelectorAll('.offcanvas-backdrop').forEach(el => el.remove());
                     document.body.classList.remove('modal-open');
