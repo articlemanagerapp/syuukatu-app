@@ -87,6 +87,7 @@
 </head>
 <body>
 
+<!-- ログイン画面 -->
 <div id="loginOverlay" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; justify-content: center; align-items: center;">
     <div class="card p-4" style="max-width: 400px; width: 90%; border-radius: 16px;">
         <h3 class="text-center mb-3 fw-bold text-primary">就活クラウド<br><span style="font-size:1rem;color:#666;">ログイン</span></h3>
@@ -100,7 +101,9 @@
     </div>
 </div>
 
+<!-- メインレイアウト -->
 <div class="d-flex vh-100 overflow-hidden">
+    <!-- サイドバー -->
     <div class="offcanvas-md offcanvas-start bg-dark text-white shadow sidebar d-flex flex-column" tabindex="-1" id="sidebarMenu">
         <div class="offcanvas-header border-bottom border-secondary d-md-none">
             <h5 class="offcanvas-title fw-bold text-white">就活クラウド</h5>
@@ -123,6 +126,7 @@
         </div>
     </div>
 
+    <!-- メインコンテンツ -->
     <div class="flex-grow-1 d-flex flex-column h-100 bg-light" style="min-width:0;">
         <header class="bg-white border-bottom p-3 d-flex justify-content-between align-items-center shadow-sm z-1">
             <div class="d-flex align-items-center gap-3">
@@ -136,6 +140,7 @@
             <div class="container-fluid p-0">
                 <div class="tab-content" id="myTabContent">
                     
+                    <!-- 0. ダッシュボード -->
                     <div class="tab-pane fade show active" id="dashboard-view" role="tabpanel">
                         <div class="row">
                             <div class="col-md-12 mb-4">
@@ -178,6 +183,7 @@
                         </div>
                     </div>
 
+                    <!-- 1. テーブルビュー -->
                     <div class="tab-pane fade" id="table-view" role="tabpanel">
                         <div class="top-scrollbar-wrapper" id="topScrollWrapper"><div class="top-scrollbar-fake-content" id="topScrollFakeContent"></div></div>
                         <div class="table-wrapper" id="tableWrapper">
@@ -204,8 +210,10 @@
                         </div>
                     </div>
 
+                    <!-- 2. カレンダー -->
                     <div class="tab-pane fade" id="calendar-view" role="tabpanel"><div id="calendar"></div></div>
                     
+                    <!-- 3. ES設問管理 -->
                     <div class="tab-pane fade" id="es-view" role="tabpanel">
                         <div class="row">
                             <div class="col-md-3">
@@ -228,6 +236,7 @@
                         </div>
                     </div>
 
+                    <!-- 4. マイページ -->
                     <div class="tab-pane fade" id="mypage-view" role="tabpanel">
                         <div class="table-wrapper" style="padding:0;">
                             <table class="table table-hover" id="mypageTable">
@@ -237,6 +246,7 @@
                         </div>
                     </div>
 
+                    <!-- 5. 面接対策 -->
                     <div class="tab-pane fade" id="interview-view" role="tabpanel">
                         <div class="row">
                             <div class="col-md-3">
@@ -274,6 +284,7 @@
     </div>
 </div>
 
+<!-- 各種設定モーダル -->
 <div class="modal fade" id="settingsModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -310,6 +321,7 @@
   </div>
 </div>
 
+<!-- アカウント情報サイドバー -->
 <div class="offcanvas offcanvas-end" tabindex="-1" id="accountSidebar">
   <div class="offcanvas-header bg-light border-bottom">
     <h5 id="accountSidebarLabel" class="mb-0 fw-bold">🔐 アカウント情報</h5>
@@ -323,6 +335,7 @@
   </div>
 </div>
 
+<!-- 企業追加・編集モーダル -->
 <div class="modal fade" id="addModal" tabindex="-1">
   <div class="modal-dialog modal-lg modal-dialog-scrollable">
     <div class="modal-content">
@@ -375,6 +388,7 @@
 <script src="https://apis.google.com/js/api.js" onload="gapiLoaded()" async defer></script>
 <script src="https://accounts.google.com/gsi/client" onload="gisLoaded()" async defer></script>
 
+<!-- Firebase 設定 -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -432,6 +446,7 @@
     });
 </script>
 
+<!-- UIコアスクリプト -->
 <script>
     window.shukatsuData = [];
     window.appSettings = { googleApiKey: '', googleClientId: '' };
@@ -439,7 +454,6 @@
     let calendar, currentInterviewCompanyId = null, currentEsCompanyId = null, currentSortKey = '', currentSortAsc = true;
     let isSyncingTopScroll = false, isSyncingTableScroll = false;
 
-    // ★ 初期設定・イベント登録
     document.addEventListener('DOMContentLoaded', async function() {
         const isAutoSync = localStorage.getItem('autoCalSync') === 'true';
         if (document.getElementById('autoCalSyncToggle')) document.getElementById('autoCalSyncToggle').checked = isAutoSync;
@@ -472,7 +486,6 @@
         renderTable(); renderMypageTable(); loadDashboard(); loadEsView(); loadInterviewView(); syncScrollWidth(); if (calendar) renderCalendarEvents(); 
     };
 
-    // Google API 初期化
     let tokenClient; let isGapiScriptLoaded = false; let isGisScriptLoaded = false;
     window.gapiLoaded = function() { gapi.load('client', () => { isGapiScriptLoaded = true; window.tryInitGoogleAPI(); }); };
     window.gisLoaded = function() { isGisScriptLoaded = true; window.tryInitGoogleAPI(); };
@@ -526,7 +539,6 @@
         if (mainTable && fakeContent) fakeContent.style.width = mainTable.offsetWidth + 'px'; 
     }
 
-    // 掲示板処理
     window.loadDashboard = function() {
         const tbody = document.getElementById('dashboardScheduleBody'); tbody.innerHTML = '';
         let events = []; const now = new Date(); now.setHours(0,0,0,0);
@@ -560,7 +572,6 @@
     window.toggleTodo = async function(type, index) { window.todos[type][index].done = !window.todos[type][index].done; await window.saveToServer(); };
     window.removeTodo = async function(type, index) { window.todos[type].splice(index, 1); await window.saveToServer(); };
 
-    // カレンダー
     function initializeCalendar() {
         const el = document.getElementById('calendar'); if(!el) return;
         calendar = new FullCalendar.Calendar(el, { 
@@ -581,7 +592,6 @@
         });
     }
 
-    // データ操作
     window.prepareAdd = function() { 
         document.getElementById('editId').value = ''; document.getElementById('addModalLabel').innerText = '企業の追加'; 
         ['companyInput','internStartInput','locationInput','mypageUrlInput','mypageIdInput','mypagePassInput','hasSessionInput','sessionStatusInput','sessionDateInput','sessionMemoInput','esProgressInput','esSubmittedInput','esDeadlineInput','testStatusInput','passStatusInput'].forEach(id=>document.getElementById(id).value=''); 
@@ -629,13 +639,11 @@
         let displayList = [...window.shukatsuData];
         if (currentSortKey) { displayList.sort((a, b) => { let valA = a[currentSortKey], valB = b[currentSortKey]; if (currentSortKey === 'internStart') { let aDates = a.internDates || [], bDates = b.internDates || []; valA = aDates.length > 0 ? aDates[0].start : ''; valB = bDates.length > 0 ? bDates[0].start : ''; } if (valA === undefined || valA === null) valA = ''; if (valB === undefined || valB === null) valB = ''; if (typeof valA === 'boolean') { valA = valA ? 1 : 0; valB = valB ? 1 : 0; } if (typeof valA === 'string' && typeof valB === 'string') return currentSortAsc ? valA.localeCompare(valB, 'ja') : valB.localeCompare(valA, 'ja'); return currentSortAsc ? (valA > valB ? 1 : -1) : (valA > valB ? -1 : 1); }); }
         
-        const headers = Array.from(document.querySelectorAll('#mainTable th')).map(th => th.innerText.replace(/ ▼| ▲/g, '').trim());
         displayList.forEach(item => {
             const tr = document.createElement('tr');
             tr.onclick = (e) => { if (window.innerWidth <= 768 && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'A') { tr.classList.toggle('is-open'); } };
             let dates = item.internDates || []; let periodHtml = dates.length > 0 ? dates.map(d => { let t = d.title ? `<span class="badge bg-secondary me-1">${d.title}</span>` : ''; let s = d.start || '', e = d.end || ''; let p = (s && e) ? `${s} 〜 ${e}` : (s ? s : e); return p ? `${t}${p}` : ''; }).filter(v => v).join('<br>') : '';
-            const checkMark = (isChecked) => isChecked ? '✅' : 'ー';
-            let mypageCell = item.mypageUrl ? `<a href="${item.mypageUrl}" target="_blank" class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation()">開く</a>` : (item.mypage ? '✅ 開設済' : 'ー');
+            let mypageCell = item.mypageUrl ? `<a href="${item.mypageUrl}" target="_blank" class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation()">開く</a>` : 'ー';
             let accountBtn = `<button class="btn btn-sm btn-outline-secondary me-1" onclick="event.stopPropagation(); openAccountSidebar('${item.id}')" title="アカウント情報">🔐</button>`;
             let memoCell = `<span class="memo-clickable text-truncate" title="${item.sessionMemo || ''}">${item.sessionMemo || '（空欄）'}</span>`;
             
@@ -663,8 +671,15 @@
     window.copyText = function(elementId) { const input = document.getElementById(elementId); input.type = 'text'; input.select(); document.execCommand('copy'); if(elementId==='sidebarPassword') input.type='password'; alert('コピーしました'); }
     window.togglePasswordVisibility = function() { const p = document.getElementById('sidebarPassword'); const b = document.getElementById('togglePasswordBtn'); if (p.type === 'password') { p.type = 'text'; b.innerText = '隠す'; } else { p.type = 'password'; b.innerText = '表示'; } }
 
-    // ES・面接のプルダウン展開（スマホ）機能
+    // ★ ES・面接ビューの読み込み（バグ修正版：リセット前にDOMを退避させる）
     function loadEsView() {
+        const detailArea = document.getElementById('esDetailArea');
+        const emptyMsg = document.getElementById('esEmptyMessage');
+        const rightCol = document.querySelector('#es-view .col-md-9');
+        if (detailArea && rightCol && emptyMsg && !rightCol.contains(detailArea)) {
+            rightCol.insertBefore(detailArea, emptyMsg);
+        }
+
         const list = document.getElementById('esCompanyList'); list.innerHTML = '';
         window.shukatsuData.forEach(item => {
             const btn = document.createElement('button'); 
@@ -682,8 +697,7 @@
             };
             list.appendChild(btn);
         });
-        const detailArea = document.getElementById('esDetailArea');
-        if (currentEsCompanyId && window.shukatsuData.some(i=>i.id===currentEsCompanyId)) { selectEsCompany(currentEsCompanyId); } else { detailArea.style.display = 'none'; document.getElementById('esEmptyMessage').style.display = 'block'; }
+        if (currentEsCompanyId && window.shukatsuData.some(i=>i.id===currentEsCompanyId)) { selectEsCompany(currentEsCompanyId); } else { if(detailArea) detailArea.style.display = 'none'; if(emptyMsg) emptyMsg.style.display = 'block'; }
     }
 
     window.addEsQuestionRow = function(qData = { id: '', question: '', finalAnswer: '', memoAnswer: '' }) {
@@ -703,6 +717,13 @@
     window.saveEsDetails = async function() { const id = document.getElementById('esTargetId').value; const data = window.shukatsuData.find(item => item.id === id); if (!data) return; const qs = []; document.querySelectorAll('.es-question-card').forEach(card => { qs.push({ id: card.dataset.qId, question: card.querySelector('.es-q-text').value, memoAnswer: card.querySelector('.es-q-memo').value, finalAnswer: card.querySelector('.es-q-final').value }); }); data.esQuestions = qs; await window.saveToServer(); alert('ES内容を保存しました！'); };
 
     function loadInterviewView() {
+        const detailArea = document.getElementById('interviewDetailArea');
+        const emptyMsg = document.getElementById('interviewEmptyMessage');
+        const rightCol = document.querySelector('#interview-view .col-md-9');
+        if (detailArea && rightCol && emptyMsg && !rightCol.contains(detailArea)) {
+            rightCol.insertBefore(detailArea, emptyMsg);
+        }
+
         const list = document.getElementById('interviewCompanyList'); list.innerHTML = '';
         window.shukatsuData.forEach(item => {
             const btn = document.createElement('button'); btn.className = `list-group-item list-group-item-action fw-bold d-flex justify-content-between align-items-center ${item.id === currentInterviewCompanyId ? 'active' : ''}`;
@@ -711,7 +732,7 @@
                 if (currentInterviewCompanyId === item.id && window.innerWidth <= 768) { currentInterviewCompanyId = null; document.getElementById('interviewDetailArea').style.display = 'none'; document.getElementById('interviewEmptyMessage').style.display = 'block'; btn.classList.remove('active'); if(btn.querySelector('.interview-arrow')) btn.querySelector('.interview-arrow').innerText = '▼'; } else { currentInterviewCompanyId = item.id; Array.from(list.children).forEach(c => { c.classList.remove('active'); const a = c.querySelector('.interview-arrow'); if(a) a.innerText = '▼'; }); btn.classList.add('active'); const a = btn.querySelector('.interview-arrow'); if(a) a.innerText = '▲'; selectInterviewCompany(item.id); }
             }; list.appendChild(btn);
         });
-        const detailArea = document.getElementById('interviewDetailArea'); if (currentInterviewCompanyId && window.shukatsuData.some(i=>i.id===currentInterviewCompanyId)) { selectInterviewCompany(currentInterviewCompanyId); } else { detailArea.style.display = 'none'; document.getElementById('interviewEmptyMessage').style.display = 'block'; }
+        if (currentInterviewCompanyId && window.shukatsuData.some(i=>i.id===currentInterviewCompanyId)) { selectInterviewCompany(currentInterviewCompanyId); } else { if(detailArea) detailArea.style.display = 'none'; if(emptyMsg) emptyMsg.style.display = 'block'; }
     }
     window.selectInterviewCompany = function(id) {
         currentInterviewCompanyId = id; const data = window.shukatsuData.find(item => item.id === id);
@@ -723,7 +744,7 @@
     };
     window.saveInterviewDetails = async function() { const id = document.getElementById('interviewTargetId').value; const data = window.shukatsuData.find(item => item.id === id); if (!data) return; const oldDate = data.interviewDate; const newDate = document.getElementById('interviewDateInput').value; if (document.getElementById('autoCalSyncToggle').checked && newDate && newDate !== oldDate) { window.syncToGoogleCalendarAPI([{ title: `[面接] ${data.company}`, date: newDate, type: 'time' }], data.location); } data.interviewDate = newDate; data.esText = document.getElementById('esTextInput').value; data.interviewNote = document.getElementById('interviewNoteInput').value; await window.saveToServer(); alert('面接対策内容を保存しました！'); };
 
-    // バックアップ機能
+    // バックアップ・エクスポート関連
     window.downloadTXTBackup = function() { const str = JSON.stringify({ data: window.shukatsuData, todos: window.todos }, null, 2); const blob = new Blob([str], { type: 'text/plain' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'shukatsu_backup.txt'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); };
     window.importTXTBackup = function(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { try { const json = JSON.parse(e.target.result); if (json && (json.data || Array.isArray(json))) { window.shukatsuData = json.data || json; window.todos = json.todos || { today: [], week: [] }; window.saveToServer(); alert('データを正常に復元しました！'); bootstrap.Modal.getInstance(document.getElementById('settingsModal')).hide(); } else { alert('有効なファイルではありません。'); } } catch (err) { alert('読み込みに失敗しました。'); } }; reader.readAsText(file); };
     window.downloadICSForGoogleCalendar = function() {
@@ -742,6 +763,5 @@
         const blob = new Blob([icsLines.join('\r\n')], { type: 'text/calendar;charset=utf-8;' }); const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.setAttribute("download", `就活予定_Google一括連携_${new Date().toISOString().split('T')[0]}.ics`); document.body.appendChild(link); link.click(); document.body.removeChild(link);
     };
 </script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
