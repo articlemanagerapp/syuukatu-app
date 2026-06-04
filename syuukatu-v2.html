@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>就活・インターン管理アプリ（クラウド版）</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
@@ -46,6 +46,9 @@
            スマホ向けレスポンシブ＆アコーディオン化
         ========================================== */
         @media (max-width: 768px) {
+            /* ★ iPhoneの時刻・バッテリー表示との干渉を防ぐため、ヘッダーの上部余白を約1cm(45px)下に下げる ★ */
+            header { padding-top: max(45px, env(safe-area-inset-top)) !important; }
+            
             .sidebar { width: 280px; }
             input, select, textarea { font-size: 16px !important; } 
             .btn { font-size: 0.9rem; padding: 0.4rem 0.7rem; margin-bottom: 3px; }
@@ -466,20 +469,36 @@
     let calendar, currentInterviewCompanyId = null, currentEsCompanyId = null, currentSortKey = '', currentSortAsc = true;
     let isSyncingTopScroll = false, isSyncingTableScroll = false;
 
-    // ★ メニュー切り替え処理 ★
+    // ★ メニュー切り替え処理（暗転解消の完全修正版） ★
     document.querySelectorAll('#myTab .nav-link').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            document.getElementById('topTitle').innerText = e.target.innerText; // タイトル動的変更
+            // タイトル動的変更
+            document.getElementById('topTitle').innerText = e.target.innerText; 
+            
             if(window.innerWidth <= 768) {
-                const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('sidebarMenu'));
-                if(offcanvas) offcanvas.hide(); // スマホ時はメニューを閉じる
+                const sidebarEl = document.getElementById('sidebarMenu');
+                const bsOffcanvas = bootstrap.Offcanvas.getInstance(sidebarEl);
+                if (bsOffcanvas) {
+                    bsOffcanvas.hide();
+                } else {
+                    const closeBtn = sidebarEl.querySelector('.btn-close');
+                    if(closeBtn) closeBtn.click();
+                }
+                
+                // ★ 確実に暗転(Backdrop)を消して画面を明るくする強制クリーンアップ処理 ★
+                setTimeout(() => {
+                    document.querySelectorAll('.offcanvas-backdrop').forEach(el => el.remove());
+                    document.body.classList.remove('modal-open');
+                    document.body.style.overflow = '';
+                    document.body.style.paddingRight = '';
+                }, 300);
             }
             if(e.target.id === 'calendar-tab' && calendar) { setTimeout(() => calendar.render(), 100); }
             if(e.target.id === 'table-tab') { setTimeout(syncScrollWidth, 100); }
         });
     });
 
-    // ★ API初期化＆設定保存 ★
+    // API初期化＆設定保存
     let tokenClient; let isGapiScriptLoaded = false; let isGisScriptLoaded = false;
     window.gapiLoaded = function() { gapi.load('client', () => { isGapiScriptLoaded = true; window.tryInitGoogleAPI(); }); };
     window.gisLoaded = function() { isGisScriptLoaded = true; window.tryInitGoogleAPI(); };
@@ -541,7 +560,7 @@
         if (calendar) updateCalendar(); 
     };
 
-    // ★ 掲示板処理 ★
+    // 掲示板処理
     window.loadDashboardSchedule = function() {
         const tbody = document.getElementById('dashboardScheduleBody'); tbody.innerHTML = '';
         let events = []; const now = new Date(); now.setHours(0,0,0,0);
@@ -711,7 +730,13 @@
         function formatToICSDate(dateStr, isAllDay = false) { if (!dateStr) return ''; if (isAllDay) { const parts = dateStr.split('-'); if (parts.length === 3) return `${parts[0]}${parts[1]}${parts[2]}`; const ld = new Date(dateStr); return `${ld.getFullYear()}${pad(ld.getMonth() + 1)}${pad(ld.getDate())}`; } else { const d = new Date(dateStr); if (isNaN(d.getTime())) return ''; return `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`; } }
         function addDayToDateString(dateStr) { const parts = dateStr.split('-'); if (parts.length === 3) { const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2])); d.setDate(d.getDate() + 1); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; } const d = new Date(dateStr); d.setDate(d.getDate() + 1); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
         function escapeICS(str) { if (!str) return ''; return str.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n'); }
-        window.shukatsuData.forEach(data => { if (data.esDeadline) { const start = formatToICSDate(data.esDeadline); const end = formatToICSDate(new Date(new Date(data.esDeadline).getTime() + 30 * 60 * 1000).toISOString()); if (start && end) { icsLines.push('BEGIN:VEVENT', `UID:es_${data.id}@syuukatu.app`, `DTSTART:${start}`, `DTEND:${end}`, `SUMMARY:${escapeICS('締切: ' + data.company)}`); if (data.location) icsLines.push(`LOCATION:${escapeICS(data.location)}`); icsLines.push('END:VEVENT'); } } if (data.interviewDate) { const start = formatToICSDate(data.interviewDate); const end = formatToICSDate(new Date(new Date(data.interviewDate).getTime() + 60 * 60 * 1000).toISOString()); if (start && end) { icsLines.push('BEGIN:VEVENT', `UID:interview_${data.id}@syuukatu.app`, `DTSTART:${start}`, `DTEND:${end}`, `SUMMARY:${escapeICS('面接: ' + data.company)}`); if (data.location) icsLines.push(`LOCATION:${escapeICS(data.location)}`); if (data.interviewNote) icsLines.push(`DESCRIPTION:${escapeICS(data.interviewNote)}`); icsLines.push('END:VEVENT'); } } let dates = data.internDates || []; if (dates.length === 0 && (data.internStart || data.internEnd)) dates = [{ title: '', start: data.internStart, end: data.internEnd }]; dates.forEach((d, idx) => { if (d.start) { const start = formatToICSDate(d.start, true); const end = formatToICSDate(addDayToDateString(d.end || d.start), true); if (start && end) { icsLines.push('BEGIN:VEVENT', `UID:intern_${data.id}_${idx}@syuukatu.app`, `DTSTART;VALUE=DATE:${start}`, `DTEND;VALUE=DATE:${end}`, `SUMMARY:${escapeICS('ｲﾝﾀｰﾝ: ' + data.company + (d.title ? ' ' + d.title : ''))}`); if (data.location) icsLines.push(`LOCATION:${escapeICS(data.location)}`); icsLines.push('END:VEVENT'); } } }); }); icsLines.push('END:VCALENDAR');
+        window.shukatsuData.forEach(data => {
+            if (data.esDeadline) { const start = formatToICSDate(data.esDeadline); const end = formatToICSDate(new Date(new Date(data.esDeadline).getTime() + 30 * 60 * 1000).toISOString()); if (start && end) { icsLines.push('BEGIN:VEVENT', `UID:es_${data.id}@syuukatu.app`, `DTSTART:${start}`, `DTEND:${end}`, `SUMMARY:${escapeICS('締切: ' + data.company)}`); if (data.location) icsLines.push(`LOCATION:${escapeICS(data.location)}`); icsLines.push('END:VEVENT'); } }
+            if (data.interviewDate) { const start = formatToICSDate(data.interviewDate); const end = formatToICSDate(new Date(new Date(data.interviewDate).getTime() + 60 * 60 * 1000).toISOString()); if (start && end) { icsLines.push('BEGIN:VEVENT', `UID:interview_${data.id}@syuukatu.app`, `DTSTART:${start}`, `DTEND:${end}`, `SUMMARY:${escapeICS('面接: ' + data.company)}`); if (data.location) icsLines.push(`LOCATION:${escapeICS(data.location)}`); if (data.interviewNote) icsLines.push(`DESCRIPTION:${escapeICS(data.interviewNote)}`); icsLines.push('END:VEVENT'); } }
+            let dates = data.internDates || []; if (dates.length === 0 && (data.internStart || data.internEnd)) dates = [{ title: '', start: data.internStart, end: data.internEnd }];
+            dates.forEach((d, idx) => { if (d.start) { const start = formatToICSDate(d.start, true); const end = formatToICSDate(addDayToDateString(d.end || d.start), true); if (start && end) { icsLines.push('BEGIN:VEVENT', `UID:intern_${data.id}_${idx}@syuukatu.app`, `DTSTART;VALUE=DATE:${start}`, `DTEND;VALUE=DATE:${end}`, `SUMMARY:${escapeICS('ｲﾝﾀｰﾝ: ' + data.company + (d.title ? ' ' + d.title : ''))}`); if (data.location) icsLines.push(`LOCATION:${escapeICS(data.location)}`); icsLines.push('END:VEVENT'); } } });
+        });
+        icsLines.push('END:VCALENDAR');
         const blob = new Blob([icsLines.join('\r\n')], { type: 'text/calendar;charset=utf-8;' }); const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.setAttribute("download", `就活予定_Google一括連携_${new Date().toISOString().split('T')[0]}.ics`); document.body.appendChild(link); link.click(); document.body.removeChild(link);
     };
 
