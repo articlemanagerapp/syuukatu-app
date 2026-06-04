@@ -8,6 +8,9 @@
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
     <style>
+        /* ==========================================
+           基本スタイル・PC版レイアウト
+        ========================================== */
         body { padding: 20px; background-color: #f8f9fa; font-family: sans-serif; }
         .top-scrollbar-wrapper { overflow-x: auto; overflow-y: hidden; height: 20px; margin-left: 15px; margin-right: 15px; margin-bottom: -5px; }
         .top-scrollbar-fake-content { height: 1px; }
@@ -16,7 +19,7 @@
         .sticky-col { position: sticky; left: 0; background-color: white !important; z-index: 2; box-shadow: 3px 0 6px rgba(0,0,0,0.08); }
         th.sticky-col { z-index: 3; background-color: #f8f9fa !important; }
         
-        /* カレンダーのカスタマイズ（セルサイズ固定＆日付コンパクト化） */
+        /* カレンダーのカスタマイズ（セル固定＆コンパクト化） */
         #calendar { background: white; padding: 12px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .fc .fc-daygrid-day-top { padding: 2px 4px !important; justify-content: flex-end !important; flex-direction: row !important; }
         .fc .fc-daygrid-day-number { font-size: 0.75rem !important; color: #868e96; font-weight: bold; text-decoration: none !important; padding: 0 !important; }
@@ -33,7 +36,9 @@
         .memo-clickable:hover { color: #0d6efd; text-decoration: underline; }
         .sync-status { font-size: 0.85rem; padding: 4px 8px; border-radius: 4px; }
         
-        /* スマホ向け・アコーディオン式レスポンシブデザイン */
+        /* ==========================================
+           ★スマホ向け・アコーディオン式レスポンシブデザイン（完全復元）★
+        ========================================== */
         @media (max-width: 768px) {
             body { padding: 10px 5px; }
             h2 { font-size: 1.4rem; font-weight: bold; margin-bottom: 10px !important; }
@@ -342,7 +347,6 @@
                 <div class="col-md-3 mb-3"><label class="form-label text-secondary">通過状況</label><select class="form-select" id="passStatus" onchange="toggleFormFields()"><option value="結果待ち">結果待ち</option><option value="書類通過">書類通過</option><option value="通過">通過（面接等）</option><option value="お祈り">お祈り</option></select></div>
                 <div id="interviewFields" class="col-md-12 mt-2 pt-3 border-top" style="display: none;"><label class="form-label fw-bold text-primary">🗣️ 次回 面接日時</label><input type="datetime-local" class="form-control border-primary" id="modalInterviewDate" style="max-width: 300px;"></div>
             </div>
-        </form>
       </div>
       <div class="modal-footer bg-light">
           <button type="submit" form="addForm" class="btn btn-success fw-bold px-5 py-2 w-100">💾 企業データを保存する</button>
@@ -352,6 +356,9 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script src="https://apis.google.com/js/api.js" onload="gapiLoaded()" async defer></script>
+<script src="https://accounts.google.com/gsi/client" onload="gisLoaded()" async defer></script>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -421,6 +428,51 @@
     let calendar, currentInterviewCompanyId = null, currentEsCompanyId = null, currentSortKey = '', currentSortAsc = true;
     let isSyncingTopScroll = false, isSyncingTableScroll = false;
 
+    // ==========================================
+    // ★ Google Calendar API 設定（取得した鍵をここに貼り付けてください！）
+    // ==========================================
+    const GOOGLE_API_KEY = 'ここにAPIキーを貼り付けます';
+    const GOOGLE_CLIENT_ID = 'ここにクライアントIDを貼り付けます.apps.googleusercontent.com';
+    
+    let tokenClient; let isGapiLoaded = false; let isGisLoaded = false;
+    window.gapiLoaded = function() { gapi.load('client', async () => { await gapi.client.init({ apiKey: GOOGLE_API_KEY, discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'] }); isGapiLoaded = true; }); };
+    window.gisLoaded = function() { tokenClient = google.accounts.oauth2.initTokenClient({ client_id: GOOGLE_CLIENT_ID, scope: 'https://www.googleapis.com/auth/calendar.events', callback: '' }); isGisLoaded = true; };
+
+    // ★ 画面を飛ばずに（裏側で）複数予定をカレンダーに登録する関数
+    window.syncToGoogleCalendarAPI = function(events, location) {
+        if (!isGapiLoaded || !isGisLoaded) { alert("APIキーが設定されていないか、環境エラーです。"); return; }
+        
+        tokenClient.callback = async (resp) => {
+            if (resp.error !== undefined) { alert("Google認証に失敗しました。"); return; }
+            document.getElementById('cloudStatus').innerText = '⏳ カレンダー裏で登録中...';
+            
+            let successCount = 0;
+            for (const ev of events) {
+                let start, end;
+                if(ev.type === 'allday') {
+                    start = { date: ev.date };
+                    let d = new Date(ev.end || ev.date); if(!ev.end) d.setDate(d.getDate() + 1);
+                    end = { date: d.toISOString().split('T')[0] };
+                } else {
+                    start = { dateTime: new Date(ev.date).toISOString() };
+                    let endD = new Date(new Date(ev.date).getTime() + 60*60*1000); 
+                    end = { dateTime: endD.toISOString() };
+                }
+                const resource = { summary: ev.title, start: start, end: end };
+                if(location) resource.location = location;
+
+                try {
+                    await gapi.client.calendar.events.insert({ calendarId: 'primary', resource: resource });
+                    successCount++;
+                } catch (e) { console.error("登録エラー:", e); }
+            }
+            alert(`裏側でGoogleカレンダーに ${successCount} 件の予定を自動追加しました！`);
+            document.getElementById('cloudStatus').innerText = `☁️ 同期完了`;
+        };
+        if (gapi.client.getToken() === null) { tokenClient.requestAccessToken({prompt: 'consent'}); } else { tokenClient.requestAccessToken({prompt: ''}); }
+    };
+    // ==========================================
+
     document.addEventListener('DOMContentLoaded', async function() {
         const isAutoSync = localStorage.getItem('autoCalSync') === 'true';
         const toggleEl = document.getElementById('autoCalSyncToggle');
@@ -468,32 +520,7 @@
             dayMaxEvents: true, 
             headerToolbar: { left: 'prev,next', center: 'title', right: isMobile ? 'dayGridMonth,timeGridWeek' : 'dayGridMonth,timeGridWeek,multiMonthFourMonth' }, 
             views: { multiMonthFourMonth: { type: 'multiMonth', duration: { months: 4 }, buttonText: '4ヶ月' } }, 
-            events: getCalendarEvents(),
-            eventClick: function(info) {
-                const props = info.event.extendedProps;
-                if (props && props.companyId) {
-                    const data = window.shukatsuData.find(item => item.id === props.companyId);
-                    if (!data) return;
-                    
-                    let title = info.event.title;
-                    let startStr = "", endStr = ""; let d = new Date(info.event.start);
-                    
-                    if (info.event.allDay) {
-                        const pad = (n) => String(n).padStart(2, '0');
-                        startStr = d.toISOString().replace(/-|:/g, '').substring(0,8);
-                        let dEnd = info.event.end ? new Date(info.event.end) : new Date(d);
-                        if(!info.event.end) dEnd.setDate(dEnd.getDate() + 1);
-                        endStr = dEnd.toISOString().replace(/-|:/g, '').substring(0,8);
-                    } else {
-                        startStr = d.toISOString().replace(/-|:|\.\d\d\d/g, '');
-                        let dEnd = info.event.end ? new Date(info.event.end) : new Date(d.getTime() + 60*60*1000); 
-                        endStr = dEnd.toISOString().replace(/-|:|\.\d\d\d/g, '');
-                    }
-                    let url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${startStr}/${endStr}`;
-                    if(data.location) url += `&location=${encodeURIComponent(data.location)}`;
-                    if (confirm(`「${title}」をGoogleカレンダーに個別に登録しますか？\n（別タブでカレンダー作成画面が開きます）`)) { window.open(url, '_blank'); }
-                }
-            }
+            events: getCalendarEvents() 
         });
         calendar.render();
     }
@@ -525,24 +552,6 @@
         }
     };
 
-    window.autoOpenCalendarTabs = function(location, eventsToSync) {
-        eventsToSync.forEach(selected => {
-            let startStr = "", endStr = ""; let d = new Date(selected.date);
-            if(selected.type === 'allday') {
-                startStr = d.toISOString().replace(/-|:/g, '').substring(0,8);
-                let dEnd = selected.end ? new Date(selected.end) : new Date(d); dEnd.setDate(dEnd.getDate() + 1); 
-                endStr = dEnd.toISOString().replace(/-|:/g, '').substring(0,8);
-            } else {
-                startStr = d.toISOString().replace(/-|:|\.\d\d\d/g, '');
-                let dEnd = new Date(d.getTime() + 60*60*1000); 
-                endStr = dEnd.toISOString().replace(/-|:|\.\d\d\d/g, '');
-            }
-            let url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(selected.title)}&dates=${startStr}/${endStr}`;
-            if(location) url += `&location=${encodeURIComponent(location)}`;
-            window.open(url, '_blank');
-        });
-    };
-
     document.getElementById('addForm').addEventListener('submit', async function(e) {
         e.preventDefault(); const editId = document.getElementById('editId').value;
         let existingData = window.shukatsuData.find(item => item.id === editId) || {};
@@ -567,28 +576,17 @@
         if (newData.esDeadline && newData.esDeadline !== existingData.esDeadline) {
             eventsToSync.push({ title: `[ES締切] ${newData.company}`, date: newData.esDeadline, type: 'time' });
         }
-        
-        // ★ インターン日程の差分検知（新しく増えた・変更された日程のみ抽出）
         const oldInterns = existingData.internDates || [];
-        const newInterns = newData.internDates || [];
-        newInterns.forEach(newD => {
+        (newData.internDates || []).forEach(newD => {
             if (newD.start) {
-                // まったく同じ日程・タイトルが古いデータに存在するかチェック
-                const isAlreadyExists = oldInterns.some(oldD => 
-                    oldD.start === newD.start && 
-                    oldD.end === newD.end && 
-                    oldD.title === newD.title
-                );
-                // 存在しなければ「新しく追加・変更された日程」として連携対象に入れる
-                if (!isAlreadyExists) {
-                    eventsToSync.push({ title: `[ｲﾝﾀｰﾝ] ${newData.company} ${newD.title}`, date: newD.start, end: newD.end, type: 'allday' });
-                }
+                const isAlreadyExists = oldInterns.some(oldD => oldD.start === newD.start && oldD.end === newD.end && oldD.title === newD.title);
+                if (!isAlreadyExists) eventsToSync.push({ title: `[ｲﾝﾀｰﾝ] ${newData.company} ${newD.title}`, date: newD.start, end: newD.end, type: 'allday' });
             }
         });
 
-        // 連携を待つ前にポップアップを開く
+        // ★ APIを利用して裏側で自動登録 ★
         if (document.getElementById('autoCalSyncToggle').checked && eventsToSync.length > 0) {
-            window.autoOpenCalendarTabs(newData.location, eventsToSync);
+            window.syncToGoogleCalendarAPI(eventsToSync, newData.location);
         }
 
         if (editId) { const index = window.shukatsuData.findIndex(item => item.id === editId); if (index !== -1) window.shukatsuData[index] = newData; } else { window.shukatsuData.push(newData); }
@@ -616,6 +614,7 @@
                 if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.classList.contains('memo-clickable')) { return; }
                 if (window.innerWidth <= 768) { this.classList.toggle('is-open'); }
             });
+
             let dates = data.internDates || []; let periodHtml = dates.length > 0 ? dates.map(d => { let t = d.title ? `<span class="badge bg-secondary me-1">${d.title}</span>` : ''; let s = d.start || '', e = d.end || ''; let p = (s && e) ? `${s} 〜 ${e}` : (s ? s : e); return p ? `${t}${p}` : ''; }).filter(v => v).join('<br>') : '';
             const checkMark = (isChecked) => isChecked ? '✅' : 'ー';
             let mypageCell = data.mypageUrl ? `<button class="btn btn-sm btn-success" onclick="openMypage('${data.mypageUrl}')">🔗</button>` : (data.mypage ? '✅ 開設済' : 'ー');
@@ -652,7 +651,10 @@
         const tbody = document.getElementById('mypageTableBody'); tbody.innerHTML = '';
         window.shukatsuData.forEach((data) => {
             const tr = document.createElement('tr');
-            tr.addEventListener('click', function(e) { if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.tagName === 'INPUT') { return; } if (window.innerWidth <= 768) { this.classList.toggle('is-open'); } });
+            tr.addEventListener('click', function(e) {
+                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.tagName === 'INPUT') { return; }
+                if (window.innerWidth <= 768) { this.classList.toggle('is-open'); }
+            });
             tr.innerHTML = `
                 <td data-label="社名" class="fw-bold text-primary">${data.company}</td>
                 <td data-label="マイページ">${data.mypageUrl ? `<button class="btn btn-sm btn-success" onclick="openMypage('${data.mypageUrl}')">🔗 開く</button>` : 'ー'}</td>
@@ -687,8 +689,9 @@
             const oldDate = window.shukatsuData[index].interviewDate;
             const newDate = document.getElementById('interviewDateInput').value;
             
+            // APIによる裏側自動登録
             if (document.getElementById('autoCalSyncToggle').checked && newDate && newDate !== oldDate) {
-                window.autoOpenCalendarTabs(window.shukatsuData[index].location, [{ title: `[面接] ${window.shukatsuData[index].company}`, date: newDate, type: 'time' }]);
+                window.syncToGoogleCalendarAPI([{ title: `[面接] ${window.shukatsuData[index].company}`, date: newDate, type: 'time' }], window.shukatsuData[index].location);
             }
 
             window.shukatsuData[index].interviewDate = newDate;
