@@ -8,9 +8,6 @@
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
     <style>
-        /* ==========================================
-           基本スタイル・PC版レイアウト
-        ========================================== */
         body { padding: 20px; background-color: #f8f9fa; font-family: sans-serif; }
         .top-scrollbar-wrapper { overflow-x: auto; overflow-y: hidden; height: 20px; margin-left: 15px; margin-right: 15px; margin-bottom: -5px; }
         .top-scrollbar-fake-content { height: 1px; }
@@ -19,7 +16,6 @@
         .sticky-col { position: sticky; left: 0; background-color: white !important; z-index: 2; box-shadow: 3px 0 6px rgba(0,0,0,0.08); }
         th.sticky-col { z-index: 3; background-color: #f8f9fa !important; }
         
-        /* カレンダーのカスタマイズ（セル固定＆コンパクト化） */
         #calendar { background: white; padding: 12px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .fc .fc-daygrid-day-top { padding: 2px 4px !important; justify-content: flex-end !important; flex-direction: row !important; }
         .fc .fc-daygrid-day-number { font-size: 0.75rem !important; color: #868e96; font-weight: bold; text-decoration: none !important; padding: 0 !important; }
@@ -36,96 +32,36 @@
         .memo-clickable:hover { color: #0d6efd; text-decoration: underline; }
         .sync-status { font-size: 0.85rem; padding: 4px 8px; border-radius: 4px; }
         
-        /* ==========================================
-           ★スマホ向け・アコーディオン式レスポンシブデザイン（完全復元）★
-        ========================================== */
+        /* スマホ向け・アコーディオン式レスポンシブデザイン */
         @media (max-width: 768px) {
             body { padding: 10px 5px; }
             h2 { font-size: 1.4rem; font-weight: bold; margin-bottom: 10px !important; }
-            
             .d-flex.justify-content-between { flex-direction: column; align-items: flex-start !important; gap: 10px; }
             .d-flex.justify-content-between > div { width: 100%; text-align: left; }
             #cloudStatus { margin-bottom: 5px; font-size: 0.8rem; }
             .text-md-end { display: flex; gap: 6px; flex-wrap: wrap; }
-
             .nav-tabs { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; white-space: nowrap; border-bottom: none; -webkit-overflow-scrolling: touch; padding-bottom: 10px; margin-bottom: 15px; }
             .nav-tabs::-webkit-scrollbar { display: none; }
             .nav-tabs .nav-link { padding: 0.6rem 1rem; font-size: 0.95rem; border: 1px solid #dee2e6; border-radius: 30px; margin-right: 8px; background: white; color: #495057; font-weight: bold; }
             .nav-tabs .nav-link.active { background: #0d6efd; color: white; border-color: #0d6efd; }
-
             input, select, textarea { font-size: 16px !important; } 
             .btn { font-size: 0.9rem; padding: 0.4rem 0.7rem; margin-bottom: 3px; }
-
             .top-scrollbar-wrapper { display: none; } 
             .table-wrapper { background: transparent; padding: 0; box-shadow: none; overflow: visible; }
-            
             table.table { display: block; border: none; }
             table.table thead { display: none; } 
             table.table tbody { display: block; width: 100%; }
-            
             table.table tr { display: block; background: white; margin-bottom: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e9ecef; overflow: hidden; cursor: pointer; transition: background-color 0.2s; }
             table.table tr:active { background-color: #f1f7fe; }
-
             table.table tr td { display: none !important; }
-            
-            table.table tr.is-open td { 
-                display: flex !important; 
-                flex-direction: column; 
-                align-items: flex-start; 
-                border: none; 
-                border-bottom: 1px solid #f1f3f5; 
-                padding: 12px 15px; 
-                font-size: 0.95rem; 
-                text-align: left; 
-                white-space: normal; 
-                width: 100%;
-            }
-            table.table tr.is-open td:last-child { 
-                border-bottom: none; 
-                background: #f8f9fa; 
-                flex-direction: row;
-                justify-content: flex-end; 
-                align-items: center;
-                gap: 5px;
-            }
-            
-            table.table tr.is-open td::before { 
-                content: attr(data-label); 
-                font-weight: bold; 
-                color: #868e96; 
-                text-align: left; 
-                padding-bottom: 4px; 
-                min-width: unset; 
-                display: block;
-            }
+            table.table tr.is-open td { display: flex !important; flex-direction: column; align-items: flex-start; border: none; border-bottom: 1px solid #f1f3f5; padding: 12px 15px; font-size: 0.95rem; text-align: left; white-space: normal; width: 100%; }
+            table.table tr.is-open td:last-child { border-bottom: none; background: #f8f9fa; flex-direction: row; justify-content: flex-end; align-items: center; gap: 5px; }
+            table.table tr.is-open td::before { content: attr(data-label); font-weight: bold; color: #868e96; text-align: left; padding-bottom: 4px; min-width: unset; display: block; }
             table.table tr.is-open td:last-child::before { content: none; }
-            
-            table.table tr td:first-child { 
-                display: flex !important; 
-                flex-direction: row !important;
-                justify-content: space-between !important;
-                align-items: center !important;
-                background: #f1f7fe; 
-                border-bottom: 2px solid #0d6efd; 
-                padding: 15px 15px !important; 
-                font-size: 1.1rem !important;
-                color: #0d6efd;
-                font-weight: bold;
-                width: 100%;
-            }
+            table.table tr td:first-child { display: flex !important; flex-direction: row !important; justify-content: space-between !important; align-items: center !important; background: #f1f7fe; border-bottom: 2px solid #0d6efd; padding: 15px 15px !important; font-size: 1.1rem !important; color: #0d6efd; font-weight: bold; width: 100%; }
             table.table tr td:first-child::before { content: none; } 
-            
-            table.table tr td:first-child::after {
-                content: '▼';
-                font-size: 0.8rem;
-                color: #0d6efd;
-                transition: transform 0.2s;
-                margin-left: auto;
-                padding-left: 10px;
-            }
-            table.table tr.is-open td:first-child::after {
-                content: '▲';
-            }
+            table.table tr td:first-child::after { content: '▼'; font-size: 0.8rem; color: #0d6efd; transition: transform 0.2s; margin-left: auto; padding-left: 10px; }
+            table.table tr.is-open td:first-child::after { content: '▲'; }
             table.table tr.is-open td:first-child { border-bottom: 1px solid #dee2e6; }
         }
     </style>
@@ -153,12 +89,13 @@
             <button class="btn btn-sm btn-outline-danger ms-2" onclick="logoutUser()">ログアウト</button>
         </div>
         <div class="text-md-end d-flex align-items-center flex-wrap gap-2 justify-content-md-end">
-            <div class="form-check form-switch mb-0 me-1 p-2 bg-white rounded shadow-sm border d-flex align-items-center">
+            <div class="form-check form-switch mb-0 p-2 bg-white rounded shadow-sm border d-flex align-items-center">
                 <input class="form-check-input mt-0 me-2" type="checkbox" id="autoCalSyncToggle" onchange="localStorage.setItem('autoCalSync', this.checked)">
                 <label class="form-check-label fw-bold text-primary" style="font-size:0.85rem; padding-top:2px;" for="autoCalSyncToggle">📅 カレンダー自動追加</label>
             </div>
-            <button class="btn btn-outline-info text-dark fw-bold" onclick="downloadICSForGoogleCalendar()" title="既存の全予定をまとめて出力">一括連携</button>
-            <button class="btn btn-outline-secondary" onclick="downloadTXTBackup()">📥 バックアップ</button>
+            <button class="btn btn-outline-secondary fw-bold bg-white" data-bs-toggle="modal" data-bs-target="#settingsModal">⚙️ 設定</button>
+            <button class="btn btn-outline-info text-dark fw-bold bg-white" onclick="downloadICSForGoogleCalendar()" title="既存の全予定をまとめて出力">一括連携</button>
+            <button class="btn btn-outline-secondary bg-white" onclick="downloadTXTBackup()">📥 バックアップ</button>
             <button class="btn btn-primary fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addModal" onclick="prepareAdd()">＋ 新規企業</button>
         </div>
     </div>
@@ -291,6 +228,31 @@
   </div>
 </div>
 
+<div class="modal fade" id="settingsModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-light">
+        <h5 class="modal-title fw-bold">⚙️ アプリ設定</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted" style="font-size: 0.85rem;">「カレンダー自動追加機能」を利用するには、ご自身で取得したGoogle CloudのAPI情報を入力してください。（情報はクラウド上に安全に保存されます）</p>
+        <div class="mb-3">
+          <label class="form-label fw-bold text-secondary">Google API キー</label>
+          <input type="text" class="form-control" id="settingApiKey" placeholder="AIzaSy...">
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-bold text-secondary">OAuth クライアント ID</label>
+          <input type="text" class="form-control" id="settingClientId" placeholder=".....apps.googleusercontent.com">
+        </div>
+      </div>
+      <div class="modal-footer bg-light">
+        <button type="button" class="btn btn-success fw-bold w-100 py-2" onclick="saveSettings()">💾 設定を保存する</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal fade" id="addModal" tabindex="-1">
   <div class="modal-dialog modal-lg modal-dialog-scrollable">
     <div class="modal-content">
@@ -347,6 +309,7 @@
                 <div class="col-md-3 mb-3"><label class="form-label text-secondary">通過状況</label><select class="form-select" id="passStatus" onchange="toggleFormFields()"><option value="結果待ち">結果待ち</option><option value="書類通過">書類通過</option><option value="通過">通過（面接等）</option><option value="お祈り">お祈り</option></select></div>
                 <div id="interviewFields" class="col-md-12 mt-2 pt-3 border-top" style="display: none;"><label class="form-label fw-bold text-primary">🗣️ 次回 面接日時</label><input type="datetime-local" class="form-control border-primary" id="modalInterviewDate" style="max-width: 300px;"></div>
             </div>
+        </form>
       </div>
       <div class="modal-footer bg-light">
           <button type="submit" form="addForm" class="btn btn-success fw-bold px-5 py-2 w-100">💾 企業データを保存する</button>
@@ -391,12 +354,16 @@
     };
     window.logoutUser = () => signOut(auth);
 
+    // ★ データと一緒に「設定（API鍵）」もクラウドに保存する
     window.saveToServer = async () => {
         if (!auth.currentUser) return;
         const statusEl = document.getElementById('cloudStatus');
         statusEl.innerText = '⏳ 保存中...'; statusEl.className = 'sync-status d-inline-block bg-warning text-dark';
         try {
-            await set(ref(db, 'users/' + auth.currentUser.uid), { data: window.shukatsuData });
+            await set(ref(db, 'users/' + auth.currentUser.uid), { 
+                data: window.shukatsuData,
+                settings: window.appSettings // ★ APIキーの情報を保存
+            });
             statusEl.innerText = `☁️ ${auth.currentUser.email} (同期済)`; statusEl.className = 'sync-status d-inline-block bg-success text-white';
         } catch (error) {
             console.error(error); statusEl.innerText = '❌ 保存失敗'; statusEl.className = 'sync-status d-inline-block bg-danger text-white';
@@ -409,7 +376,19 @@
             document.getElementById('cloudStatus').innerText = '🔄 データ読み込み中...';
             try {
                 const snapshot = await get(child(ref(db), `users/${user.uid}`));
-                window.shukatsuData = (snapshot.exists() && snapshot.val().data) ? snapshot.val().data : [];
+                const val = snapshot.val();
+                
+                // データと設定を読み込み
+                window.shukatsuData = (val && val.data) ? val.data : [];
+                window.appSettings = (val && val.settings) ? val.settings : { googleApiKey: '', googleClientId: '' };
+                
+                // 設定画面の入力欄に復元
+                document.getElementById('settingApiKey').value = window.appSettings.googleApiKey || '';
+                document.getElementById('settingClientId').value = window.appSettings.googleClientId || '';
+                
+                // 鍵があればAPIを初期化
+                window.tryInitGoogleAPI();
+
                 if(window.refreshAllViews) window.refreshAllViews();
                 document.getElementById('cloudStatus').innerText = `☁️ ${user.email} (同期済)`;
                 document.getElementById('cloudStatus').className = 'sync-status d-inline-block bg-success text-white';
@@ -417,30 +396,56 @@
         } else {
             document.getElementById('loginOverlay').style.display = 'flex';
             window.shukatsuData = [];
+            window.appSettings = { googleApiKey: '', googleClientId: '' };
             if(window.refreshAllViews) window.refreshAllViews();
         }
     });
 </script>
 
 <script>
-    var shukatsuData = [];
-    window.shukatsuData = shukatsuData;
+    var shukatsuData = []; window.shukatsuData = shukatsuData;
+    var appSettings = { googleApiKey: '', googleClientId: '' }; window.appSettings = appSettings;
+    
     let calendar, currentInterviewCompanyId = null, currentEsCompanyId = null, currentSortKey = '', currentSortAsc = true;
     let isSyncingTopScroll = false, isSyncingTableScroll = false;
 
     // ==========================================
-    // ★ Google Calendar API 設定（取得した鍵をここに貼り付けてください！）
+    // ★ ユーザーごとに設定されたキーでAPIを初期化 ★
     // ==========================================
-    const GOOGLE_API_KEY = 'ここにAPIキーを貼り付けます';
-    const GOOGLE_CLIENT_ID = 'ここにクライアントIDを貼り付けます.apps.googleusercontent.com';
+    let tokenClient; let isGapiScriptLoaded = false; let isGisScriptLoaded = false;
     
-    let tokenClient; let isGapiLoaded = false; let isGisLoaded = false;
-    window.gapiLoaded = function() { gapi.load('client', async () => { await gapi.client.init({ apiKey: GOOGLE_API_KEY, discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'] }); isGapiLoaded = true; }); };
-    window.gisLoaded = function() { tokenClient = google.accounts.oauth2.initTokenClient({ client_id: GOOGLE_CLIENT_ID, scope: 'https://www.googleapis.com/auth/calendar.events', callback: '' }); isGisLoaded = true; };
+    window.gapiLoaded = function() { gapi.load('client', () => { isGapiScriptLoaded = true; window.tryInitGoogleAPI(); }); };
+    window.gisLoaded = function() { isGisScriptLoaded = true; window.tryInitGoogleAPI(); };
 
-    // ★ 画面を飛ばずに（裏側で）複数予定をカレンダーに登録する関数
+    window.tryInitGoogleAPI = async function() {
+        if (isGapiScriptLoaded && isGisScriptLoaded && window.appSettings && window.appSettings.googleApiKey && window.appSettings.googleClientId) {
+            try {
+                await gapi.client.init({ apiKey: window.appSettings.googleApiKey, discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'] });
+                tokenClient = google.accounts.oauth2.initTokenClient({ client_id: window.appSettings.googleClientId, scope: 'https://www.googleapis.com/auth/calendar.events', callback: '' });
+            } catch (e) { console.error("Google API初期化エラー:", e); }
+        }
+    };
+
+    // 設定画面からキーを保存する関数
+    window.saveSettings = async function() {
+        window.appSettings.googleApiKey = document.getElementById('settingApiKey').value.trim();
+        window.appSettings.googleClientId = document.getElementById('settingClientId').value.trim();
+        await window.saveToServer(); // クラウドに保存
+        window.tryInitGoogleAPI();   // すぐにAPIを使えるようにする
+        alert('API設定を保存しました！');
+        bootstrap.Modal.getInstance(document.getElementById('settingsModal')).hide();
+    };
+
+    // 裏側で一気にカレンダーに登録する関数
     window.syncToGoogleCalendarAPI = function(events, location) {
-        if (!isGapiLoaded || !isGisLoaded) { alert("APIキーが設定されていないか、環境エラーです。"); return; }
+        if (!window.appSettings.googleApiKey || !window.appSettings.googleClientId) {
+            alert("⚠️ Googleカレンダー連携を使用するには、右上の「⚙️設定」ボタンからご自身のAPIキーとクライアントIDを登録してください。");
+            return;
+        }
+        if (!tokenClient) {
+            alert("APIの読み込み中、または設定された鍵が間違っている可能性があります。「⚙️設定」を確認してください。");
+            return;
+        }
         
         tokenClient.callback = async (resp) => {
             if (resp.error !== undefined) { alert("Google認証に失敗しました。"); return; }
@@ -469,6 +474,7 @@
             alert(`裏側でGoogleカレンダーに ${successCount} 件の予定を自動追加しました！`);
             document.getElementById('cloudStatus').innerText = `☁️ 同期完了`;
         };
+        // 許可画面を表示して通信スタート
         if (gapi.client.getToken() === null) { tokenClient.requestAccessToken({prompt: 'consent'}); } else { tokenClient.requestAccessToken({prompt: ''}); }
     };
     // ==========================================
@@ -520,7 +526,29 @@
             dayMaxEvents: true, 
             headerToolbar: { left: 'prev,next', center: 'title', right: isMobile ? 'dayGridMonth,timeGridWeek' : 'dayGridMonth,timeGridWeek,multiMonthFourMonth' }, 
             views: { multiMonthFourMonth: { type: 'multiMonth', duration: { months: 4 }, buttonText: '4ヶ月' } }, 
-            events: getCalendarEvents() 
+            events: getCalendarEvents(),
+            eventClick: function(info) {
+                const props = info.event.extendedProps;
+                if (props && props.companyId) {
+                    const data = window.shukatsuData.find(item => item.id === props.companyId);
+                    if (!data) return;
+                    let title = info.event.title; let startStr = "", endStr = ""; let d = new Date(info.event.start);
+                    if (info.event.allDay) {
+                        const pad = (n) => String(n).padStart(2, '0');
+                        startStr = d.toISOString().replace(/-|:/g, '').substring(0,8);
+                        let dEnd = info.event.end ? new Date(info.event.end) : new Date(d);
+                        if(!info.event.end) dEnd.setDate(dEnd.getDate() + 1);
+                        endStr = dEnd.toISOString().replace(/-|:/g, '').substring(0,8);
+                    } else {
+                        startStr = d.toISOString().replace(/-|:|\.\d\d\d/g, '');
+                        let dEnd = info.event.end ? new Date(info.event.end) : new Date(d.getTime() + 60*60*1000); 
+                        endStr = dEnd.toISOString().replace(/-|:|\.\d\d\d/g, '');
+                    }
+                    let url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${startStr}/${endStr}`;
+                    if(data.location) url += `&location=${encodeURIComponent(data.location)}`;
+                    if (confirm(`「${title}」をGoogleカレンダーに個別に登録しますか？\n（別タブで手動登録画面が開きます）`)) { window.open(url, '_blank'); }
+                }
+            }
         });
         calendar.render();
     }
@@ -568,7 +596,7 @@
             testStatus: document.getElementById('testStatus').value, passStatus: document.getElementById('passStatus').value
         };
 
-        // ★ 差分抽出：前回から「変更・追加」があった予定だけを抽出 ★
+        // 差分抽出：前回から「変更・追加」があった予定だけを抽出
         let eventsToSync = [];
         if (newData.interviewDate && newData.interviewDate !== existingData.interviewDate) {
             eventsToSync.push({ title: `[面接] ${newData.company}`, date: newData.interviewDate, type: 'time' });
