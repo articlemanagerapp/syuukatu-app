@@ -6,7 +6,7 @@
     <title>就活・インターン管理アプリ（クラウド版）</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/ अनार.min.js"></script>
     <style>
         /* ==========================================
            全体レイアウト・サイドバー設計
@@ -70,6 +70,19 @@
             #mainTable tr td:first-child::after, #mypageTable tr td:first-child::after { content: '▼'; font-size: 0.8rem; color: #0d6efd; transition: transform 0.2s; margin-left: auto; padding-left: 10px; }
             #mainTable tr.is-open td:first-child::after, #mypageTable tr.is-open td:first-child::after { content: '▲'; }
             #mainTable tr.is-open td:first-child, #mypageTable tr.is-open td:first-child { border-bottom: 1px solid #dee2e6; }
+
+            /* スマホ版ES・面接のリストと詳細エリアの結合用スタイル */
+            #esCompanyList .list-group-item.active, #interviewCompanyList .list-group-item.active {
+                border-radius: 8px 8px 0 0 !important;
+                border-bottom: none !important;
+            }
+            #esDetailArea, #interviewDetailArea {
+                margin-top: 0 !important;
+                border: 1px solid #0d6efd !important;
+                border-top: none !important;
+                border-radius: 0 0 8px 8px !important;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important;
+            }
         }
     </style>
 </head>
@@ -378,8 +391,8 @@
         syncScrollWidth();
         window.addEventListener('resize', () => {
             syncScrollWidth();
-            if (currentEsCompanyId) selectEsCompany(currentEsCompanyId);
-            if (currentInterviewCompanyId) selectInterviewCompany(currentInterviewCompanyId);
+            loadEsView();
+            loadInterviewView();
         });
 
         document.getElementById('sidebarMenu').addEventListener('shown.bs.offcanvas', () => { document.querySelector('header').style.zIndex = '1040'; });
@@ -515,16 +528,50 @@
     }
 
     // ==========================================
-    //   ES管理機能
+    //   ES管理機能（スマホ版トグル・アコーディオン化）
     // ==========================================
     function loadEsView() {
         const list = document.getElementById('esCompanyList'); list.innerHTML = '';
         window.shukatsuData.forEach(item => {
-            const btn = document.createElement('button'); btn.className = `list-group-item list-group-item-action fw-bold ${item.id === currentEsCompanyId ? 'active' : ''}`;
-            btn.innerText = item.company; btn.onclick = () => { Array.from(list.children).forEach(c=>c.classList.remove('active')); btn.classList.add('active'); selectEsCompany(item.id); };
+            const btn = document.createElement('button'); 
+            btn.className = `list-group-item list-group-item-action fw-bold d-flex justify-content-between align-items-center ${item.id === currentEsCompanyId ? 'active' : ''}`;
+            
+            const isTarget = item.id === currentEsCompanyId;
+            const arrowText = window.innerWidth <= 768 ? (isTarget ? '▲' : '▼') : '';
+            btn.innerHTML = `<span>${item.company}</span><span class="es-arrow">${arrowText}</span>`;
+            
+            btn.onclick = () => { 
+                if (currentEsCompanyId === item.id && window.innerWidth <= 768) {
+                    // スマホで既に開いている場合は閉じる（格納）
+                    currentEsCompanyId = null;
+                    document.getElementById('esDetailArea').style.display = 'none';
+                    document.getElementById('esEmptyMessage').style.display = 'block';
+                    btn.classList.remove('active');
+                    if(btn.querySelector('.es-arrow')) btn.querySelector('.es-arrow').innerText = '▼';
+                } else {
+                    // 新しく展開する
+                    currentEsCompanyId = item.id;
+                    Array.from(list.children).forEach(c => {
+                        c.classList.remove('active');
+                        const a = c.querySelector('.es-arrow');
+                        if(a) a.innerText = '▼';
+                    });
+                    btn.classList.add('active');
+                    const a = btn.querySelector('.es-arrow');
+                    if(a) a.innerText = '▲';
+                    selectEsCompany(item.id); 
+                }
+            };
             list.appendChild(btn);
         });
-        if (currentEsCompanyId && window.shukatsuData.some(i=>i.id===currentEsCompanyId)) { selectEsCompany(currentEsCompanyId); } else { document.getElementById('esDetailArea').style.display = 'none'; document.getElementById('esEmptyMessage').style.display = 'block'; }
+        
+        const detailArea = document.getElementById('esDetailArea');
+        if (currentEsCompanyId && window.shukatsuData.some(i=>i.id===currentEsCompanyId)) { 
+            selectEsCompany(currentEsCompanyId); 
+        } else { 
+            detailArea.style.display = 'none'; 
+            document.getElementById('esEmptyMessage').style.display = 'block'; 
+        }
     }
 
     window.addEsQuestionRow = function(qData = { id: '', question: '', finalAnswer: '', memoAnswer: '' }) {
@@ -570,10 +617,10 @@
             if (window.innerWidth <= 768) {
                 const activeBtn = Array.from(document.getElementById('esCompanyList').children).find(btn => btn.classList.contains('active'));
                 if (activeBtn) activeBtn.after(detailArea);
-                detailArea.classList.add('mt-2', 'mb-4', 'p-3');
+                detailArea.classList.add('mb-4', 'p-3');
             } else {
                 document.querySelector('#es-view .col-md-9').insertBefore(detailArea, document.getElementById('esEmptyMessage'));
-                detailArea.classList.remove('mt-2', 'mb-4', 'p-3');
+                detailArea.classList.remove('mb-4', 'p-3');
             }
             
             setTimeout(() => { container.querySelectorAll('.es-q-final').forEach(ta => window.updateCharCount(ta)); }, 50); 
@@ -587,16 +634,50 @@
     };
 
     // ==========================================
-    //   面接管理機能
+    //   面接管理機能（スマホ版トグル・アコーディオン化）
     // ==========================================
     function loadInterviewView() {
         const list = document.getElementById('interviewCompanyList'); list.innerHTML = '';
         window.shukatsuData.forEach(item => {
-            const btn = document.createElement('button'); btn.className = `list-group-item list-group-item-action fw-bold ${item.id === currentInterviewCompanyId ? 'active' : ''}`;
-            btn.innerText = item.company; btn.onclick = () => { Array.from(list.children).forEach(c=>c.classList.remove('active')); btn.classList.add('active'); selectInterviewCompany(item.id); };
+            const btn = document.createElement('button'); 
+            btn.className = `list-group-item list-group-item-action fw-bold d-flex justify-content-between align-items-center ${item.id === currentInterviewCompanyId ? 'active' : ''}`;
+            
+            const isTarget = item.id === currentInterviewCompanyId;
+            const arrowText = window.innerWidth <= 768 ? (isTarget ? '▲' : '▼') : '';
+            btn.innerHTML = `<span>${item.company}</span><span class="interview-arrow">${arrowText}</span>`;
+            
+            btn.onclick = () => { 
+                if (currentInterviewCompanyId === item.id && window.innerWidth <= 768) {
+                    // スマホで既に開いている場合は閉じる（格納）
+                    currentInterviewCompanyId = null;
+                    document.getElementById('interviewDetailArea').style.display = 'none';
+                    document.getElementById('interviewEmptyMessage').style.display = 'block';
+                    btn.classList.remove('active');
+                    if(btn.querySelector('.interview-arrow')) btn.querySelector('.interview-arrow').innerText = '▼';
+                } else {
+                    // 新しく展開する
+                    currentInterviewCompanyId = item.id;
+                    Array.from(list.children).forEach(c => {
+                        c.classList.remove('active');
+                        const a = c.querySelector('.interview-arrow');
+                        if(a) a.innerText = '▼';
+                    });
+                    btn.classList.add('active');
+                    const a = btn.querySelector('.interview-arrow');
+                    if(a) a.innerText = '▲';
+                    selectInterviewCompany(item.id); 
+                }
+            };
             list.appendChild(btn);
         });
-        if (currentInterviewCompanyId && window.shukatsuData.some(i=>i.id===currentInterviewCompanyId)) { selectInterviewCompany(currentInterviewCompanyId); } else { document.getElementById('interviewDetailArea').style.display = 'none'; document.getElementById('interviewEmptyMessage').style.display = 'block'; }
+        
+        const detailArea = document.getElementById('interviewDetailArea');
+        if (currentInterviewCompanyId && window.shukatsuData.some(i=>i.id===currentInterviewCompanyId)) { 
+            selectInterviewCompany(currentInterviewCompanyId); 
+        } else { 
+            detailArea.style.display = 'none'; 
+            document.getElementById('interviewEmptyMessage').style.display = 'block'; 
+        }
     }
 
     window.selectInterviewCompany = function(id) {
@@ -610,10 +691,10 @@
             if (window.innerWidth <= 768) {
                 const activeBtn = Array.from(document.getElementById('interviewCompanyList').children).find(btn => btn.classList.contains('active'));
                 if (activeBtn) activeBtn.after(detailArea);
-                detailArea.classList.add('mt-2', 'mb-4', 'p-3');
+                detailArea.classList.add('mb-4', 'p-3');
             } else {
                 document.querySelector('#interview-view .col-md-9').insertBefore(detailArea, document.getElementById('interviewEmptyMessage'));
-                detailArea.classList.remove('mt-2', 'mb-4', 'p-3');
+                detailArea.classList.remove('mb-4', 'p-3');
             }
         }
     };
@@ -638,7 +719,6 @@
         const blob = new Blob([str], { type: 'text/plain' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'shukatsu_backup.txt'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
     }
 
-    // ★ 追加：バックアップから復元する関数 ★
     window.importTXTBackup = function(event) {
         const file = event.target.files[0];
         if (!file) return;
