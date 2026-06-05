@@ -64,8 +64,8 @@
             #mainTable tr.is-open td:first-child::after, #mypageTable tr.is-open td:first-child::after { content: '▲'; }
             #mainTable tr.is-open td:first-child, #mypageTable tr.is-open td:first-child { border-bottom: 1px solid #dee2e6; }
 
-            #esCompanyList .list-group-item.active, #interviewCompanyList .list-group-item.active { border-radius: 8px 8px 0 0 !important; border-bottom: none !important; }
-            #esDetailArea, #interviewDetailArea { margin-top: 0 !important; border: 1px solid #0d6efd !important; border-top: none !important; border-radius: 0 0 8px 8px !important; box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important; }
+            #esCompanyList .list-group-item.active, #interviewCompanyList .list-group-item.active, #researchCompanyList .list-group-item.active { border-radius: 8px 8px 0 0 !important; border-bottom: none !important; }
+            #esDetailArea, #interviewDetailArea, #researchDetailArea { margin-top: 0 !important; border: 1px solid #0d6efd !important; border-top: none !important; border-radius: 0 0 8px 8px !important; box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important; }
         }
     </style>
 </head>
@@ -99,6 +99,7 @@
                 <li class="nav-item" role="presentation"><button class="nav-link active w-100 text-start" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard-view" type="button" role="tab">🏠 掲示板</button></li>
                 <li class="nav-item" role="presentation"><button class="nav-link w-100 text-start" id="table-tab" data-bs-toggle="tab" data-bs-target="#table-view" type="button" role="tab">📊 一覧表</button></li>
                 <li class="nav-item" role="presentation"><button class="nav-link w-100 text-start" id="calendar-tab" data-bs-toggle="tab" data-bs-target="#calendar-view" type="button" role="tab">🗓️ カレンダー</button></li>
+                <li class="nav-item" role="presentation"><button class="nav-link w-100 text-start" id="research-tab" data-bs-toggle="tab" data-bs-target="#research-view" type="button" role="tab">🔍 企業研究</button></li>
                 <li class="nav-item" role="presentation"><button class="nav-link w-100 text-start" id="es-tab" data-bs-toggle="tab" data-bs-target="#es-view" type="button" role="tab">📝 ES・メモ管理</button></li>
                 <li class="nav-item" role="presentation"><button class="nav-link w-100 text-start" id="mypage-tab" data-bs-toggle="tab" data-bs-target="#mypage-view" type="button" role="tab">🔐 パスワード管理</button></li>
                 <li class="nav-item" role="presentation"><button class="nav-link w-100 text-start" id="interview-tab" data-bs-toggle="tab" data-bs-target="#interview-view" type="button" role="tab">🗣️ 面接対策</button></li>
@@ -123,7 +124,7 @@
         <main class="flex-grow-1 overflow-auto p-3 p-md-4">
             <div class="container-fluid p-0">
                 <div class="tab-content" id="myTabContent">
-                    <!-- 各種ビュー (ダッシュボード、テーブル、カレンダー、ES、マイページ、面接) -->
+                    <!-- 各種ビュー -->
                     <div class="tab-pane fade show active" id="dashboard-view" role="tabpanel">
                         <div class="row">
                             <div class="col-md-12 mb-4">
@@ -175,6 +176,44 @@
 
                     <div class="tab-pane fade" id="calendar-view" role="tabpanel"><div id="calendar"></div></div>
                     
+                    <!-- 企業研究ビュー -->
+                    <div class="tab-pane fade" id="research-view" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="card p-2 mb-3"><h6 class="fw-bold mb-2">企業一覧</h6><div class="list-group" id="researchCompanyList"></div></div>
+                            </div>
+                            <div class="col-md-9">
+                                <div id="researchDetailArea" class="table-wrapper bg-white shadow-sm" style="display:none; border-radius: 8px;">
+                                    <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                                        <h4 id="researchTargetCompany" class="text-primary mb-0 fw-bold">企業名</h4>
+                                        <input type="hidden" id="researchTargetId">
+                                        <button class="btn btn-success fw-bold" onclick="saveResearchDetails()">💾 保存</button>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-12 mb-4">
+                                            <h5 class="fw-bold text-dark border-start border-primary border-4 ps-2 mb-3">🏢 企業基本情報</h5>
+                                            <div class="row g-3">
+                                                <div class="col-md-6"><label class="form-label fw-bold text-secondary">創業年・創設者</label><input type="text" class="form-control" id="resFounderInput" placeholder="例: 1947年 創設者: ○○"></div>
+                                                <div class="col-md-6"><label class="form-label fw-bold text-secondary">業界</label><input type="text" class="form-control" id="resIndustryInput" placeholder="例: IT・通信, 製造業など"></div>
+                                                <div class="col-12"><label class="form-label fw-bold text-secondary">業界内ライバル</label><textarea class="form-control" id="resRivalsInput" rows="2" placeholder="競合他社や、その企業との違い・立ち位置など"></textarea></div>
+                                                <div class="col-12"><label class="form-label fw-bold text-secondary">企業の強み・特徴</label><textarea class="form-control" id="resStrengthsInput" rows="3" placeholder="他社に負けない独自技術、シェア、社風など"></textarea></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <h5 class="fw-bold text-dark border-start border-success border-4 ps-2 mb-3">💰 福利厚生・条件</h5>
+                                            <div class="row g-3">
+                                                <div class="col-md-4"><label class="form-label fw-bold text-secondary">初任給</label><input type="text" class="form-control" id="resSalaryInput" placeholder="例: 大卒25万円, 院卒27万円"></div>
+                                                <div class="col-md-4"><label class="form-label fw-bold text-secondary">休暇</label><input type="text" class="form-control" id="resVacationInput" placeholder="例: 土日祝、有給消化率80%, 夏季休暇"></div>
+                                                <div class="col-md-4"><label class="form-label fw-bold text-secondary">賞与</label><input type="text" class="form-control" id="resBonusInput" placeholder="例: 年2回（6月・12月）実績5ヶ月分"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="researchEmptyMessage" class="table-wrapper text-center text-muted p-5">左側の企業一覧から企業を選択してください。</div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="tab-pane fade" id="es-view" role="tabpanel">
                         <div class="row">
                             <div class="col-md-3">
@@ -344,7 +383,6 @@
                 const snapshot = await get(child(ref(db), `users/${user.uid}`)); 
                 const val = snapshot.val();
                 
-                // ★修正箇所：Firebaseのオブジェクト変換対策
                 let rawData = (val && val.data) ? val.data : [];
                 window.shukatsuData = Array.isArray(rawData) ? rawData : Object.values(rawData).filter(item => item !== null);
 
@@ -380,7 +418,7 @@
 <!-- UIコアスクリプト -->
 <script>
     window.shukatsuData = []; window.appSettings = { googleApiKey: '', googleClientId: '' }; window.todos = { today: [], week: [] };
-    let calendar, currentInterviewCompanyId = null, currentEsCompanyId = null, currentSortKey = '', currentSortAsc = true;
+    let calendar, currentInterviewCompanyId = null, currentEsCompanyId = null, currentResearchCompanyId = null, currentSortKey = '', currentSortAsc = true;
     let isSyncingTopScroll = false, isSyncingTableScroll = false;
 
     document.addEventListener('DOMContentLoaded', async function() {
@@ -405,11 +443,11 @@
             topScrollWrapper.addEventListener('scroll', () => { if (!isSyncingTopScroll) { isSyncingTableScroll = true; tableWrapper.scrollLeft = topScrollWrapper.scrollLeft; } isSyncingTopScroll = false; });
             tableWrapper.addEventListener('scroll', () => { if (!isSyncingTableScroll) { isSyncingTopScroll = true; topScrollWrapper.scrollLeft = tableWrapper.scrollLeft; } isSyncingTableScroll = false; });
         }
-        window.addEventListener('resize', () => { syncScrollWidth(); loadEsView(); loadInterviewView(); });
+        window.addEventListener('resize', () => { syncScrollWidth(); loadResearchView(); loadEsView(); loadInterviewView(); });
         initializeCalendar();
     });
 
-    window.renderAll = function() { renderTable(); renderMypageTable(); loadDashboard(); loadEsView(); loadInterviewView(); syncScrollWidth(); if (calendar) renderCalendarEvents(); };
+    window.renderAll = function() { renderTable(); renderMypageTable(); loadDashboard(); loadResearchView(); loadEsView(); loadInterviewView(); syncScrollWidth(); if (calendar) renderCalendarEvents(); };
 
     let tokenClient; let isGapiScriptLoaded = false; let isGisScriptLoaded = false;
     window.gapiLoaded = function() { gapi.load('client', () => { isGapiScriptLoaded = true; window.tryInitGoogleAPI(); }); };
@@ -520,7 +558,7 @@
         const internDates = []; document.querySelectorAll('.intern-date-row').forEach(row => { const title = row.querySelector('.intern-title').value, start = row.querySelector('.intern-start').value, end = row.querySelector('.intern-end').value; if (title || start || end) internDates.push({ title, start, end }); });
         const data = { id: id || Date.now().toString(), company: document.getElementById('companyInput').value, internStart: document.getElementById('internStartInput').value, location: document.getElementById('locationInput').value, mypageUrl: document.getElementById('mypageUrlInput').value, mypageId: document.getElementById('mypageIdInput').value, mypagePass: document.getElementById('mypagePassInput').value, hasSession: document.getElementById('hasSessionInput').value, sessionStatus: document.getElementById('sessionStatusInput').value, sessionDate: document.getElementById('sessionDateInput').value, sessionMemo: document.getElementById('sessionMemoInput').value, esProgress: document.getElementById('esProgressInput').value, esSubmitted: document.getElementById('esSubmittedInput').value, esDeadline: document.getElementById('esDeadlineInput').value, testStatus: document.getElementById('testStatusInput').value, passStatus: document.getElementById('passStatusInput').value, internDates: internDates };
         let existingData = {};
-        if (id) { const idx = window.shukatsuData.findIndex(item => item.id === id); if (idx !== -1) { existingData = window.shukatsuData[idx]; data.esQuestions = existingData.esQuestions || []; data.esText = existingData.esText || ''; data.interviewNote = existingData.interviewNote || ''; data.interviewDate = existingData.interviewDate || ''; } }
+        if (id) { const idx = window.shukatsuData.findIndex(item => item.id === id); if (idx !== -1) { existingData = window.shukatsuData[idx]; data.esQuestions = existingData.esQuestions || []; data.esText = existingData.esText || ''; data.interviewNote = existingData.interviewNote || ''; data.interviewDate = existingData.interviewDate || ''; data.companyResearch = existingData.companyResearch || {}; } }
 
         let eventsToSync = [];
         if (data.interviewDate && data.interviewDate !== existingData.interviewDate) { eventsToSync.push({ title: `[面接] ${data.company}`, date: data.interviewDate, type: 'time' }); }
@@ -571,6 +609,51 @@
     
     window.copyText = function(elementId) { const input = document.getElementById(elementId); input.type = 'text'; input.select(); document.execCommand('copy'); if(elementId==='sidebarPassword') input.type='password'; alert('コピーしました'); }
     window.togglePasswordVisibility = function() { const p = document.getElementById('sidebarPassword'); const b = document.getElementById('togglePasswordBtn'); if (p.type === 'password') { p.type = 'text'; b.innerText = '隠す'; } else { p.type = 'password'; b.innerText = '表示'; } }
+
+    /* 企業研究ロジック */
+    function loadResearchView() {
+        const detailArea = document.getElementById('researchDetailArea'); const emptyMsg = document.getElementById('researchEmptyMessage'); const rightCol = document.querySelector('#research-view .col-md-9');
+        if (detailArea && rightCol && emptyMsg && !rightCol.contains(detailArea)) { rightCol.insertBefore(detailArea, emptyMsg); }
+        const list = document.getElementById('researchCompanyList'); list.innerHTML = '';
+        window.shukatsuData.forEach(item => {
+            const btn = document.createElement('button'); btn.className = `list-group-item list-group-item-action fw-bold d-flex justify-content-between align-items-center ${item.id === currentResearchCompanyId ? 'active' : ''}`;
+            const isTarget = item.id === currentResearchCompanyId; const arrowText = window.innerWidth <= 768 ? (isTarget ? '▲' : '▼') : ''; btn.innerHTML = `<span>${item.company}</span><span class="research-arrow">${arrowText}</span>`;
+            btn.onclick = () => { 
+                if (currentResearchCompanyId === item.id && window.innerWidth <= 768) { currentResearchCompanyId = null; document.getElementById('researchDetailArea').style.display = 'none'; document.getElementById('researchEmptyMessage').style.display = 'block'; btn.classList.remove('active'); if(btn.querySelector('.research-arrow')) btn.querySelector('.research-arrow').innerText = '▼'; } else { currentResearchCompanyId = item.id; Array.from(list.children).forEach(c => { c.classList.remove('active'); const a = c.querySelector('.research-arrow'); if(a) a.innerText = '▼'; }); btn.classList.add('active'); const a = btn.querySelector('.research-arrow'); if(a) a.innerText = '▲'; selectResearchCompany(item.id); }
+            }; list.appendChild(btn);
+        });
+        if (currentResearchCompanyId && window.shukatsuData.some(i=>i.id===currentResearchCompanyId)) { selectResearchCompany(currentResearchCompanyId); } else { if(detailArea) detailArea.style.display = 'none'; if(emptyMsg) emptyMsg.style.display = 'block'; }
+    }
+    window.selectResearchCompany = function(id) {
+        currentResearchCompanyId = id; const data = window.shukatsuData.find(item => item.id === id);
+        if (data) {
+            document.getElementById('researchTargetCompany').innerText = data.company; document.getElementById('researchTargetId').value = data.id;
+            const res = data.companyResearch || {};
+            document.getElementById('resFounderInput').value = res.founder || '';
+            document.getElementById('resIndustryInput').value = res.industry || '';
+            document.getElementById('resRivalsInput').value = res.rivals || '';
+            document.getElementById('resStrengthsInput').value = res.strengths || '';
+            document.getElementById('resSalaryInput').value = res.salary || '';
+            document.getElementById('resVacationInput').value = res.vacation || '';
+            document.getElementById('resBonusInput').value = res.bonus || '';
+            
+            const detailArea = document.getElementById('researchDetailArea'); detailArea.style.display = 'block'; document.getElementById('researchEmptyMessage').style.display = 'none';
+            if (window.innerWidth <= 768) { const activeBtn = Array.from(document.getElementById('researchCompanyList').children).find(btn => btn.classList.contains('active')); if (activeBtn) activeBtn.after(detailArea); detailArea.classList.add('mb-4', 'p-3'); } else { document.querySelector('#research-view .col-md-9').insertBefore(detailArea, document.getElementById('researchEmptyMessage')); detailArea.classList.remove('mb-4', 'p-3'); }
+        }
+    };
+    window.saveResearchDetails = async function() {
+        const id = document.getElementById('researchTargetId').value; const data = window.shukatsuData.find(item => item.id === id); if (!data) return;
+        data.companyResearch = {
+            founder: document.getElementById('resFounderInput').value,
+            industry: document.getElementById('resIndustryInput').value,
+            rivals: document.getElementById('resRivalsInput').value,
+            strengths: document.getElementById('resStrengthsInput').value,
+            salary: document.getElementById('resSalaryInput').value,
+            vacation: document.getElementById('resVacationInput').value,
+            bonus: document.getElementById('resBonusInput').value
+        };
+        await window.saveToServer(); alert('企業研究内容を保存しました！');
+    };
 
     function loadEsView() {
         const detailArea = document.getElementById('esDetailArea'); const emptyMsg = document.getElementById('esEmptyMessage'); const rightCol = document.querySelector('#es-view .col-md-9');
