@@ -80,7 +80,7 @@
     <div class="card p-4" style="max-width: 400px; width: 90%; border-radius: 16px;">
         <h3 class="text-center mb-3 fw-bold text-primary">就活クラウド<br><span style="font-size:1rem;color:#666;">ログイン</span></h3>
         <div id="loginError" class="text-danger mb-2 text-center" style="font-size:0.9rem;"></div>
-        <label class="form-label text-secondary fw-bold mb-0">メールアドレス</label>
+        <label class="form-label text-secondary fw-bold mb-0">メールアドレス (またはID)</label>
         <input type="email" id="emailInput" class="form-control mb-3" placeholder="example@email.com">
         <label class="form-label text-secondary fw-bold mb-0">パスワード (6文字以上)</label>
         <input type="password" id="passwordInput" class="form-control mb-4" placeholder="••••••••">
@@ -476,15 +476,20 @@
     import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
     import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    // ダミーの設定（実際のFirebase設定で上書きしてください）
+    // =====================================================================
+    // 【⚠️重要⚠️】
+    // 以下の部分は元の syuukatu-v2.txt に書かれている、
+    // ご自身の Firebase プロジェクトの設定情報をそのままコピーして貼り付けてください。
+    // （下記のものはダミーのため、このままではログインできません）
+    // =====================================================================
     const firebaseConfig = {
-        apiKey: "AIzaSyDummyKey_PleaseReplaceWithYourOwn",
-        authDomain: "syuukatu-app.firebaseapp.com",
-        databaseURL: "https://syuukatu-app-default-rtdb.firebaseio.com",
-        projectId: "syuukatu-app",
-        storageBucket: "syuukatu-app.appspot.com",
-        messagingSenderId: "1234567890",
-        appId: "1:1234567890:web:abcdef123456"
+        apiKey: "ここの文字列を元のコードからコピペしてください",
+        authDomain: "ここの文字列を元のコードからコピペしてください",
+        databaseURL: "ここの文字列を元のコードからコピペしてください",
+        projectId: "ここの文字列を元のコードからコピペしてください",
+        storageBucket: "ここの文字列を元のコードからコピペしてください",
+        messagingSenderId: "ここの文字列を元のコードからコピペしてください",
+        appId: "ここの文字列を元のコードからコピペしてください"
     };
 
     const app = initializeApp(firebaseConfig);
@@ -539,7 +544,7 @@
                 let rawData = (val && val.data) ? val.data : [];
                 window.shukatsuData = Array.isArray(rawData) ? rawData : Object.values(rawData).filter(item => item !== null);
                 
-                // 枝分かれツリー構造データへの自動互換性（マイマイグレーション）処理
+                // 枝分かれツリー構造データへの自動互換性（マイグレーション）処理
                 window.shukatsuData.forEach(item => {
                     if (item.companyResearch && item.companyResearch.selectionFlow) {
                         item.companyResearch.selectionFlow = migrateFlowSteps(item.companyResearch.selectionFlow);
