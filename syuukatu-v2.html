@@ -37,10 +37,12 @@
         .dashboard-list-item:hover { background-color: #f8f9fa; }
         .todo-checkbox:checked + .todo-text { text-decoration: line-through; color: #adb5bd; }
 
-        /* 選考フロー（ツリー構造・枝分かれ対応）UI */
-        .flow-tree-container { display: flex; flex-direction: column; gap: 6px; }
-        .flow-node-row { display: flex; align-items: center; gap: 8px; bg-color: white; padding: 8px 12px; border-radius: 8px; shadow-sm: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #e9ecef; }
-        .flow-node-indent-line { color: #adb5bd; font-weight: bold; font-family: monospace; }
+        /* 選考フロー（ロケット鉛筆風）UI */
+        .flow-step-wrapper { display: flex; align-items: center; }
+        .flow-step-container { display: flex; flex-direction: column; align-items: center; margin: 0 2px; }
+        .flow-step-circle { width: 34px; height: 34px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.9rem; font-weight: bold; z-index: 2; flex-shrink: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: 0.3s; }
+        .flow-step-line { height: 4px; width: 40px; margin: 0 -5px; z-index: 1; flex-shrink: 0; transition: 0.3s; }
+        .flow-step-label { font-size: 0.75rem; text-align: center; margin-top: 6px; white-space: normal; width: 75px; font-weight: bold; color: #495057; line-height: 1.2; }
 
         /* スマホ向けレスポンシブ＆アコーディオン化 */
         @media (max-width: 768px) {
@@ -80,7 +82,7 @@
     <div class="card p-4" style="max-width: 400px; width: 90%; border-radius: 16px;">
         <h3 class="text-center mb-3 fw-bold text-primary">就活クラウド<br><span style="font-size:1rem;color:#666;">ログイン</span></h3>
         <div id="loginError" class="text-danger mb-2 text-center" style="font-size:0.9rem;"></div>
-        <label class="form-label text-secondary fw-bold mb-0">メールアドレス (またはID)</label>
+        <label class="form-label text-secondary fw-bold mb-0">メールアドレス</label>
         <input type="email" id="emailInput" class="form-control mb-3" placeholder="example@email.com">
         <label class="form-label text-secondary fw-bold mb-0">パスワード (6文字以上)</label>
         <input type="password" id="passwordInput" class="form-control mb-4" placeholder="••••••••">
@@ -125,1614 +127,670 @@
         <main class="flex-grow-1 overflow-auto p-3 p-md-4">
             <div class="container-fluid p-0">
                 <div class="tab-content" id="myTabContent">
-                    
                     <div class="tab-pane fade show active" id="dashboard-view" role="tabpanel">
                         <div class="row">
                             <div class="col-md-12 mb-4">
                                 <div class="card shadow-sm border-0">
                                     <div class="card-header bg-primary text-white fw-bold fs-5 py-3">🔔 直近の重要スケジュール</div>
-                                    <div class="card-body p-0">
-                                        <div class="table-responsive">
-                                            <table class="table table-hover mb-0">
-                                                <thead class="table-light text-secondary">
-                                                    <tr><th style="min-width:140px;">日時・期限</th><th>カテゴリ</th><th>企業名</th></tr>
-                                                </thead>
-                                                <tbody id="dashboardScheduleBody"></tbody>
-                                            </table>
-                                        </div>
-                                    </div>
+                                    <div class="card-body p-0"><div class="table-responsive"><table class="table table-hover mb-0"><thead class="table-light text-secondary"><tr><th style="min-width:140px;">日時・期限</th><th>カテゴリ</th><th>企業名</th></tr></thead><tbody id="dashboardScheduleBody"></tbody></table></div></div>
                                 </div>
                             </div>
                             <div class="col-md-6 mb-4">
                                 <div class="card shadow-sm border-0 h-100">
                                     <div class="card-header bg-warning text-dark fw-bold fs-5 py-3">📅 今日すること</div>
-                                    <div class="card-body">
-                                        <div class="input-group mb-3">
-                                            <input type="text" id="todoTodayInput" class="form-control border-warning" placeholder="タスクを入力" onkeypress="if(event.key==='Enter') addTodo('today')">
-                                            <button class="btn btn-warning fw-bold text-dark" onclick="addTodo('today')">追加</button>
-                                        </div>
-                                        <ul class="list-group list-group-flush" id="todoTodayList"></ul>
-                                    </div>
+                                    <div class="card-body"><div class="input-group mb-3"><input type="text" id="todoTodayInput" class="form-control border-warning" placeholder="タスクを入力" onkeypress="if(event.key==='Enter') addTodo('today')"><button class="btn btn-warning fw-bold text-dark" onclick="addTodo('today')">追加</button></div><ul class="list-group list-group-flush" id="todoTodayList"></ul></div>
                                 </div>
                             </div>
                             <div class="col-md-6 mb-4">
                                 <div class="card shadow-sm border-0 h-100">
                                     <div class="card-header bg-info text-dark fw-bold fs-5 py-3">🗓️ 今週すること</div>
-                                    <div class="card-body">
-                                        <div class="input-group mb-3">
-                                            <input type="text" id="todoWeekInput" class="form-control border-info" placeholder="タスクを入力" onkeypress="if(event.key==='Enter') addTodo('week')">
-                                            <button class="btn btn-info fw-bold text-dark" onclick="addTodo('week')">追加</button>
-                                        </div>
-                                        <ul class="list-group list-group-flush" id="todoWeekList"></ul>
-                                    </div>
+                                    <div class="card-body"><div class="input-group mb-3"><input type="text" id="todoWeekInput" class="form-control border-info" placeholder="タスクを入力" onkeypress="if(event.key==='Enter') addTodo('week')"><button class="btn btn-info fw-bold text-dark" onclick="addTodo('week')">追加</button></div><ul class="list-group list-group-flush" id="todoWeekList"></ul></div>
                                 </div>
                             </div>
-                            <div class="col-md-12 mb-4">
-                                <div class="card shadow-sm border-0">
-                                    <div class="card-header bg-dark text-white fw-bold fs-5 py-3">📊 選考状況（進捗ツリー一覧）</div>
-                                    <div class="card-body" id="dashboardFlowContainer"></div>
-                                </div>
+                            
+                            <div class="col-md-12 mb-4">  
+                                <div class="card shadow-sm border-0">  
+                                    <div class="card-header bg-dark text-white fw-bold fs-5 py-3 d-flex justify-content-between align-items-center">
+                                        <span>🏢 各企業の選考状況（進捗順）</span>
+                                        <span class="badge bg-secondary fs-7" id="dashboardFlowCountBadge">0社</span>
+                                    </div>  
+                                    <div class="card-body p-3">
+                                        <div class="row g-3" id="dashboardCompanyFlowsContainer" style="max-height: 450px; overflow-y: auto;">
+                                            </div>
+                                    </div>  
+                                </div>  
                             </div>
+
                         </div>
                     </div>
 
                     <div class="tab-pane fade" id="table-view" role="tabpanel">
-                        <div class="top-scrollbar-wrapper" id="topScrollWrapper">
-                            <div class="top-scrollbar-fake-content" id="topScrollFakeContent"></div>
-                        </div>
+                        <div class="top-scrollbar-wrapper" id="topScrollWrapper"><div class="top-scrollbar-fake-content" id="topScrollFakeContent"></div></div>
                         <div class="table-wrapper" id="tableWrapper">
-                            <table class="table table-hover align-middle mb-0" id="mainTable">
+                            <table class="table table-hover table-bordered" id="mainTable">
                                 <thead class="table-light">
                                     <tr>
-                                        <th class="sticky-col" onclick="sortTable('company')">企業名 ⇅</th>
-                                        <th onclick="sortTable('internPeriod')">インターン時期 ⇅</th>
-                                        <th onclick="sortTable('location')">場所 ⇅</th>
-                                        <th onclick="sortTable('sessionStatus')">説明会状況 ⇅</th>
-                                        <th onclick="sortTable('esDeadline')">ES締切 ⇅</th>
-                                        <th onclick="sortTable('interviewDate')">面接日時 ⇅</th>
-                                        <th class="text-end">操作</th>
+                                        <th class="sticky-col" onclick="sortTable('company')">社名 <span id="sort_company" style="font-size: 0.8rem;"></span></th>
+                                        <th onclick="sortTable('internStart')">インターン時期 <span id="sort_internStart" style="font-size: 0.8rem;"></span></th>
+                                        <th onclick="sortTable('location')">場所 <span id="sort_location" style="font-size: 0.8rem;"></span></th>
+                                        <th onclick="sortTable('hasSession')">説明会 <span id="sort_hasSession" style="font-size: 0.8rem;"></span></th>
+                                        <th onclick="sortTable('sessionStatus')">説明会申込 <span id="sort_sessionStatus" style="font-size: 0.8rem;"></span></th>
+                                        <th onclick="sortTable('sessionMemo')">説明会メモ <span id="sort_sessionMemo" style="font-size: 0.8rem;"></span></th>
+                                        <th onclick="sortTable('mypageUrl')">マイページ <span id="sort_mypageUrl" style="font-size: 0.8rem;"></span></th>
+                                        <th onclick="sortTable('esDeadline')">ES締切 <span id="sort_esDeadline" style="font-size: 0.8rem;"></span></th>
+                                        <th>選考進捗（フロー）</th>
+                                        <th>操作</th>
                                     </tr>
                                 </thead>
-                                <tbody id="tableBody"></tbody>
+                                <tbody id="companyTableBody"></tbody>
                             </table>
                         </div>
                     </div>
 
-                    <div class="tab-pane fade" id="calendar-view" role="tabpanel">
-                        <div id="calendar"></div>
-                    </div>
-
+                    <div class="tab-pane fade" id="calendar-view" role="tabpanel"><div id="calendar"></div></div>
+                    
                     <div class="tab-pane fade" id="research-view" role="tabpanel">
                         <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <div class="list-group shadow-sm" id="researchCompanyList"></div>
+                            <div class="col-md-3">
+                                <div class="card p-2 mb-3"><h6 class="fw-bold mb-2">企業一覧</h6><div class="list-group" id="researchCompanyList"></div></div>
                             </div>
-                            <div class="col-md-8 mb-3">
-                                <div id="researchEmptyMessage" class="card p-5 text-center text-muted shadow-sm border-0">
-                                    <h5>👈 左側のリストから企業を選択、または新規企業を追加してください。</h5>
-                                </div>
-                                <div id="researchDetailArea" class="card shadow-sm border-0 p-4" style="display:none; background: white;">
-                                    <h4 class="fw-bold text-primary mb-4 border-bottom pb-2" id="researchCompanyName">企業名</h4>
-                                    
-                                    <h5 class="fw-bold text-dark border-start border-primary border-4 ps-2 mb-3">🏢 企業基本情報</h5>
-                                    <div class="row g-3 mb-4">
-                                        <div class="col-md-6">
-                                            <label class="form-label fw-bold text-secondary">創業年・創設者</label>
-                                            <input type="text" class="form-control" id="resFounderInput">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label fw-bold text-secondary">業界・主要ビジネス</label>
-                                            <input type="text" class="form-control" id="resIndustryInput">
-                                        </div>
-                                        <div class="col-12">
-                                            <label class="form-label fw-bold text-secondary">ライバル他社</label>
-                                            <input type="text" class="form-control" id="resRivalsInput" placeholder="競合企業名など">
-                                        </div>
-                                        <div class="col-12">
-                                            <label class="form-label fw-bold text-secondary">企業の強み・特徴</label>
-                                            <textarea class="form-control" id="resStrengthsInput" rows="3" placeholder="ビジネスモデルや独自の強み"></textarea>
-                                        </div>
+                            <div class="col-md-9">
+                                <div id="researchDetailArea" class="table-wrapper bg-white shadow-sm" style="display:none; border-radius: 8px;">
+                                    <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                                        <h4 id="researchTargetCompany" class="text-primary mb-0 fw-bold">企業名</h4>
+                                        <input type="hidden" id="researchTargetId">
+                                        <button class="btn btn-success fw-bold" onclick="saveResearchDetails()">💾 全体保存</button>
                                     </div>
-
-                                    <h5 class="fw-bold text-dark border-start border-primary border-4 ps-2 mb-3">🚀 選考フロー（枝分かれ対応型）</h5>
-                                    <div class="card p-3 bg-light border-0 mb-4 rounded-3">
-                                        <div id="selectionFlowProgressBar" class="mb-3"></div>
-                                        <div class="bg-light p-2 rounded">
-                                            <div id="selectionFlowEditor" class="flow-tree-container mb-3"></div>
-                                            <div class="input-group">
-                                                <input type="text" id="newFlowStepName" class="form-control" placeholder="新しいルートの起点ステップ（例：ES提出, 1次面接）" list="flowStepSuggestions" onkeypress="if(event.key==='Enter') addSelectionFlowStep()">
-                                                <datalist id="flowStepSuggestions">
-                                                    <option value="ES提出"><option value="適性検査"><option value="インターンシップ通過"><option value="座談会"><option value="1次面接"><option value="2次面接"><option value="最終面接"><option value="内定"><option value="本選考">
-                                                </datalist>
-                                                <button class="btn btn-primary fw-bold" onclick="addSelectionFlowStep()">＋ 新規ルートの起点として追加</button>
+                                    <div class="row">
+                                        <div class="col-12 mb-4">
+                                            <h5 class="fw-bold text-dark border-start border-primary border-4 ps-2 mb-3">🏢 企業基本情報</h5>
+                                            <div class="row g-3">
+                                                <div class="col-md-6"><label class="form-label fw-bold text-secondary">創業年・創設者</label><input type="text" class="form-control" id="resFounderInput" placeholder="例: 1947年 創設者: ○○"></div>
+                                                <div class="col-md-6"><label class="form-label fw-bold text-secondary">業界</label><input type="text" class="form-control" id="resIndustryInput" placeholder="例: IT・通信, 製造業など"></div>
+                                                <div class="col-12"><label class="form-label fw-bold text-secondary">業界内ライバル</label><textarea class="form-control" id="resRivalsInput" rows="2" placeholder="競合他社や、その企業との違い・立ち位置など"></textarea></div>
+                                                <div class="col-12"><label class="form-label fw-bold text-secondary">企業の強み・特徴</label><textarea class="form-control" id="resStrengthsInput" rows="3" placeholder="他社に負けない独自技術、シェア、社風など"></textarea></div>
                                             </div>
-                                            <div class="d-flex flex-wrap gap-2 align-items-center border-top pt-3 mt-3">
-                                                <div class="d-flex align-items-center gap-1">
-                                                    <label class="form-label fw-bold text-secondary mb-0 text-nowrap" style="font-size:0.85rem;">📁 フロー型:</label>
-                                                    <select id="flowTemplateSelect" class="form-select form-select-sm" style="max-width: 180px;"><option value="">-- 選択 --</option></select>
+                                        </div>
+                                        
+                                        <div class="col-12 mb-4">
+                                            <h5 class="fw-bold text-dark border-start border-warning border-4 ps-2 mb-3">🚀 選考フロー</h5>
+                                            <div id="selectionFlowProgressBar" class="d-flex align-items-center mb-3 overflow-auto pb-3 pt-2" style="white-space: nowrap;"></div>
+                                            <div class="bg-light p-3 rounded border">
+                                                <div id="selectionFlowEditor" class="mb-2"></div>
+                                                <div class="input-group">
+                                                    <input type="text" id="newFlowStepName" class="form-control" placeholder="新しいステップ（例：ES提出, 1次面接）" list="flowStepSuggestions" onkeypress="if(event.key==='Enter') addSelectionFlowStep()">
+                                                    <datalist id="flowStepSuggestions"><option value="ES提出"><option value="適性検査"><option value="インターンシップ通過"><option value="座談会"><option value="1次面接"><option value="2次面接"><option value="最終面接"><option value="内定"><option value="本選考"></datalist>
+                                                    <button class="btn btn-outline-primary fw-bold" onclick="addSelectionFlowStep()">＋ 追加</button>
                                                 </div>
-                                                <button class="btn btn-sm btn-outline-primary fw-bold" onclick="applyFlowTemplate()">適用</button>
-                                                <button class="btn btn-sm btn-outline-success fw-bold ms-auto" onclick="saveAsFlowTemplate()">💾 現在のフローを型として保存</button>
+
+                                                <div class="d-flex flex-wrap gap-2 align-items-center border-top pt-3 mt-3">
+                                                    <div class="d-flex align-items-center gap-1">
+                                                        <label class="form-label fw-bold text-secondary mb-0 text-nowrap" style="font-size:0.85rem;">📁 フロー型:</label>
+                                                        <select id="flowTemplateSelect" class="form-select form-select-sm" style="max-width: 180px;"><option value="">-- 選択 --</option></select>
+                                                    </div>
+                                                    <button class="btn btn-sm btn-outline-primary fw-bold" onclick="applyFlowTemplate()">適用</button>
+                                                    <button class="btn btn-sm btn-outline-success fw-bold ms-auto" onclick="saveAsFlowTemplate()">💾 現在のフローを型として保存</button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-12">
+                                            <h5 class="fw-bold text-dark border-start border-success border-4 ps-2 mb-3">💰 福利厚生・条件</h5>
+                                            <div class="row g-3">
+                                                <div class="col-md-4"><label class="form-label fw-bold text-secondary">初任給</label><input type="text" class="form-control" id="resSalaryInput" placeholder="例: 大卒25万円, 院卒27万円"></div>
+                                                <div class="col-md-4"><label class="form-label fw-bold text-secondary">休暇</label><input type="text" class="form-control" id="resVacationInput" placeholder="例: 土日祝、有給消化率80%, 夏季休暇"></div>
+                                                <div class="col-md-4"><label class="form-label fw-bold text-secondary">賞与</label><input type="text" class="form-control" id="resBonusInput" placeholder="例: 年2回（6月・12月）実績5ヶ月分"></div>
                                             </div>
                                         </div>
                                     </div>
-
-                                    <h5 class="fw-bold text-dark border-start border-success border-4 ps-2 mb-3">💰 福利厚生・労働条件</h5>
-                                    <div class="row g-3 mb-4">
-                                        <div class="col-md-4">
-                                            <label class="form-label fw-bold text-secondary">初任給・給与体系</label>
-                                            <input type="text" class="form-control" id="resSalaryInput">
-                                        </div>
-                                        <div class="col-md-4">
-                                            <label class="form-label fw-bold text-secondary">年間休日・休暇</label>
-                                            <input type="text" class="form-control" id="resHolidayInput">
-                                        </div>
-                                        <div class="col-md-4">
-                                            <label class="form-label fw-bold text-secondary">賞与・福利厚生制度</label>
-                                            <input type="text" class="form-control" id="resWelfareInput">
-                                        </div>
-                                    </div>
-
-                                    <button class="btn btn-success fw-bold w-100 py-2 fs-5 shadow" onclick="saveResearchDetails()">💾 企業研究内容をすべて保存</button>
                                 </div>
+                                <div id="researchEmptyMessage" class="table-wrapper text-center text-muted p-5">左側の企業一覧から企業を選択してください。</div>
                             </div>
                         </div>
                     </div>
 
                     <div class="tab-pane fade" id="es-view" role="tabpanel">
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <div class="list-group shadow-sm" id="esCompanyList"></div>
-                            </div>
-                            <div class="col-md-8 mb-3">
-                                <div id="esEmptyMessage" class="card p-5 text-center text-muted shadow-sm border-0">
-                                    <h5>👈 左側のリストから企業を選択してください。</h5>
-                                </div>
-                                <div id="esDetailArea" class="card shadow-sm border-0 p-4" style="display:none; background: white;">
-                                    <h4 class="fw-bold text-primary mb-4 border-bottom pb-2" id="esCompanyName">企業名</h4>
-                                    <div id="esQuestionsContainer"></div>
-                                    <button class="btn btn-outline-primary fw-bold w-100 mb-4" onclick="addEsQuestionCard()">＋ 新しい設問を追加</button>
-                                    <button class="btn btn-success fw-bold w-100 py-2 fs-5 shadow" onclick="saveEsAnswers()">💾 ES内容をすべて保存</button>
-                                </div>
-                            </div>
-                        </div>
+                        <div class="row"><div class="col-md-3"><div class="card p-2 mb-3"><h6 class="fw-bold mb-2">企業一覧</h6><div class="list-group" id="esCompanyList"></div></div></div><div class="col-md-9"><div id="esDetailArea" class="table-wrapper bg-white shadow-sm" style="display:none; border-radius: 8px;"><div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2"><h4 id="esTargetCompany" class="text-primary mb-0 fw-bold">企業名</h4><input type="hidden" id="esTargetId"><div class="d-flex gap-2"><button class="btn btn-outline-primary" onclick="addEsQuestionRow()">＋ 新しい設問</button><button class="btn btn-success fw-bold" onclick="saveEsDetails()">💾 保存</button></div></div><div id="esQuestionsContainer"></div></div><div id="esEmptyMessage" class="table-wrapper text-center text-muted p-5">左側の企業一覧から企業を選択してください。</div></div></div>
                     </div>
 
-                    <div class="tab-pane fade" id="mypage-view" role="tabpanel">
-                        <div class="table-wrapper">
-                            <table class="table table-hover align-middle mb-0" id="mypageTable">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th class="sticky-col">企業名</th>
-                                        <th>マイページ</th>
-                                        <th>ログインID</th>
-                                        <th>パスワード</th>
-                                        <th class="text-end">操作</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="mypageTableBody"></tbody>
-                            </table>
-                        </div>
-                    </div>
+                    <div class="tab-pane fade" id="mypage-view" role="tabpanel"><div class="table-wrapper" style="padding:0;"><table class="table table-hover" id="mypageTable"><thead class="table-light"><tr><th>社名</th><th>マイページ</th><th>ログインID</th><th>パスワード</th><th>操作</th></tr></thead><tbody id="mypageTableBody"></tbody></table></div></div>
 
-                    <div class="tab-pane fade" id="interview-view" role="tabpanel">
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <div class="list-group shadow-sm" id="interviewCompanyList"></div>
-                            </div>
-                            <div class="col-md-8 mb-3">
-                                <div id="interviewEmptyMessage" class="card p-5 text-center text-muted shadow-sm border-0">
-                                    <h5>👈 左側のリストから企業を選択してください。</h5>
-                                </div>
-                                <div id="interviewDetailArea" class="card shadow-sm border-0 p-4" style="display:none; background: white;">
-                                    <h4 class="fw-bold text-primary mb-4 border-bottom pb-2" id="interviewCompanyName">企業名</h4>
-                                    <div class="row g-3 mb-4">
-                                        <div class="col-md-6">
-                                            <label class="form-label fw-bold text-secondary">面接日時</label>
-                                            <input type="datetime-local" class="form-control" id="intDateInput">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label fw-bold text-secondary">提出したES（参考表示）</label>
-                                            <select class="form-select" id="intEsSelect" onchange="showEsReferenceInInterview()"><option value="">-- 選択 --</option></select>
-                                        </div>
-                                        <div class="col-12" id="intEsRefArea" style="display: none;">
-                                            <div class="p-3 bg-light rounded border text-secondary" style="font-size:0.9rem; max-height:200px; overflow-y:auto;" id="intEsRefContent"></div>
-                                        </div>
-                                        <div class="col-12">
-                                            <label class="form-label fw-bold text-secondary">面接対策メモ（想定問答・逆質問・振り返りなど）</label>
-                                            <textarea class="form-control" id="intNoteInput" rows="12" placeholder="志望動機、自己PR、逆質問のメモ、終了後の反省点など"></textarea>
-                                        </div>
-                                    </div>
-                                    <button class="btn btn-success fw-bold w-100 py-2 fs-5 shadow" onclick="saveInterviewPrep()">💾 面接対策内容を保存</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
+                    <div class="tab-pane fade" id="interview-view" role="tabpanel"><div class="row"><div class="col-md-3"><div class="card p-2 mb-3"><h6 class="fw-bold mb-2">企業一覧</h6><div class="list-group" id="interviewCompanyList"></div></div></div><div class="col-md-9"><div id="interviewDetailArea" class="table-wrapper bg-white shadow-sm" style="display:none; border-radius: 8px;"><div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2"><h4 id="interviewTargetCompany" class="text-primary mb-0 fw-bold">企業名</h4><input type="hidden" id="interviewTargetId"><button class="btn btn-success fw-bold" onclick="saveInterviewDetails()">💾 保存</button></div><div class="mb-4" style="max-width: 300px;"><label class="form-label fw-bold">🗣️ 面接日時</label><input type="datetime-local" class="form-control" id="interviewDateInput"></div><div class="row"><div class="col-12 mb-4"><label class="form-label fw-bold text-success">📝 提出したES内容（控え）</label><textarea class="form-control" id="esTextInput" rows="8" placeholder="提出した志望動機や自己PR"></textarea></div><div class="col-12 mb-3"><label class="form-label fw-bold text-info">💡 面接対策メモ・想定問答</label><textarea class="form-control" id="interviewNoteInput" rows="10" placeholder="深掘り対策、逆質問など"></textarea></div></div></div><div id="interviewEmptyMessage" class="table-wrapper text-center text-muted p-5">左側の企業一覧から企業を選択してください。</div></div></div></div>
                 </div>
             </div>
         </main>
     </div>
 </div>
 
-<div class="modal fade" id="addModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-primary text-white py-3">
-                <h5 class="modal-title fw-bold" id="modalTitle">＋ 新規企業を追加</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4 bg-light">
-                <input type="hidden" id="editId">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold text-secondary">企業名 <span class="text-danger">*</span></label>
-                        <input type="text" class="form-select" id="companyInput" required placeholder="株式会社〇〇" list="companySuggestions">
-                        <datalist id="companySuggestions"></datalist>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold text-secondary">場所・勤務地</label>
-                        <input type="text" class="form-control" id="locationInput" placeholder="東京、オンラインなど">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold text-secondary">説明会日程</label>
-                        <input type="datetime-local" class="form-control" id="sessionDateInput">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold text-secondary">説明会状況</label>
-                        <select class="form-select fw-bold text-dark" id="sessionStatusSelect">
-                            <option value="未申込">未申込</option><option value="予約済">予約済</option><option value="参加済">参加済</option><option value="アーカイブ視聴">アーカイブ視聴</option>
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold text-secondary">ES提出締切</label>
-                        <input type="datetime-local" class="form-control" id="esDeadlineInput">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold text-secondary">面接日時</label>
-                        <input type="datetime-local" class="form-control" id="interviewDateInput">
-                    </div>
-                    <div class="col-md-12 border-top pt-3 mt-3">
-                        <label class="form-label fw-bold text-dark fs-6">📅 インターン開催日程（複数登録可能）</label>
-                        <div id="internDatesContainer"></div>
-                        <button type="button" class="btn btn-sm btn-outline-primary fw-bold mt-2" onclick="addInternDateRow()">＋ 日程を追加</button>
-                    </div>
-                    <div class="col-md-12 border-top pt-3 mt-3">
-                        <label class="form-label fw-bold text-dark fs-6">🔐 決定パスワード・マイページ情報</label>
-                        <div class="row g-2">
-                            <div class="col-md-4"><input type="url" id="mypageUrlInput" class="form-control" placeholder="マイページURL"></div>
-                            <div class="col-md-4"><input type="text" id="mypageIdInput" class="form-control" placeholder="ログインID"></div>
-                            <div class="col-md-4"><input type="text" id="mypagePassInput" class="form-control" placeholder="パスワード"></div>
-                        </div>
-                    </div>
-                    <div class="col-md-12 border-top pt-3 mt-3">
-                        <label class="form-label fw-bold text-dark fs-6">🚀 選考フロー設定（簡易編集）</label>
-                        <div class="bg-white p-3 rounded border">
-                            <div id="modalSelectionFlowEditor" class="flow-tree-container mb-3"></div>
-                            <div class="input-group">
-                                <input type="text" id="modalNewFlowStepName" class="form-control" placeholder="新しいルートの起点ステップ（例：ES提出）" list="modalFlowStepSuggestions" onkeypress="if(event.key==='Enter') addModalSelectionFlowStep()">
-                                <datalist id="modalFlowStepSuggestions">
-                                    <option value="ES提出"><option value="適性検査"><option value="インターンシップ通過"><option value="座談会"><option value="1次面接"><option value="2次面接"><option value="最終面接"><option value="内定"><option value="本選考">
-                                                </datalist>
-                                <button type="button" class="btn btn-outline-primary fw-bold" onclick="addModalSelectionFlowStep()">＋ 追加</button>
-                            </div>
-                            <div class="d-flex flex-wrap gap-2 align-items-center border-top pt-3 mt-3">
-                                <div class="d-flex align-items-center gap-1">
-                                    <label class="form-label fw-bold text-secondary mb-0 text-nowrap" style="font-size:0.85rem;">📁 型:</label>
-                                    <select id="modalFlowTemplateSelect" class="form-select form-select-sm" style="max-width: 140px;"><option value="">-- 選択 --</option></select>
-                                </div>
-                                <button type="button" class="btn btn-sm btn-outline-primary fw-bold" onclick="applyModalFlowTemplate()">適用</button>
-                                <button type="button" class="btn btn-sm btn-outline-success fw-bold ms-auto" onclick="saveAsModalFlowTemplate()">💾 保存</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-12 border-top pt-3 mt-3">
-                        <label class="form-label fw-bold text-secondary">全体簡易メモ</label>
-                        <textarea class="form-control" id="memoInput" rows="2" placeholder="備考など自由に入力してください"></textarea>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer bg-light">
-                <button type="button" class="btn btn-secondary fw-bold px-4" data-bs-dismiss="modal">キャンセル</button>
-                <button type="button" class="btn btn-primary fw-bold px-5 shadow-sm" onclick="saveData()">💾 データを保存する</button>
-            </div>
-        </div>
+<div class="modal fade" id="settingsModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-light"><h5 class="modal-title fw-bold">⚙️ 各種設定</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body p-4">
+        <h6 class="fw-bold border-bottom pb-2 text-primary">👤 アカウント情報</h6>
+        <div class="mb-4 d-flex justify-content-between align-items-center"><div class="text-secondary fw-bold" id="settingUserEmail">未ログイン</div><button class="btn btn-sm btn-outline-danger px-3 fw-bold" onclick="logoutUser(); bootstrap.Modal.getInstance(document.getElementById('settingsModal')).hide();">ログアウト</button></div>
+        <h6 class="fw-bold border-bottom pb-2 text-primary">💾 データ・バックアップ</h6>
+        <div class="mb-3"><button class="btn btn-outline-secondary w-100 fw-bold mb-2" onclick="downloadTXTBackup()">📥 全データをバックアップ (TXT形式)</button></div>
+        <div class="mb-4 bg-light p-2 rounded border"><label class="form-label fw-bold text-secondary mb-1" style="font-size:0.85rem;">📤 バックアップから復元</label><input type="file" id="importFileInput" class="form-control form-control-sm" accept=".txt" onchange="importTXTBackup(event)"></div>
+        <h6 class="fw-bold border-bottom pb-2 text-primary">📅 Googleカレンダー連携</h6>
+        <div class="form-check form-switch mb-3 p-3 bg-light rounded border d-flex align-items-center"><input class="form-check-input mt-0 me-3 fs-5" type="checkbox" id="autoCalSyncToggle" onchange="localStorage.setItem('autoCalSync', this.checked)"><label class="form-check-label fw-bold text-dark" for="autoCalSyncToggle">カレンダー自動裏連携をONにする</label></div>
+        <div class="mb-3"><button class="btn btn-outline-info text-dark w-100 fw-bold" onclick="downloadICSForGoogleCalendar()">🗓️ 既存予定を一括連携 (ICS形式出力)</button></div>
+        <div class="mb-2"><label class="form-label fw-bold text-secondary" style="font-size:0.85rem;">Google API キー</label><input type="text" class="form-control bg-light" id="settingApiKey" placeholder="AIzaSy..."></div>
+        <div class="mb-2"><label class="form-label fw-bold text-secondary" style="font-size:0.85rem;">OAuth クライアント ID</label><input type="text" class="form-control bg-light" id="settingClientId" placeholder=".....apps.googleusercontent.com"></div>
+      </div>
+      <div class="modal-footer bg-light"><button type="button" class="btn btn-success fw-bold w-100 py-2 fs-5" onclick="saveSettings()">💾 設定を保存する</button></div>
     </div>
+  </div>
 </div>
 
-<div class="modal fade" id="settingsModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-dark text-white py-3">
-                <h5 class="modal-title fw-bold">⚙️ 各種設定</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4">
-                <div class="mb-3 p-3 bg-light rounded border d-flex align-items-center">
-                    <input class="form-check-input mt-0 me-3 fs-5" type="checkbox" id="autoCalSyncToggle" onchange="localStorage.setItem('autoCalSync', this.checked)">
-                    <label class="form-check-label fw-bold text-dark" for="autoCalSyncToggle">カレンダー自動裏連携をONにする</label>
+<div class="offcanvas offcanvas-end" tabindex="-1" id="accountSidebar"><div class="offcanvas-header bg-light border-bottom"><h5 id="accountSidebarLabel" class="mb-0 fw-bold">🔐 アカウント情報</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div><div class="offcanvas-body"><h4 id="sidebarCompanyName" class="text-primary mb-4 fw-bold">企業名</h4><div class="mb-3"><label class="form-label fw-bold">ログインID / 会員番号</label><div class="input-group"><input type="text" class="form-control" id="sidebarLoginId" readonly><button class="btn btn-outline-secondary" type="button" onclick="copyText('sidebarLoginId')">コピー</button></div></div><div class="mb-4"><label class="form-label fw-bold">パスワード</label><div class="input-group"><input type="password" class="form-control" id="sidebarPassword" readonly><button class="btn btn-outline-secondary" type="button" id="togglePasswordBtn" onclick="togglePasswordVisibility()">表示</button><button class="btn btn-outline-secondary" type="button" onclick="copyText('sidebarPassword')">コピー</button></div></div><div class="d-grid gap-2"><a id="sidebarMypageLink" href="#" target="_blank" class="btn btn-primary fw-bold py-2">マイページを開く</a></div></div></div>
+
+<div class="modal fade" id="addModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-light">
+        <h5 class="modal-title fw-bold" id="addModalLabel">企業の追加</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <input type="hidden" id="editId">
+        
+        <div class="d-flex justify-content-center mb-4">
+           <div id="step1Indicator" class="fw-bold text-primary">1. 基本情報</div>
+           <div class="mx-3 text-secondary">➔</div>
+           <div id="step2Indicator" class="fw-bold text-secondary">2. 選考フロー設定</div>
+        </div>
+
+        <div id="addStep1">
+            <div class="row">
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">企業名</label><input type="text" class="form-control" id="companyInput" required></div>
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">インターン時期</label><select class="form-select" id="internStartInput"><option value="">選択してください</option><option value="夏">夏</option><option value="秋">秋</option><option value="冬">冬</option><option value="春">春</option></select></div>
+                
+                <div class="col-12 mb-3 p-3 bg-light rounded border">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label class="form-label fw-bold text-secondary mb-0">インターン日程（複数登録OK）</label>
+                        <button type="button" class="btn btn-sm btn-outline-primary fw-bold" onclick="addInternDateRow()">＋ 追加</button>
+                    </div>
+                    <div id="internDatesContainer" class="col-12"></div>
                 </div>
-                <div class="mb-3">
-                    <button class="btn btn-outline-info text-dark w-100 fw-bold" onclick="downloadICSForGoogleCalendar()">🗓️ 既存予定を一括連携 (ICS形式出力)</button>
-                </div>
-                <div class="mb-2">
-                    <label class="form-label fw-bold text-secondary" style="font-size:0.85rem;">Google API キー</label>
-                    <input type="text" class="form-control bg-light" id="settingApiKey" placeholder="AIzaSy...">
-                </div>
-                <div class="mb-2">
-                    <label class="form-label fw-bold text-secondary" style="font-size:0.85rem;">OAuth クライアント ID</label>
-                    <input type="text" class="form-control bg-light" id="settingClientId" placeholder=".....apps.googleusercontent.com">
-                </div>
-            </div>
-            <div class="modal-footer bg-light">
-                <button type="button" class="btn btn-success fw-bold w-100 py-2 fs-5" onclick="saveSettings()">💾 設定を保存する</button>
+
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">勤務場所・形式</label><input type="text" class="form-control" id="locationInput" placeholder="オンライン, 東京など"></div>
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">マイページURL</label><input type="url" class="form-control" id="mypageUrlInput"></div>
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">マイページ ログインID</label><input type="text" class="form-control" id="mypageIdInput"></div>
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">マイページ パスワード</label><input type="text" class="form-control" id="mypagePassInput"></div>
+                
+                <div class="col-12 mt-3 mb-2"><h6 class="fw-bold border-bottom pb-2 text-primary">説明会関連</h6></div>
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">説明会開催の有無</label><select class="form-select" id="hasSessionInput"><option value="">-</option><option value="あり">あり</option><option value="なし">なし</option></select></div>
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">説明会申込・参加状況</label><select class="form-select" id="sessionStatusInput"><option value="">-</option><option value="未申込">未申込</option><option value="申込済">申込済</option><option value="参加済">参加済</option><option value="アーカイブ視聴">アーカイブ視聴</option></select></div>
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">説明会・イベント日時</label><input type="datetime-local" class="form-control" id="sessionDateInput"></div>
+                <div class="col-md-12 mb-3"><label class="form-label fw-bold">説明会メモ</label><textarea class="form-control" id="sessionMemoInput" rows="2" placeholder="社員名や印象など"></textarea></div>
+
+                <div class="col-12 mt-3 mb-2"><h6 class="fw-bold border-bottom pb-2 text-primary">ES関連</h6></div>
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">ES締切日時</label><input type="datetime-local" class="form-control" id="esDeadlineInput"></div>
             </div>
         </div>
+
+        <div id="addStep2" style="display: none;">
+            <div class="row">
+                <div class="col-12 mb-4">
+                    <h5 class="fw-bold text-dark border-start border-warning border-4 ps-2 mb-3">🚀 選考フローの設定</h5>
+                    <div id="modalSelectionFlowProgressBar" class="d-flex align-items-center mb-3 overflow-auto pb-3 pt-2" style="white-space: nowrap;"></div>
+                    <div class="bg-light p-3 rounded border">
+                        <div id="modalSelectionFlowEditor" class="mb-2"></div>
+                        <div class="input-group">
+                            <input type="text" id="modalNewFlowStepName" class="form-control" placeholder="新しいステップ（例：ES提出, 1次面接）" list="modalFlowStepSuggestions" onkeypress="if(event.key==='Enter') addModalSelectionFlowStep()">
+                            <datalist id="modalFlowStepSuggestions"><option value="ES提出"><option value="適性検査"><option value="インターンシップ通過"><option value="座談会"><option value="1次面接"><option value="2次面接"><option value="最終面接"><option value="内定"><option value="本選考"></datalist>
+                            <button type="button" class="btn btn-outline-primary fw-bold" onclick="addModalSelectionFlowStep()">＋ 追加</button>
+                        </div>
+
+                        <div class="d-flex flex-wrap gap-2 align-items-center border-top pt-3 mt-3">
+                            <div class="d-flex align-items-center gap-1">
+                                <label class="form-label fw-bold text-secondary mb-0 text-nowrap" style="font-size:0.85rem;">📁 フロー型:</label>
+                                <select id="modalFlowTemplateSelect" class="form-select form-select-sm" style="max-width: 180px;"><option value="">-- 選択 --</option></select>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-primary fw-bold" onclick="applyModalFlowTemplate()">適用</button>
+                            <button type="button" class="btn btn-sm btn-outline-success fw-bold ms-auto" onclick="saveModalAsFlowTemplate()">💾 現在のフローを型として保存</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+      </div>
+      <div class="modal-footer bg-light" id="addModalFooter1">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+        <button type="button" class="btn btn-outline-success fw-bold px-3" onclick="saveData(true)">スキップして保存</button>
+        <button type="button" class="btn btn-primary fw-bold px-4" onclick="goToStep(2)">次へ（フロー設定）</button>
+      </div>
+      <div class="modal-footer bg-light" id="addModalFooter2" style="display: none;">
+        <button type="button" class="btn btn-secondary me-auto" onclick="goToStep(1)">戻る</button>
+        <button type="button" class="btn btn-primary fw-bold px-4" onclick="saveData()">この内容で保存</button>
+      </div>
     </div>
+  </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://apis.google.com/js/api.js" onload="gapiLoaded()" async defer></script>
+<script src="https://accounts.google.com/gsi/client" onload="gisLoaded()" async defer></script>
 
 <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-    // =====================================================================
-    // 【⚠️重要⚠️】
-    // 以下の部分は元の syuukatu-v2.txt に書かれている、
-    // ご自身の Firebase プロジェクトの設定情報をそのままコピーして貼り付けてください。
-    // （下記のものはダミーのため、このままではログインできません）
-    // =====================================================================
-    const firebaseConfig = {
-        apiKey: "ここの文字列を元のコードからコピペしてください",
-        authDomain: "ここの文字列を元のコードからコピペしてください",
-        databaseURL: "ここの文字列を元のコードからコピペしてください",
-        projectId: "ここの文字列を元のコードからコピペしてください",
-        storageBucket: "ここの文字列を元のコードからコピペしてください",
-        messagingSenderId: "ここの文字列を元のコードからコピペしてください",
-        appId: "ここの文字列を元のコードからコピペしてください"
-    };
+    const firebaseConfig = { apiKey: "AIzaSyB8-VCe66GK77czczFqJKIDqfTaC1jTi8g", authDomain: "shukatsu-app-ae30e.firebaseapp.com", databaseURL: "https://shukatsu-app-ae30e-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "shukatsu-app-ae30e" };
+    const app = initializeApp(firebaseConfig); const auth = getAuth(app); const db = getDatabase(app);
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getDatabase(app);
+    window.loginUser = async () => { document.getElementById('loginError').innerText = ''; try { await signInWithEmailAndPassword(auth, document.getElementById('emailInput').value, document.getElementById('passwordInput').value); } catch(err) { document.getElementById('loginError').innerText = 'ログイン失敗'; } };
+    window.registerUser = async () => { document.getElementById('loginError').innerText = ''; try { await createUserWithEmailAndPassword(auth, document.getElementById('emailInput').value, document.getElementById('passwordInput').value); } catch(err) { document.getElementById('loginError').innerText = '登録失敗'; } };
+    window.logoutUser = () => signOut(auth);
 
-    window.shukatsuData = [];
-    window.todos = { today: [], week: [] };
-    window.appSettings = { googleApiKey: '', googleClientId: '', flowTemplates: {} };
-    let currentUser = null;
-    let calendar = null;
-    let currentSortKey = '';
-    let currentSortAsc = true;
-
-    let currentResearchCompanyId = null;
-    let currentEsCompanyId = null;
-    let currentInterviewCompanyId = null;
-    let tempSelectionFlow = []; // 新規・編集モーダル用の作業領域配列
-
-    // 認証処理
-    window.loginUser = function() {
-        const email = document.getElementById('emailInput').value.trim();
-        const password = document.getElementById('passwordInput').value;
-        const errDiv = document.getElementById('loginError');
-        if(!email || !password) { errDiv.innerText = "すべての欄を入力してください。"; return; }
-        signInWithEmailAndPassword(auth, email, password)
-            .then(() => { errDiv.innerText = ""; })
-            .catch(err => { errDiv.innerText = "ログイン失敗: " + err.message; });
-    };
-
-    window.registerUser = function() {
-        const email = document.getElementById('emailInput').value.trim();
-        const password = document.getElementById('passwordInput').value;
-        const errDiv = document.getElementById('loginError');
-        if(!email || !password || password.length < 6) { errDiv.innerText = "パスワードは6文字以上で入力してください。"; return; }
-        createUserWithEmailAndPassword(auth, email, password)
-            .then(() => { errDiv.innerText = ""; alert("アカウントが作成されました！"); })
-            .catch(err => { errDiv.innerText = "作成失敗: " + err.message; });
+    window.saveToServer = async () => {
+        if (!auth.currentUser) return;
+        const statusEl = document.getElementById('cloudStatus');
+        if(statusEl) { statusEl.innerText = '⏳ 保存中...'; statusEl.className = 'text-truncate text-warning mb-3 fw-bold'; }
+        try {
+            await set(ref(db, 'users/' + auth.currentUser.uid), { data: window.shukatsuData, settings: window.appSettings, todos: window.todos });
+            if(statusEl) { statusEl.innerText = `☁️ 同期済`; statusEl.className = 'text-truncate text-info mb-3 fw-bold'; }
+            if(window.renderAll) window.renderAll();
+        } catch (error) { 
+            if(statusEl) { statusEl.innerText = '❌ 保存失敗'; statusEl.className = 'text-truncate text-danger mb-3 fw-bold'; }
+        }
     };
 
     onAuthStateChanged(auth, async (user) => {
-        const overlay = document.getElementById('loginOverlay');
-        const statusEl = document.getElementById('cloudStatus');
         if (user) {
-            currentUser = user;
-            overlay.style.display = 'none';
-            statusEl.innerText = "🔄 データ読込中...";
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('cloudStatus').innerText = '🔄 データ読込中...';
+            document.getElementById('cloudStatus').className = 'text-truncate text-white-50 mb-3 fw-bold';
+            document.getElementById('settingUserEmail').innerText = user.email;
             try {
-                const snapshot = await get(child(ref(db), `users/${user.uid}`));
+                const snapshot = await get(child(ref(db), `users/${user.uid}`)); 
                 const val = snapshot.val();
-                
-                let rawData = (val && val.data) ? val.data : [];
-                window.shukatsuData = Array.isArray(rawData) ? rawData : Object.values(rawData).filter(item => item !== null);
-                
-                // 枝分かれツリー構造データへの自動互換性（マイグレーション）処理
-                window.shukatsuData.forEach(item => {
-                    if (item.companyResearch && item.companyResearch.selectionFlow) {
-                        item.companyResearch.selectionFlow = migrateFlowSteps(item.companyResearch.selectionFlow);
-                    }
-                });
-
-                window.appSettings = (val && val.settings) ? val.settings : { googleApiKey: '', googleClientId: '', flowTemplates: {} };
-                if (!window.appSettings.flowTemplates) window.appSettings.flowTemplates = {};
-                
+                let rawData = (val && val.data) ? val.data : []; window.shukatsuData = Array.isArray(rawData) ? rawData : Object.values(rawData).filter(item => item !== null);
+                window.appSettings = (val && val.settings) ? val.settings : { googleApiKey: '', googleClientId: '' };
                 let rawTodos = (val && val.todos) ? val.todos : { today: [], week: [] };
-                window.todos = {
-                    today: Array.isArray(rawTodos.today) ? rawTodos.today : Object.values(rawTodos.today || {}).filter(item => item !== null),
-                    week: Array.isArray(rawTodos.week) ? rawTodos.week : Object.values(rawTodos.week || {}).filter(item => item !== null)
-                };
+                window.todos = { today: Array.isArray(rawTodos.today) ? rawTodos.today : Object.values(rawTodos.today || {}).filter(item => item !== null), week: Array.isArray(rawTodos.week) ? rawTodos.week : Object.values(rawTodos.week || {}).filter(item => item !== null) };
+                
+                document.getElementById('settingApiKey').value = window.appSettings.googleApiKey || ''; document.getElementById('settingClientId').value = window.appSettings.googleClientId || '';
+                window.tryInitGoogleAPI();
 
-                document.getElementById('settingApiKey').value = window.appSettings.googleApiKey || '';
-                document.getElementById('settingClientId').value = window.appSettings.googleClientId || '';
-                document.getElementById('autoCalSyncToggle').checked = localStorage.getItem('autoCalSync') === 'true';
-
-                statusEl.innerText = "☁️ クラウド同期中";
-                window.updateFlowTemplateSelects();
-                renderAll();
-                initCalendarView();
-            } catch (err) {
-                console.error(err);
-                statusEl.innerText = "⚠️ 読込エラー";
-            }
+                if(window.checkAndUpdateTodos) window.checkAndUpdateTodos();
+                
+                if(window.renderAll) window.renderAll();
+                document.getElementById('cloudStatus').innerText = `☁️ 同期済`; document.getElementById('cloudStatus').className = 'text-truncate text-info mb-3 fw-bold';
+            } catch(e) { document.getElementById('cloudStatus').innerText = '❌ 読込エラー'; document.getElementById('cloudStatus').className = 'text-truncate text-danger mb-3 fw-bold'; }
         } else {
-            currentUser = null;
-            overlay.style.display = 'flex';
-            statusEl.innerText = "🔒 未ログイン";
+            document.getElementById('loginOverlay').style.display = 'flex';
+            window.shukatsuData = []; window.appSettings = { googleApiKey: '', googleClientId: '' }; window.todos = { today: [], week: [] };
+            document.getElementById('settingUserEmail').innerText = '未ログイン'; if(window.renderAll) window.renderAll();
         }
     });
+</script>
 
-    window.saveToServer = async function() {
-        if (!currentUser) return;
-        const statusEl = document.getElementById('cloudStatus');
-        statusEl.innerText = "🔄 同期処理中...";
-        try {
-            await set(ref(db, `users/${currentUser.uid}`), {
-                data: window.shukatsuData,
-                settings: window.appSettings,
-                todos: window.todos
-            });
-            statusEl.innerText = "☁️ クラウド同期中";
-        } catch (err) {
-            console.error(err);
-            statusEl.innerText = "⚠️ 同期失敗";
-        }
+<script>
+    window.shukatsuData = []; window.appSettings = { googleApiKey: '', googleClientId: '' }; window.todos = { today: [], week: [] };
+    let calendar, currentInterviewCompanyId = null, currentEsCompanyId = null, currentResearchCompanyId = null, currentSortKey = '', currentSortAsc = true;
+    let isSyncingTopScroll = false, isSyncingTableScroll = false;
+    let tempSelectionFlow = []; // モーダル編集用の一時フロー保持変数
+
+    window.checkAndUpdateTodos = function() {
+        const now = new Date(); const todayStr = now.toLocaleDateString();
+        const getWeek = d => { const date = new Date(d.getTime()); date.setHours(0, 0, 0, 0); date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7); const week1 = new Date(date.getFullYear(), 0, 4); return date.getFullYear() + '-W' + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7); };
+        const weekStr = getWeek(now);
+        let changed = false;
+        if (!window.appSettings.lastTodoDay || window.appSettings.lastTodoDay !== todayStr) { window.todos.today = window.todos.today.filter(t => !t.done); window.appSettings.lastTodoDay = todayStr; changed = true; }
+        if (!window.appSettings.lastTodoWeek || window.appSettings.lastTodoWeek !== weekStr) { window.todos.week = window.todos.week.filter(t => !t.done); window.appSettings.lastTodoWeek = weekStr; changed = true; }
+        if (changed) window.saveToServer();
     };
 
-    // 過去データ（直線配列）をツリー対応データ（id, parentId持ち）に安全変換するロジック
-    function migrateFlowSteps(flowArray) {
-        if (!Array.isArray(flowArray)) return [];
-        let needsMigration = flowArray.some(step => !step.id);
-        if (!needsMigration) return flowArray;
-
-        let migrated = [];
-        let prevId = null;
-        flowArray.forEach((step, index) => {
-            let stepId = step.id || "step_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
-            migrated.push({
-                id: stepId,
-                name: step.name,
-                status: step.status || 'not_started',
-                parentId: prevId
+    document.addEventListener('DOMContentLoaded', async function() {
+        const isAutoSync = localStorage.getItem('autoCalSync') === 'true'; if (document.getElementById('autoCalSyncToggle')) document.getElementById('autoCalSyncToggle').checked = isAutoSync;
+        document.querySelectorAll('#myTab .nav-link').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.getElementById('topTitle').innerText = e.target.innerText; 
+                if(window.innerWidth <= 768) {
+                    const sidebarEl = document.getElementById('sidebarMenu'); const bsOffcanvas = bootstrap.Offcanvas.getInstance(sidebarEl);
+                    if (bsOffcanvas) { bsOffcanvas.hide(); } else { const closeBtn = sidebarEl.querySelector('.btn-close'); if(closeBtn) closeBtn.click(); }
+                    setTimeout(() => { document.querySelectorAll('.offcanvas-backdrop').forEach(el => el.remove()); document.body.classList.remove('modal-open'); document.body.style.overflow = ''; document.body.style.paddingRight = ''; }, 300);
+                }
+                if(e.target.id === 'calendar-tab' && calendar) { setTimeout(() => calendar.render(), 100); }
+                if(e.target.id === 'table-tab') { setTimeout(syncScrollWidth, 100); }
             });
-            prevId = stepId;
         });
-        return migrated;
-    }
-
-    // 全タブ画面の再レンダリング
-    function renderAll() {
-        loadDashboard();
-        loadTable();
-        loadResearch();
-        loadEs();
-        loadMypage();
-        loadInterview();
-        if (calendar) calendar.refetchEvents ? calendar.refetchEvents() : renderCalendarEvents();
-        updateCompanyDatalist();
-    }
-
-    function updateCompanyDatalist() {
-        const dl = document.getElementById('companySuggestions');
-        if(!dl) return;
-        dl.innerHTML = '';
-        const names = [...new Set(window.shukatsuData.map(i => i.company))];
-        names.forEach(n => { const op = document.createElement('option'); op.value = n; dl.appendChild(op); });
-    }
-
-    // タブ切り替え制御
-    document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(tabBtn => {
-        tabBtn.addEventListener('shown.bs.tab', function (e) {
-            const titleMap = {
-                'dashboard-tab': '🏠 掲示板', 'table-tab': '📊 一覧表', 'calendar-tab': '🗓️ カレンダー',
-                'research-tab': '🔍 企業研究', 'es-tab': '📝 ES・メモ管理', 'mypage-tab': '🔐 パスワード管理', 'interview-tab': '🗣️ 面接対策'
-            };
-            document.getElementById('topTitle').innerText = titleMap[e.target.id] || '就活クラウド';
-            
-            const sidebarEl = document.getElementById('sidebarMenu');
-            if (window.innerWidth <= 768 && sidebarEl) {
-                const bsOffcanvas = bootstrap.Offcanvas.getInstance(sidebarEl);
-                if (bsOffcanvas) { bsOffcanvas.hide(); }
-            }
-            if(e.target.id === 'calendar-tab' && calendar) { setTimeout(() => calendar.render(), 100); }
-            if(e.target.id === 'table-tab') { setTimeout(syncScrollWidth, 100); }
-        });
+        const topScrollWrapper = document.getElementById('topScrollWrapper'); const tableWrapper = document.getElementById('tableWrapper');
+        if(topScrollWrapper && tableWrapper) {
+            topScrollWrapper.addEventListener('scroll', () => { if (!isSyncingTopScroll) { isSyncingTableScroll = true; tableWrapper.scrollLeft = topScrollWrapper.scrollLeft; } isSyncingTopScroll = false; });
+            tableWrapper.addEventListener('scroll', () => { if (!isSyncingTableScroll) { isSyncingTopScroll = true; topScrollWrapper.scrollLeft = tableWrapper.scrollLeft; } isSyncingTableScroll = false; });
+        }
+        window.addEventListener('resize', () => { syncScrollWidth(); loadResearchView(); loadEsView(); loadInterviewView(); });
+        initializeCalendar();
     });
 
-    const topScrollWrapper = document.getElementById('topScrollWrapper');
-    const tableWrapper = document.getElementById('tableWrapper');
-    if(topScrollWrapper && tableWrapper) {
-        topScrollWrapper.addEventListener('scroll', () => { tableWrapper.scrollLeft = topScrollWrapper.scrollLeft; });
-        tableWrapper.addEventListener('scroll', () => { topScrollWrapper.scrollLeft = tableWrapper.scrollLeft; });
-    }
-    function syncScrollWidth() {
-        const mainTable = document.getElementById('mainTable');
-        const fakeContent = document.getElementById('topScrollFakeContent');
-        if (mainTable && fakeContent) fakeContent.style.width = mainTable.offsetWidth + 'px';
-    }
+    window.renderAll = function() { renderTable(); renderMypageTable(); loadDashboard(); loadResearchView(); loadEsView(); loadInterviewView(); syncScrollWidth(); if (calendar) renderCalendarEvents(); if (window.updateFlowTemplateSelect) window.updateFlowTemplateSelect(); if (window.updateModalFlowTemplateSelect) window.updateModalFlowTemplateSelect(); };
 
-    // ==========================================
-    // ① 掲示板ロジック
-    // ==========================================
+    let tokenClient; let isGapiScriptLoaded = false; let isGisScriptLoaded = false;
+    window.gapiLoaded = function() { gapi.load('client', () => { isGapiScriptLoaded = true; window.tryInitGoogleAPI(); }); };
+    window.gisLoaded = function() { isGisScriptLoaded = true; window.tryInitGoogleAPI(); };
+    window.tryInitGoogleAPI = async function() { if (isGapiScriptLoaded && isGisScriptLoaded && window.appSettings.googleApiKey && window.appSettings.googleClientId) { try { await gapi.client.init({ apiKey: window.appSettings.googleApiKey, discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'] }); tokenClient = google.accounts.oauth2.initTokenClient({ client_id: window.appSettings.googleClientId, scope: 'https://www.googleapis.com/auth/calendar.events', callback: '' }); } catch (e) { console.error(e); } } };
+    window.saveSettings = async function() { window.appSettings.googleApiKey = document.getElementById('settingApiKey').value.trim(); window.appSettings.googleClientId = document.getElementById('settingClientId').value.trim(); await window.saveToServer(); window.tryInitGoogleAPI(); alert('API設定を保存しました！'); bootstrap.Modal.getInstance(document.getElementById('settingsModal')).hide(); };
+    window.syncToGoogleCalendarAPI = function(events, location) {
+        if (!window.appSettings.googleApiKey || !window.appSettings.googleClientId) { alert("⚠️ ⚙️各種設定からAPIキーを登録してください。"); return; }
+        if (!tokenClient) { alert("API読み込み中"); return; }
+        tokenClient.callback = async (resp) => {
+            if (resp.error !== undefined) { alert("認証失敗"); return; }
+            document.getElementById('cloudStatus').innerText = '⏳ 登録中...';
+            let successCount = 0;
+            for (const ev of events) {
+                let start, end;
+                if(ev.type === 'allday') { start = { date: ev.date }; let d = new Date(ev.end || ev.date); if(!ev.end) d.setDate(d.getDate() + 1); end = { date: d.toISOString().split('T')[0] }; } 
+                else { start = { dateTime: new Date(ev.date).toISOString() }; let endD = new Date(new Date(ev.date).getTime() + 60*60*1000); end = { dateTime: endD.toISOString() }; }
+                try { await gapi.client.calendar.events.insert({ calendarId: 'primary', resource: { summary: ev.title, start: start, end: end, location: location } }); successCount++; } catch (e) {}
+            }
+            alert(`裏側で ${successCount} 件の予定をカレンダーに追加しました！`); document.getElementById('cloudStatus').innerText = `☁️ 同期完了`;
+        };
+        if (gapi.client.getToken() === null) { tokenClient.requestAccessToken({prompt: 'consent'}); } else { tokenClient.requestAccessToken({prompt: ''}); }
+    };
+
+    function syncScrollWidth() { const mainTable = document.getElementById('mainTable'); const fakeContent = document.getElementById('topScrollFakeContent'); if (mainTable && fakeContent) fakeContent.style.width = mainTable.offsetWidth + 'px'; }
+
+    // 掲示板ロジック
     window.loadDashboard = function() {
-        const tbody = document.getElementById('dashboardScheduleBody');
-        tbody.innerHTML = '';
-        let events = [];
-        const now = new Date();
-        now.setHours(0,0,0,0);
-
+        const tbody = document.getElementById('dashboardScheduleBody'); tbody.innerHTML = ''; let events = []; const now = new Date(); now.setHours(0,0,0,0);
         window.shukatsuData.forEach(data => {
-            if (data.esDeadline) {
-                const d = new Date(data.esDeadline);
-                if (d >= now) events.push({ type: '📄 ES締切', company: data.company, date: d, rawStr: data.esDeadline, id: data.id });
-            }
-            if (data.interviewDate) {
-                const d = new Date(data.interviewDate);
-                if (d >= now) events.push({ type: '🗣️ 面接日時', company: data.company, date: d, rawStr: data.interviewDate, id: data.id });
-            }
-            let dates = data.internDates || [];
-            dates.forEach(idate => {
-                if(idate.start) {
-                    const d = new Date(idate.start);
-                    if (d >= now) events.push({ type: `💼 ｲﾝﾀｰﾝ (${idate.title || '本編'})`, company: data.company, date: d, rawStr: idate.start, id: data.id });
-                }
-            });
+            if (data.esDeadline) { const d = new Date(data.esDeadline); if (d >= now) events.push({ type: '📄 ES締切', company: data.company, dateObj: d, dateStr: data.esDeadline.replace('T', ' ') }); }
+            if (data.interviewDate) { const d = new Date(data.interviewDate); if (d >= now) events.push({ type: '🗣️ 面接', company: data.company, dateObj: d, dateStr: data.interviewDate.replace('T', ' ') }); }
+            (data.internDates || []).forEach(intern => { if (intern.start) { const d = new Date(intern.start); if (d >= now) events.push({ type: `💼 ｲﾝﾀｰﾝ ${intern.title?'('+intern.title+')':''}`, company: data.company, dateObj: d, dateStr: intern.start }); } });
         });
-
-        events.sort((a, b) => a.date - b.date);
-        if(events.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3" class="text-muted text-center py-3">予定されている直近のスケジュールはありません</td></tr>';
-        } else {
-            events.forEach(ev => {
-                const tr = document.createElement('tr');
-                tr.className = "dashboard-list-item";
-                tr.style.cursor = "pointer";
-                tr.onclick = () => { editData(ev.id); };
-                tr.innerHTML = `<td class="fw-bold text-dark">${ev.rawStr.replace('T', ' ')}</td><td><span class="badge ${ev.type.includes('ES')?'bg-danger':(ev.type.includes('面接')?'bg-success':'bg-primary')}">${ev.type}</span></td><td class="fw-bold text-primary">${ev.company}</td>`;
-                tbody.appendChild(tr);
+        events.sort((a, b) => a.dateObj - b.dateObj); const topEvents = events.slice(0, 5);
+        if (topEvents.length === 0) { tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-3">直近の予定はありません</td></tr>'; } else {
+            topEvents.forEach(ev => {
+                const diffDays = Math.ceil((ev.dateObj - new Date()) / (1000 * 60 * 60 * 24)); const isUrgent = diffDays <= 3 && diffDays >= 0;
+                let badgeClass = 'bg-secondary'; if(ev.type.includes('ES')) badgeClass = 'bg-danger'; if(ev.type.includes('面接')) badgeClass = 'bg-warning text-dark'; if(ev.type.includes('ｲﾝﾀｰﾝ')) badgeClass = 'bg-primary';
+                const tr = document.createElement('tr'); tr.className = "dashboard-list-item"; tr.innerHTML = `<td class="${isUrgent ? 'text-danger fw-bold' : 'fw-bold'}">${ev.dateStr} ${isUrgent ? `<span class="badge bg-danger ms-1">あと${diffDays}日</span>` : ''}</td><td><span class="badge ${badgeClass}">${ev.type}</span></td><td class="fw-bold text-dark">${ev.company}</td>`; tbody.appendChild(tr);
             });
         }
+        renderTodos();
+        if (window.renderDashboardCompanyFlows) window.renderDashboardCompanyFlows();
+    };
 
-        // ToDo描画
-        ['today', 'week'].forEach(type => {
-            const list = document.getElementById(`todo${type.charAt(0).toUpperCase() + type.slice(1)}List`);
-            list.innerHTML = '';
-            (window.todos[type] || []).forEach((todo, idx) => {
-                const li = document.createElement('li');
-                li.className = 'list-group-item d-flex justify-content-between align-items-center px-0 bg-transparent border-bottom';
-                li.innerHTML = `
-                    <div class="form-check m-0">
-                        <input class="form-check-input todo-checkbox" type="checkbox" id="todo_${type}_${idx}" ${todo.done?'checked':''} onchange="toggleTodo('${type}', ${idx})">
-                        <label class="form-check-label todo-text fw-bold text-dark" for="todo_${type}_${idx}">${todo.text}</label>
-                    </div>
-                    <button class="btn btn-sm text-danger p-0" onclick="deleteTodo('${type}', ${idx})">❌</button>
-                `;
-                list.appendChild(li);
-            });
+    window.renderDashboardCompanyFlows = function() {
+        const container = document.getElementById('dashboardCompanyFlowsContainer'); const badge = document.getElementById('dashboardFlowCountBadge'); if (!container) return; container.innerHTML = '';
+        let list = [...window.shukatsuData];
+        list.sort((a, b) => {
+            const flowA = (a.companyResearch && a.companyResearch.selectionFlow) ? a.companyResearch.selectionFlow : [];
+            const flowB = (b.companyResearch && b.companyResearch.selectionFlow) ? b.companyResearch.selectionFlow : [];
+            const compA = flowA.filter(s => s.status === 'completed').length; const compB = flowB.filter(s => s.status === 'completed').length;
+            if (compB !== compA) return compB - compA; return flowB.length - flowA.length;
         });
+        if (badge) badge.innerText = `${list.length}社`;
+        if (list.length === 0) { container.innerHTML = '<div class="col-12 text-center text-muted py-3">企業データがありません。「新規企業を追加」から登録してください。</div>'; return; }
 
-        // 掲示板選考状況ツリー一覧描画
-        const dashFlowContainer = document.getElementById('dashboardFlowContainer');
-        dashFlowContainer.innerHTML = '';
-        if(window.shukatsuData.length === 0) {
-            dashFlowContainer.innerHTML = '<div class="text-muted text-center py-3">登録企業がありません</div>';
-            return;
-        }
-
-        window.shukatsuData.forEach(item => {
+        list.forEach(item => {
             const flow = (item.companyResearch && item.companyResearch.selectionFlow) ? item.companyResearch.selectionFlow : [];
-            const div = document.createElement('div');
-            div.className = 'mb-4 p-3 bg-white border rounded shadow-sm';
-            
-            const titleRow = document.createElement('div');
-            titleRow.className = 'fw-bold text-primary fs-6 mb-2 border-bottom pb-1 d-flex justify-content-between align-items-center';
-            titleRow.innerHTML = `<span>🏢 ${item.company}</span><button class="btn btn-sm btn-outline-secondary" onclick="switchToResearchTab('${item.id}')">詳細・編集</button>`;
-            div.appendChild(titleRow);
-
-            const flowTreeDiv = document.createElement('div');
-            flowTreeDiv.className = 'flow-tree-container';
-            renderFlowTreeStructure(flow, flowTreeDiv, false, false);
-            div.appendChild(flowTreeDiv);
-
-            dashFlowContainer.appendChild(div);
-        });
-    };
-
-    window.switchToResearchTab = function(id) {
-        currentResearchCompanyId = id;
-        const tabTrigger = new bootstrap.Tab(document.getElementById('research-tab'));
-        tabTrigger.show();
-    };
-
-    window.addTodo = function(type) {
-        const input = document.getElementById(`todo${type.charAt(0).toUpperCase() + type.slice(1)}Input`);
-        const text = input.value.trim();
-        if(!text) return;
-        window.todos[type].push({ text, done: false });
-        input.value = '';
-        window.saveToServer();
-        loadDashboard();
-    };
-    window.toggleTodo = function(type, idx) {
-        window.todos[type][idx].done = !window.todos[type][idx].done;
-        window.saveToServer();
-        loadDashboard();
-    };
-    window.deleteTodo = function(type, idx) {
-        window.todos[type].splice(idx, 1);
-        window.saveToServer();
-        loadDashboard();
-    };
-
-    // ==========================================
-    // ② 📊 一覧表ロジック
-    // ==========================================
-    window.loadTable = function() {
-        const tbody = document.getElementById('tableBody');
-        tbody.innerHTML = '';
-        if (window.shukatsuData.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-muted text-center py-4">データがありません。右上の「新規企業を追加」から登録してください。</td></tr>';
-            return;
-        }
-        window.shukatsuData.forEach(item => {
-            const tr = document.createElement('tr');
-            tr.id = `row-${item.id}`;
-            tr.onclick = (e) => {
-                if (window.innerWidth <= 768 && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'A' && e.target.tagName !== 'INPUT') {
-                    tr.classList.toggle('is-open');
-                }
-            };
-
-            let iDatesText = 'ー';
-            if(item.internDates && item.internDates.length > 0) {
-                iDatesText = item.internDates.map(d => `${d.title ? d.title+':':''}${d.start||''}`).join('<br>');
+            const compCount = flow.filter(s => s.status === 'completed').length;
+            const col = document.createElement('div'); col.className = 'col-12 border-bottom pb-3 mb-2';
+            let flowHtml = '';
+            if (flow.length === 0) { flowHtml = '<span class="text-muted" style="font-size:0.75rem;">⚠️ 選考フローが未設定です（企業研究タブから設定可能）</span>'; } else {
+                flowHtml = '<div class="d-flex align-items-center overflow-auto pb-2 pt-1" style="white-space: nowrap;">';
+                flow.forEach((step, index) => {
+                    let circleClass = 'bg-light text-secondary'; if (step.status === 'completed') circleClass = 'bg-success text-white'; else if (step.status === 'current') circleClass = 'bg-primary text-white';
+                    flowHtml += `<div class="flow-step-container" style="margin: 0 4px;"><div class="flow-step-circle ${circleClass}" style="width: 26px; height: 26px; font-size: 0.7rem; box-shadow: none;">${step.status === 'completed' ? '✓' : index + 1}</div><div class="flow-step-label text-truncate" style="width: 65px; font-size: 0.68rem; margin-top: 4px;" title="${step.name}">${step.name}</div></div>`;
+                    if (index < flow.length - 1) { let nextStep = flow[index + 1]; let lineClass = (step.status === 'completed' && (nextStep.status === 'completed' || nextStep.status === 'current')) ? 'bg-success' : 'bg-light'; flowHtml += `<div class="flow-step-line ${lineClass}" style="width: 20px; height: 3px; margin: 0 -6px; transform: translateY(-10px);"></div>`; }
+                }); flowHtml += '</div>';
             }
-
-            tr.innerHTML = `
-                <td data-label="企業名" class="sticky-col fw-bold text-primary">${item.company}</td>
-                <td data-label="インターン時期">${iDatesText}</td>
-                <td data-label="場所">${item.location || 'ー'}</td>
-                <td data-label="説明会状況"><span class="badge bg-secondary fw-bold">${item.sessionStatus || '未申込'}</span></td>
-                <td data-label="ES締切" class="fw-bold text-danger">${item.esDeadline ? item.esDeadline.replace('T', ' ') : 'ー'}</td>
-                <td data-label="面接日時" class="fw-bold text-success">${item.interviewDate ? item.interviewDate.replace('T', ' ') : 'ー'}</td>
-                <td data-label="操作" class="text-end">
-                    <button class="btn btn-sm btn-outline-primary fw-bold" onclick="event.stopPropagation(); editData('${item.id}')">📝 編集</button>
-                    <button class="btn btn-sm btn-outline-danger fw-bold ms-1" onclick="event.stopPropagation(); deleteData('${item.id}')">🗑️ 削除</button>
-                </td>
-            `;
-            tbody.appendChild(tr);
+            col.innerHTML = `<div class="d-flex justify-content-between align-items-center mb-1"><div class="fw-bold text-dark fs-6">🏢 ${item.company}</div><div class="text-secondary fw-bold" style="font-size:0.75rem;">達成数: <span class="text-success fs-6 fw-bold">${compCount}</span> / ${flow.length}</div></div><div class="ps-2">${flowHtml}</div>`;
+            container.appendChild(col);
         });
-        setTimeout(syncScrollWidth, 150);
     };
 
-    window.sortTable = function(key) {
-        if (currentSortKey === key) { currentSortAsc = !currentSortAsc; } else { currentSortKey = key; currentSortAsc = true; }
-        window.shukatsuData.sort((a, b) => {
-            let valA = a[key], valB = b[key];
-            if (key === 'internPeriod') {
-                let aDates = a.internDates || [], bDates = b.internDates || [];
-                valA = aDates.length > 0 ? aDates[0].start : '';
-                valB = bDates.length > 0 ? bDates[0].start : '';
-            }
-            if (valA === undefined || valA === null) valA = '';
-            if (valB === undefined || valB === null) valB = '';
-            if (typeof valA === 'string' && typeof valB === 'string') return currentSortAsc ? valA.localeCompare(valB, 'ja') : valB.localeCompare(valA, 'ja');
-            return currentSortAsc ? (valA > valB ? 1 : -1) : (valA > valB ? -1 : 1);
-        });
-        loadTable();
+    window.renderTodos = function() {
+        const createItem = (task, index, type) => {
+            const li = document.createElement('li'); li.className = 'list-group-item d-flex justify-content-between align-items-center px-2 py-2 dashboard-list-item';
+            li.innerHTML = `<div class="form-check mb-0 flex-grow-1"><input class="form-check-input me-2 todo-checkbox" type="checkbox" ${task.done ? 'checked' : ''} onchange="toggleTodo('${type}', ${index})"><label class="form-check-label todo-text ${task.done ? 'text-decoration-line-through text-muted' : 'fw-bold'}" style="cursor:pointer;" onclick="toggleTodo('${type}', ${index})">${task.text}</label></div><button class="btn btn-sm btn-outline-danger ms-2 border-0" onclick="removeTodo('${type}', ${index})" style="padding:0 6px;">✖</button>`; return li;
+        };
+        const todayList = document.getElementById('todoTodayList'); todayList.innerHTML = ''; window.todos.today.forEach((task, i) => todayList.appendChild(createItem(task, i, 'today')));
+        const weekList = document.getElementById('todoWeekList'); weekList.innerHTML = ''; window.todos.week.forEach((task, i) => weekList.appendChild(createItem(task, i, 'week')));
     };
+    window.addTodo = async function(type) { const input = document.getElementById(type==='today'?'todoTodayInput':'todoWeekInput'); const text = input.value.trim(); if (!text) return; window.todos[type].push({ text: text, done: false }); input.value = ''; await window.saveToServer(); };
+    window.toggleTodo = async function(type, index) { window.todos[type][index].done = !window.todos[type][index].done; await window.saveToServer(); };
+    window.removeTodo = async function(type, index) { window.todos[type].splice(index, 1); await window.saveToServer(); };
 
-    // ==========================================
-    // ③ 🗓️ カレンダーロジック
-    // ==========================================
-    function initCalendarView() {
-        const el = document.getElementById('calendar');
-        if(!el) return;
-        calendar = new FullCalendar.Calendar(el, {
-            locale: 'ja', initialView: window.innerWidth <= 768 ? 'dayGridMonth' : 'dayGridMonth',
-            headerToolbar: { left: 'prev,next today', center: 'title', right: window.innerWidth <= 768 ? 'dayGridMonth' : 'dayGridMonth,timeGridWeek,multiMonthFourMonth' },
-            views: { multiMonthFourMonth: { type: 'multiMonth', duration: { months: 4 }, buttonText: '4ヶ月' } },
-            eventClick: function(info) { editData(info.event.id.replace(/^(session_|es_|interview_|intern_)/, '').split('_')[0]); }
-        });
-        calendar.render();
-        renderCalendarEvents();
+    function initializeCalendar() {
+        const el = document.getElementById('calendar'); if(!el) return;
+        calendar = new FullCalendar.Calendar(el, { initialView: 'dayGridMonth', locale: 'ja', height: window.innerWidth <= 768 ? 480 : 650, dayMaxEvents: true, headerToolbar: { left: 'prev,next today', center: 'title', right: window.innerWidth <= 768 ? 'dayGridMonth,timeGridWeek' : 'dayGridMonth,timeGridWeek,multiMonthFourMonth' }, views: { multiMonthFourMonth: { type: 'multiMonth', duration: { months: 4 }, buttonText: '4ヶ月' } }, eventClick: function(info) { editData(info.event.id.replace(/^(es_|interview_|intern_)/, '').split('_')[0]); } });
+        calendar.render(); renderCalendarEvents();
     }
-
     function renderCalendarEvents() {
-        if (!calendar) return;
-        calendar.removeAllEvents();
+        if (!calendar) return; calendar.removeAllEvents();
         window.shukatsuData.forEach(item => {
             if (item.sessionDate) calendar.addEvent({ id: `session_${item.id}`, title: `[説明会] ${item.company}`, start: item.sessionDate, backgroundColor: '#0dcaf0', borderColor: '#0dcaf0' });
             if (item.esDeadline) calendar.addEvent({ id: `es_${item.id}`, title: `[ES締切] ${item.company}`, start: item.esDeadline, backgroundColor: '#dc3545', borderColor: '#dc3545' });
             if (item.interviewDate) calendar.addEvent({ id: `interview_${item.id}`, title: `[面接] ${item.company}`, start: item.interviewDate, backgroundColor: '#198754', borderColor: '#198754' });
-            
-            (item.internDates || []).forEach((d, idx) => {
-                if (d.start) {
-                    calendar.addEvent({ id: `intern_${item.id}_${idx}`, title: `[💼ｲﾝﾀｰﾝ] ${item.company} (${d.title || '本編'})`, start: d.start, end: d.end || d.start, backgroundColor: '#0d6efd', borderColor: '#0d6efd' });
-                }
-            });
+            (item.internDates || []).forEach((d, idx) => { if (d.start) { let endObj = new Date(d.end || d.start); endObj.setDate(endObj.getDate() + 1); calendar.addEvent({ id: `intern_${item.id}_${idx}`, title: `ｲﾝﾀｰﾝ: ${item.company}`, start: d.start, end: endObj.toISOString().split('T')[0], backgroundColor: '#0d6efd', borderColor: '#0d6efd', allDay: true }); } });
         });
     }
 
-    // ==========================================
-    // ④ 🔍 企業研究（枝分かれツリーフロー対応）
-    // ==========================================
-    window.loadResearch = function() {
-        const list = document.getElementById('researchCompanyList');
-        const emptyMsg = document.getElementById('researchEmptyMessage');
-        const detailArea = document.getElementById('researchDetailArea');
-        list.innerHTML = '';
-
-        if (window.shukatsuData.length === 0) {
-            detailArea.style.display = 'none';
-            emptyMsg.style.display = 'block';
-            return;
-        }
-
-        window.shukatsuData.forEach(item => {
-            const btn = document.createElement('button');
-            btn.className = `list-group-item list-group-item-action d-flex justify-content-between align-items-center fw-bold text-dark ${item.id === currentResearchCompanyId ? 'active' : ''}`;
-            const isTarget = item.id === currentResearchCompanyId;
-            const arrowText = window.innerWidth <= 768 ? (isTarget ? '▲' : '▼') : '';
-            btn.innerHTML = `<span>${item.company}</span><span class="research-arrow">${arrowText}</span>`;
-            
-            btn.onclick = () => {
-                if (currentResearchCompanyId === item.id && window.innerWidth <= 768) {
-                    currentResearchCompanyId = null;
-                    detailArea.style.display = 'none';
-                    emptyMsg.style.display = 'block';
-                    btn.classList.remove('active');
-                    if(btn.querySelector('.research-arrow')) btn.querySelector('.research-arrow').innerText = '▼';
-                } else {
-                    currentResearchCompanyId = item.id;
-                    Array.from(list.children).forEach(c => { c.classList.remove('active'); const a = c.querySelector('.research-arrow'); if(a) a.innerText = '▼'; });
-                    btn.classList.add('active');
-                    const a = btn.querySelector('.research-arrow'); if(a) a.innerText = '▲';
-                    selectResearchCompany(item.id);
-                }
-            };
-            list.appendChild(btn);
-        });
-
-        if (currentResearchCompanyId && window.shukatsuData.some(i => i.id === currentResearchCompanyId)) {
-            selectResearchCompany(currentResearchCompanyId);
+    // ★ モーダル（ステップ方式）の制御 ★
+    window.goToStep = function(step) {
+        if (step === 1) {
+            document.getElementById('addStep1').style.display = 'block'; document.getElementById('addStep2').style.display = 'none'; document.getElementById('addModalFooter1').style.display = 'flex'; document.getElementById('addModalFooter2').style.display = 'none'; document.getElementById('step1Indicator').className = 'fw-bold text-primary'; document.getElementById('step2Indicator').className = 'fw-bold text-secondary';
         } else {
-            if(detailArea) detailArea.style.display = 'none';
-            if(emptyMsg) emptyMsg.style.display = 'block';
+            if (!document.getElementById('companyInput').value.trim()) { alert('企業名を入力してください。'); return; }
+            document.getElementById('addStep1').style.display = 'none'; document.getElementById('addStep2').style.display = 'block'; document.getElementById('addModalFooter1').style.display = 'none'; document.getElementById('addModalFooter2').style.display = 'flex'; document.getElementById('step1Indicator').className = 'fw-bold text-secondary'; document.getElementById('step2Indicator').className = 'fw-bold text-primary';
+            renderModalSelectionFlow(); if(window.updateModalFlowTemplateSelect) window.updateModalFlowTemplateSelect();
         }
     };
 
-    function selectResearchCompany(id) {
-        document.getElementById('researchEmptyMessage').style.display = 'none';
-        document.getElementById('researchDetailArea').style.display = 'block';
-        const item = window.shukatsuData.find(i => i.id === id);
-        document.getElementById('researchCompanyName').innerText = `🏢 ${item.company}`;
-
-        const res = item.companyResearch || {};
-        document.getElementById('resFounderInput').value = res.founder || '';
-        document.getElementById('resIndustryInput').value = res.industry || '';
-        document.getElementById('resRivalsInput').value = res.rivals || '';
-        document.getElementById('resStrengthsInput').value = res.strengths || '';
-        document.getElementById('resSalaryInput').value = res.salary || '';
-        document.getElementById('resHolidayInput').value = res.holiday || '';
-        document.getElementById('resWelfareInput').value = res.welfare || '';
-
-        const flow = res.selectionFlow || [];
-        const editor = document.getElementById('selectionFlowEditor');
-        editor.innerHTML = '';
-        renderFlowTreeStructure(flow, editor, true, false);
-    }
-
-    // ツリー構造をインデント(段下がり)付きで再帰描画する共通中核関数
-    function renderFlowTreeStructure(flowArray, containerElement, isEditable, isModal = false) {
-        containerElement.innerHTML = '';
-        if (!flowArray || flowArray.length === 0) {
-            containerElement.innerHTML = '<span class="text-muted fw-bold ms-2" style="font-size:0.85rem;">選考ステップが未登録です。下の追加ボタンから作成して下さい。</span>';
-            return;
-        }
-
-        // 親IDごとに階層マップを構築
-        const nodeMap = {};
-        flowArray.forEach(step => { nodeMap[step.id] = { ...step, children: [] }; });
-        
-        const roots = [];
-        flowArray.forEach(step => {
-            const node = nodeMap[step.id];
-            if (step.parentId && nodeMap[step.parentId]) {
-                nodeMap[step.parentId].children.push(node);
-            } else {
-                roots.push(node);
-            }
-        });
-
-        // 再帰的なDOM描画
-        function drawStepNode(node, depth = 0) {
-            const row = document.createElement('div');
-            row.className = 'flow-node-row d-flex align-items-center justify-content-between mb-2 gap-2 bg-white p-2 rounded shadow-sm border border-light';
-            row.style.marginLeft = `${depth * 25}px`;
-
-            let statusClass = 'bg-light text-secondary';
-            if (node.status === 'completed') statusClass = 'bg-success text-white';
-            else if (node.status === 'current') statusClass = 'bg-primary text-white';
-            else if (node.status === 'rejected') statusClass = 'bg-danger text-white'; // 落選（赤）
-
-            let actionsHtml = '';
-            if (isEditable) {
-                actionsHtml = `
-                    <div class="d-flex align-items-center gap-1">
-                        <select class="form-select form-select-sm w-auto fw-bold ${statusClass}" style="font-size:0.8rem;" onchange="window.changeFlowStepStatus('${node.id}', this.value, ${isModal})">
-                            <option value="not_started" ${node.status==='not_started'?'selected':''}>未着手</option>
-                            <option value="current" ${node.status==='current'?'selected':''}>進行中</option>
-                            <option value="completed" ${node.status==='completed'?'selected':''}>完了</option>
-                            <option value="rejected" ${node.status==='rejected'?'selected':''}>落選</option>
-                        </select>
-                        <button class="btn btn-sm btn-outline-secondary py-0 px-1 fw-bold" style="font-size:0.75rem;" onclick="window.addBranchFlowStep('${node.id}', ${isModal})" title="ここから新しいフローを枝分かれさせます">🌿 枝分かれ</button>
-                        <button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="window.removeFlowStep('${node.id}', ${isModal})">❌</button>
-                    </div>
-                `;
-            } else {
-                let textLabel = '未着手';
-                if(node.status === 'current') textLabel = '進行中';
-                if(node.status === 'completed') textLabel = '完了';
-                if(node.status === 'rejected') textLabel = '落選';
-                actionsHtml = `<span class="badge ${statusClass} fw-bold">${textLabel}</span>`;
-            }
-
-            let prefixMark = '';
-            if (depth > 0) { prefixMark = `<span class="flow-node-indent-line me-1 text-muted">└─</span>`; }
-
-            row.innerHTML = `
-                <div class="d-flex align-items-center text-truncate">
-                    ${prefixMark}
-                    <span class="fw-bold text-dark text-truncate" style="font-size:0.9rem;">${node.name}</span>
-                </div>
-                ${actionsHtml}
-            `;
-            containerElement.appendChild(row);
-
-            node.children.forEach(childNode => { drawStepNode(childNode, depth + 1); });
-        }
-
-        roots.forEach(root => drawStepNode(root, 0));
-
-        // 簡易進行度プログレス表示の上書き
-        if(!isModal) {
-            const bar = document.getElementById('selectionFlowProgressBar');
-            if(bar) {
-                const total = flowArray.length;
-                const comp = flowArray.filter(s => s.status === 'completed').length;
-                const rej = flowArray.filter(s => s.status === 'rejected').length;
-                const compPct = total > 0 ? Math.round((comp / total) * 100) : 0;
-                const rejPct = total > 0 ? Math.round((rej / total) * 100) : 0;
-                
-                bar.innerHTML = `
-                    <div class="d-flex justify-content-between text-secondary mb-1 fw-bold" style="font-size:0.8rem;">
-                        <span>選考全体の進捗</span>
-                        <span>完了 ${comp}/${total} (${compPct}%) | 落選 ${rej}</span>
-                    </div>
-                    <div class="progress" style="height: 10px;">
-                        <div class="progress-bar bg-success" role="progressbar" style="width: ${compPct}%"></div>
-                        <div class="progress-bar bg-danger" role="progressbar" style="width: ${rejPct}%"></div>
-                    </div>
-                `;
-            }
-        }
-    }
-
-    // ステータス変更トリガー
-    window.changeFlowStepStatus = function(stepId, newStatus, isModal) {
-        let targetFlow = isModal ? tempSelectionFlow : [];
-        if (!isModal) {
-            const item = window.shukatsuData.find(i => i.id === currentResearchCompanyId);
-            if (!item) return;
-            if(!item.companyResearch) item.companyResearch = {};
-            if(!item.companyResearch.selectionFlow) item.companyResearch.selectionFlow = [];
-            targetFlow = item.companyResearch.selectionFlow;
-        }
-
-        const step = targetFlow.find(s => s.id === stepId);
-        if (step) {
-            step.status = newStatus;
-            if (isModal) {
-                renderFlowTreeStructure(tempSelectionFlow, document.getElementById('modalSelectionFlowEditor'), true, true);
-            } else {
-                renderFlowTreeStructure(targetFlow, document.getElementById('selectionFlowEditor'), true, false);
-                window.saveToServer();
-            }
-        }
+    window.prepareAdd = function() { 
+        document.getElementById('editId').value = ''; document.getElementById('addModalLabel').innerText = '企業の追加'; 
+        ['companyInput','internStartInput','locationInput','mypageUrlInput','mypageIdInput','mypagePassInput','hasSessionInput','sessionStatusInput','sessionDateInput','sessionMemoInput','esDeadlineInput'].forEach(id=>{ if(document.getElementById(id)) document.getElementById(id).value=''; }); 
+        document.getElementById('internDatesContainer').innerHTML = ''; addInternDateRow(); tempSelectionFlow = []; goToStep(1);
     };
-
-    // 新規起点ステップ追加
-    window.addSelectionFlowStep = function() {
-        const input = document.getElementById('newFlowStepName');
-        const name = input.value.trim();
-        if (!name) return;
-        const item = window.shukatsuData.find(i => i.id === currentResearchCompanyId);
-        if (!item) return;
-        if(!item.companyResearch) item.companyResearch = {};
-        if(!item.companyResearch.selectionFlow) item.companyResearch.selectionFlow = [];
-
-        item.companyResearch.selectionFlow.push({
-            id: "step_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5),
-            name: name,
-            status: 'not_started',
-            parentId: null // 新規ルートの起点
-        });
-
-        input.value = '';
-        renderFlowTreeStructure(item.companyResearch.selectionFlow, document.getElementById('selectionFlowEditor'), true, false);
-        window.saveToServer();
-    };
-
-    // 🌿 枝分かれ（子ステップ）追加ロジック
-    window.addBranchFlowStep = function(parentStepId, isModal) {
-        const branchName = prompt("枝分かれさせる次の選考ステップ名を入力してください:\n(例: 敗者復活選考, 別職種2次面接)");
-        if (!branchName || !branchName.trim()) return;
-
-        let targetFlow = isModal ? tempSelectionFlow : [];
-        if (!isModal) {
-            const item = window.shukatsuData.find(i => i.id === currentResearchCompanyId);
-            if (!item) return;
-            targetFlow = item.companyResearch.selectionFlow;
-        }
-
-        targetFlow.push({
-            id: "step_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5),
-            name: branchName.trim(),
-            status: 'not_started',
-            parentId: parentStepId // 親IDを指定して紐付ける
-        });
-
-        if (isModal) {
-            renderFlowTreeStructure(tempSelectionFlow, document.getElementById('modalSelectionFlowEditor'), true, true);
-        } else {
-            renderFlowTreeStructure(targetFlow, document.getElementById('selectionFlowEditor'), true, false);
-            window.saveToServer();
-        }
-    };
-
-    // ステップ削除（枝分かれしている子孫も一緒に再帰安全削除）
-    window.removeFlowStep = function(stepId, isModal) {
-        if(!confirm("このステップを削除しますか？(ぶら下がっている枝分かれルートも同時に削除されます)")) return;
-        
-        let targetFlow = isModal ? tempSelectionFlow : [];
-        if (!isModal) {
-            const item = window.shukatsuData.find(i => i.id === currentResearchCompanyId);
-            if (!item) return;
-            targetFlow = item.companyResearch.selectionFlow;
-        }
-
-        // 削除対象とその全子孫のIDリストを集める
-        const idsToRemove = [stepId];
-        let lookupArr = [...idsToRemove];
-        while (lookupArr.length > 0) {
-            const currentLookupId = lookupArr.pop();
-            const children = targetFlow.filter(s => s.parentId === currentLookupId);
-            children.forEach(c => {
-                if(!idsToRemove.includes(c.id)) {
-                    idsToRemove.push(c.id);
-                    lookupArr.push(c.id);
-                }
-            });
-        }
-
-        // フィルター排除
-        let filtered = targetFlow.filter(s => !idsToRemove.includes(s.id));
-        if (isModal) {
-            tempSelectionFlow = filtered;
-            renderFlowTreeStructure(tempSelectionFlow, document.getElementById('modalSelectionFlowEditor'), true, true);
-        } else {
-            const item = window.shukatsuData.find(i => i.id === currentResearchCompanyId);
-            item.companyResearch.selectionFlow = filtered;
-            renderFlowTreeStructure(filtered, document.getElementById('selectionFlowEditor'), true, false);
-            window.saveToServer();
-        }
-    };
-
-    // 企業研究全体の確定保存
-    window.saveResearchDetails = async function() {
-        if (!currentResearchCompanyId) return;
-        const item = window.shukatsuData.find(i => i.id === currentResearchCompanyId);
-        if (!item) return;
-
-        if(!item.companyResearch) item.companyResearch = {};
-        item.companyResearch.founder = document.getElementById('resFounderInput').value.trim();
-        item.companyResearch.industry = document.getElementById('resIndustryInput').value.trim();
-        item.companyResearch.rivals = document.getElementById('resRivalsInput').value.trim();
-        item.companyResearch.strengths = document.getElementById('resStrengthsInput').value.trim();
-        item.companyResearch.salary = document.getElementById('resSalaryInput').value.trim();
-        item.companyResearch.holiday = document.getElementById('resHolidayInput').value.trim();
-        item.companyResearch.welfare = document.getElementById('resWelfareInput').value.trim();
-
-        await window.saveToServer();
-        alert("企業研究データを保存しました！");
-        loadDashboard();
-    };
-
-    // テンプレート管理
-    window.updateFlowTemplateSelects = function() {
-        const selects = ['flowTemplateSelect', 'modalFlowTemplateSelect'];
-        selects.forEach(sid => {
-            const s = document.getElementById(sid);
-            if(!s) return;
-            s.innerHTML = '<option value="">-- 選択 --</option>';
-            Object.keys(window.appSettings.flowTemplates || {}).forEach(tName => {
-                const op = document.createElement('option'); op.value = tName; op.innerText = tName; s.appendChild(op);
-            });
-        });
-    };
-
-    window.saveAsFlowTemplate = async function() {
-        const item = window.shukatsuData.find(i => i.id === currentResearchCompanyId);
-        if(!item || !item.companyResearch || !item.companyResearch.selectionFlow || item.companyResearch.selectionFlow.length === 0) {
-            alert('保存するフローがありません。'); return;
-        }
-        const tName = prompt("この選考フローを「型(テンプレート)」として名前を付けて保存します:");
-        if(!tName || !tName.trim()) return;
-
-        window.appSettings.flowTemplates[tName.trim()] = item.companyResearch.selectionFlow.map(s => ({
-            id: s.id, name: s.name, status: 'not_started', parentId: s.parentId
-        }));
-        window.updateFlowTemplateSelects();
-        await window.saveToServer();
-        alert("フローテンプレートを保存しました。");
-    };
-
-    window.applyFlowTemplate = function() {
-        const tName = document.getElementById('flowTemplateSelect').value;
-        if(!tName) return;
-        const item = window.shukatsuData.find(i => i.id === currentResearchCompanyId);
-        if(!item) return;
-        
-        // 適用時に一意の新しいIDを発行し直して構造クローン
-        const src = window.appSettings.flowTemplates[tName] || [];
-        const idMapping = {};
-        src.forEach(s => { idMapping[s.id] = "step_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5); });
-        
-        item.companyResearch.selectionFlow = src.map(s => ({
-            id: idMapping[s.id],
-            name: s.name,
-            status: 'not_started',
-            parentId: s.parentId ? idMapping[s.parentId] : null
-        }));
-
-        renderFlowTreeStructure(item.companyResearch.selectionFlow, document.getElementById('selectionFlowEditor'), true, false);
-        window.saveToServer();
-    };
-
-    // ==========================================
-    // ⑤ 📝 ES・メモ管理ロジック
-    // ==========================================
-    window.loadEs = function() {
-        const list = document.getElementById('esCompanyList');
-        const emptyMsg = document.getElementById('esEmptyMessage');
-        const detailArea = document.getElementById('esDetailArea');
-        list.innerHTML = '';
-
-        if(window.shukatsuData.length === 0) {
-            detailArea.style.display = 'none'; emptyMsg.style.display = 'block'; return;
-        }
-
-        window.shukatsuData.forEach(item => {
-            const btn = document.createElement('button');
-            btn.className = `list-group-item list-group-item-action d-flex justify-content-between align-items-center fw-bold text-dark ${item.id === currentEsCompanyId ? 'active' : ''}`;
-            const isTarget = item.id === currentEsCompanyId;
-            const arrowText = window.innerWidth <= 768 ? (isTarget ? '▲' : '▼') : '';
-            btn.innerHTML = `<span>${item.company}</span><span class="es-arrow">${arrowText}</span>`;
-
-            btn.onclick = () => {
-                if (currentEsCompanyId === item.id && window.innerWidth <= 768) {
-                    currentEsCompanyId = null; detailArea.style.display = 'none'; emptyMsg.style.display = 'block';
-                    btn.classList.remove('active'); if(btn.querySelector('.es-arrow')) btn.querySelector('.es-arrow').innerText = '▼';
-                } else {
-                    currentEsCompanyId = item.id;
-                    Array.from(list.children).forEach(c => { c.classList.remove('active'); const a = c.querySelector('.es-arrow'); if(a) a.innerText = '▼'; });
-                    btn.classList.add('active'); const a = btn.querySelector('.es-arrow'); if(a) a.innerText = '▲';
-                    selectEsCompany(item.id);
-                }
-            };
-            list.appendChild(btn);
-        });
-
-        if (currentEsCompanyId && window.shukatsuData.some(i => i.id === currentEsCompanyId)) {
-            selectEsCompany(currentEsCompanyId);
-        } else {
-            if(detailArea) detailArea.style.display = 'none'; if(emptyMsg) emptyMsg.style.display = 'block';
-        }
-    };
-
-    function selectEsCompany(id) {
-        document.getElementById('esEmptyMessage').style.display = 'none';
-        document.getElementById('esDetailArea').style.display = 'block';
-        const item = window.shukatsuData.find(i => i.id === id);
-        document.getElementById('esCompanyName').innerText = `📝 ${item.company} のエントリーシート`;
-
-        const container = document.getElementById('esQuestionsContainer');
-        container.innerHTML = '';
-        const arr = item.esAnswers || [];
-        if(arr.length === 0) {
-            // 初期ダミー設問
-            arr.push({ q: '志望動機について教えてください。', a: '', memo: '' });
-        }
-        arr.forEach((qObj, idx) => { createEsQuestionCardElement(qObj, idx); });
-    }
-
-    function createEsQuestionCardElement(qObj, idx) {
-        const container = document.getElementById('esQuestionsContainer');
-        const card = document.createElement('div');
-        card.className = 'card mb-3 border shadow-sm p-3 es-q-card';
-        card.innerHTML = `
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="badge bg-secondary fw-bold">設問 ${idx + 1}</span>
-                <button class="btn btn-sm btn-outline-danger py-0" onclick="removeEsQuestionCard(${idx})">🗑️ 設問削除</button>
-            </div>
-            <div class="mb-2">
-                <label class="form-label fw-bold text-secondary mb-1">設問・質問内容</label>
-                <input type="text" class="form-control es-q-input fw-bold" value="${qObj.q || ''}" placeholder="〇〇について（400文字以内）など">
-            </div>
-            <div class="mb-2">
-                <label class="form-label fw-bold text-success mb-1">最終提出回答・決定稿</label>
-                <textarea class="form-control es-a-textarea" rows="4" placeholder="提出した、または提出する完成文章">${qObj.a || ''}</textarea>
-            </div>
-            <div>
-                <label class="form-label fw-bold text-muted mb-1">構成メモ・推敲ログ</label>
-                <textarea class="form-control es-memo-textarea" rows="2" placeholder="ネタ出し、文字数調整などのメモ空間">${qObj.memo || ''}</textarea>
-            </div>
-        `;
-        container.appendChild(card);
-    }
-
-    window.addEsQuestionCard = function() {
-        const item = window.shukatsuData.find(i => i.id === currentEsCompanyId);
-        if(!item) return;
-        if(!item.esAnswers) item.esAnswers = [];
-        const idx = item.esAnswers.length;
-        const newObj = { q: '', a: '', memo: '' };
-        item.esAnswers.push(newObj);
-        createEsQuestionCardElement(newObj, idx);
-    };
-
-    window.removeEsQuestionCard = function(idx) {
-        if(!confirm("この設問を削除しますか？")) return;
-        const item = window.shukatsuData.find(i => i.id === currentEsCompanyId);
-        if(!item) return;
-        item.esAnswers.splice(idx, 1);
-        selectEsCompany(currentEsCompanyId);
-    };
-
-    window.saveEsAnswers = async function() {
-        if(!currentEsCompanyId) return;
-        const item = window.shukatsuData.find(i => i.id === currentEsCompanyId);
-        if(!item) return;
-
-        const cards = document.querySelectorAll('.es-q-card');
-        const newArr = [];
-        cards.forEach(c => {
-            const q = c.querySelector('.flow-node-row .es-q-input, .es-q-input').value.trim();
-            const a = c.querySelector('.es-a-textarea').value.trim();
-            const memo = c.querySelector('.es-memo-textarea').value.trim();
-            newArr.push({ q, a, memo });
-        });
-
-        item.esAnswers = newArr;
-        await window.saveToServer();
-        alert("ES内容を保存しました！");
-    };
-
-    // ==========================================
-    // ⑥ 🔐 パスワード管理ロジック
-    // ==========================================
-    window.loadMypage = function() {
-        const tbody = document.getElementById('mypageTableBody');
-        tbody.innerHTML = '';
-        if(window.shukatsuData.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-muted text-center py-4">データがありません</td></tr>'; return;
-        }
-
-        window.shukatsuData.forEach(item => {
-            const tr = document.createElement('tr');
-            tr.onclick = (e) => {
-                if (window.innerWidth <= 768 && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'A') {
-                    tr.classList.toggle('is-open');
-                }
-            };
-            tr.innerHTML = `
-                <td data-label="企業名" class="sticky-col fw-bold text-primary">${item.company}</td>
-                <td data-label="マイページ">${item.mypageUrl ? `<a href="${item.mypageUrl}" target="_blank" class="btn btn-sm btn-outline-primary fw-bold" onclick="event.stopPropagation()">🔗 ログインページへ</a>`: 'ー'}</td>
-                <td data-label="ログインID">
-                    <div class="input-group input-group-sm max-w-200">
-                        <input type="text" class="form-control text-md-start text-end fw-bold" value="${item.mypageId || ''}" readonly id="mpid_${item.id}">
-                        <button class="btn btn-outline-secondary" onclick="event.stopPropagation(); copyText('mpid_${item.id}')">📋</button>
-                    </div>
-                </td>
-                <td data-label="パスワード">
-                    <div class="input-group input-group-sm max-w-200">
-                        <input type="password" class="form-control text-md-start text-end fw-bold" value="${item.mypagePass || ''}" readonly id="mppass_${item.id}">
-                        <button class="btn btn-outline-secondary" onclick="event.stopPropagation(); togglePassMask('mppass_${item.id}')">👁️</button>
-                        <button class="btn btn-outline-secondary" onclick="event.stopPropagation(); copyText('mppass_${item.id}')">📋</button>
-                    </div>
-                </td>
-                <td data-label="操作" class="text-end">
-                    <button class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation(); editData('${item.id}')">✏️ 修正</button>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
-    };
-
-    window.copyText = function(id) {
-        const el = document.getElementById(id); if(!el || !el.value) return;
-        navigator.clipboard.writeText(el.value).then(() => { alert("クリップボードにコピーしました！"); });
-    };
-    window.togglePassMask = function(id) {
-        const el = document.getElementById(id); if(!el) return;
-        el.type = el.type === 'password' ? 'text' : 'password';
-    };
-
-    // ==========================================
-    // ⑦ 🗣️ 面接対策ロジック
-    // ==========================================
-    window.loadInterview = function() {
-        const list = document.getElementById('interviewCompanyList');
-        const emptyMsg = document.getElementById('interviewEmptyMessage');
-        const detailArea = document.getElementById('interviewDetailArea');
-        list.innerHTML = '';
-
-        if(window.shukatsuData.length === 0) {
-            detailArea.style.display = 'none'; emptyMsg.style.display = 'block'; return;
-        }
-
-        window.shukatsuData.forEach(item => {
-            const btn = document.createElement('button');
-            btn.className = `list-group-item list-group-item-action d-flex justify-content-between align-items-center fw-bold text-dark ${item.id === currentInterviewCompanyId ? 'active' : ''}`;
-            const isTarget = item.id === currentInterviewCompanyId;
-            const arrowText = window.innerWidth <= 768 ? (isTarget ? '▲' : '▼') : '';
-            btn.innerHTML = `<span>${item.company}</span><span class="interview-arrow">${arrowText}</span>`;
-
-            btn.onclick = () => {
-                if (currentInterviewCompanyId === item.id && window.innerWidth <= 768) {
-                    currentInterviewCompanyId = null; detailArea.style.display = 'none'; emptyMsg.style.display = 'block';
-                    btn.classList.remove('active'); if(btn.querySelector('.interview-arrow')) btn.querySelector('.interview-arrow').innerText = '▼';
-                } else {
-                    currentInterviewCompanyId = item.id;
-                    Array.from(list.children).forEach(c => { c.classList.remove('active'); const a = c.querySelector('.interview-arrow'); if(a) a.innerText = '▼'; });
-                    btn.classList.add('active'); const a = btn.querySelector('.interview-arrow'); if(a) a.innerText = '▲';
-                    selectInterviewCompany(item.id);
-                }
-            };
-            list.appendChild(btn);
-        });
-
-        if (currentInterviewCompanyId && window.shukatsuData.some(i => i.id === currentInterviewCompanyId)) {
-            selectInterviewCompany(currentInterviewCompanyId);
-        } else {
-            if(detailArea) detailArea.style.display = 'none'; if(emptyMsg) emptyMsg.style.display = 'block';
-        }
-    };
-
-    function selectInterviewCompany(id) {
-        document.getElementById('interviewEmptyMessage').style.display = 'none';
-        document.getElementById('interviewDetailArea').style.display = 'block';
-        const item = window.shukatsuData.find(i => i.id === id);
-        document.getElementById('interviewCompanyName').innerText = `🗣️ ${item.company} の面接対策空間`;
-
-        document.getElementById('intDateInput').value = item.interviewDate || '';
-        document.getElementById('intNoteInput').value = item.interviewNote || '';
-
-        // ESの紐付け選択肢構築
-        const sel = document.getElementById('intEsSelect');
-        sel.innerHTML = '<option value="">-- ES文章をここに参考表示 --</option>';
-        const arr = item.esAnswers || [];
-        arr.forEach((q, idx) => {
-            const op = document.createElement('option'); op.value = idx; op.innerText = `設問${idx+1}: ${q.q ? q.q.substring(0,18)+'...' : '(無題)'}`; sel.appendChild(op);
-        });
-        document.getElementById('intEsRefArea').style.display = 'none';
-    }
-
-    window.showEsReferenceInInterview = function() {
-        const idx = document.getElementById('intEsSelect').value;
-        const area = document.getElementById('intEsRefArea');
-        const content = document.getElementById('intEsRefContent');
-        if(idx === '') { area.style.display = 'none'; return; }
-        const item = window.shukatsuData.find(i => i.id === currentInterviewCompanyId);
-        if(!item || !item.esAnswers || !item.esAnswers[idx]) return;
-
-        const qObj = item.esAnswers[idx];
-        content.innerHTML = `<strong>❓ 設問:</strong> ${qObj.q || 'なし'}<br><br><strong>📝 決定稿回答:</strong><br>${(qObj.a || '').replace(/\n/g, '<br>')}`;
-        area.style.display = 'block';
-    };
-
-    window.saveInterviewPrep = async function() {
-        if(!currentInterviewCompanyId) return;
-        const item = window.shukatsuData.find(i => i.id === currentInterviewCompanyId);
-        if(!item) return;
-
-        item.interviewDate = document.getElementById('intDateInput').value;
-        item.interviewNote = document.getElementById('intNoteInput').value.trim();
-
-        await window.saveToServer();
-        alert("面接対策メモを保存しました！");
-        loadDashboard();
-        loadTable();
-    };
-
-    // ==========================================
-    // ⚙️ 新規・編集ダイアログモーダル制御
-    // ==========================================
-    window.prepareAdd = function() {
-        document.getElementById('modalTitle').innerText = '＋ 新規企業を追加';
-        document.getElementById('editId').value = '';
-        document.getElementById('companyInput').value = '';
-        document.getElementById('locationInput').value = '';
-        document.getElementById('sessionDateInput').value = '';
-        document.getElementById('sessionStatusSelect').value = '未申込';
-        document.getElementById('esDeadlineInput').value = '';
-        document.getElementById('interviewDateInput').value = '';
-        document.getElementById('mypageUrlInput').value = '';
-        document.getElementById('mypageIdInput').value = '';
-        document.getElementById('mypagePassInput').value = '';
-        document.getElementById('memoInput').value = '';
-
-        document.getElementById('internDatesContainer').innerHTML = '';
-        tempSelectionFlow = [];
-        renderFlowTreeStructure(tempSelectionFlow, document.getElementById('modalSelectionFlowEditor'), true, true);
-        updateModalTemplateSelect();
-    };
-
-    window.addInternDateRow = function(title='', start='', end='') {
-        const container = document.getElementById('internDatesContainer');
-        const div = document.createElement('div');
-        div.className = 'row g-1 mt-1 align-items-center intern-date-row';
-        div.innerHTML = `
-            <div class="col-3"><input type="text" class="form-control form-control-sm intern-title" placeholder="回・部門名" value="${title}"></div>
-            <div class="col-4"><input type="date" class="form-control form-control-sm intern-start" value="${start}"></div>
-            <div class="col-4"><input type="date" class="form-control form-control-sm intern-end" value="${end}"></div>
-            <div class="col-1 text-center"><button type="button" class="btn btn-sm text-danger p-0 fw-bold" onclick="this.closest('.intern-date-row').remove()">❌</button></div>
-        `;
-        container.appendChild(div);
-    };
+    window.addInternDateRow = function(data = {title: '', start: '', end: ''}) { const c = document.getElementById('internDatesContainer'); const r = document.createElement('div'); r.className = 'row mb-2 intern-date-row g-2'; r.innerHTML = `<div class="col-12 col-md-4"><input type="text" class="form-control intern-title" placeholder="日程名" value="${data.title}"></div><div class="col-5 col-md-3"><input type="date" class="form-control intern-start" value="${data.start}"></div><div class="col-2 col-md-1 text-center align-self-center">〜</div><div class="col-5 col-md-3"><input type="date" class="form-control intern-end" value="${data.end}"></div><div class="col-12 col-md-1 text-end"><button type="button" class="btn btn-sm btn-outline-danger w-100 h-100" onclick="this.closest('.intern-date-row').remove()">×</button></div>`; c.appendChild(r); };
 
     window.editData = function(id) {
-        const item = window.shukatsuData.find(i => i.id == id);
-        if(!item) return;
-
-        document.getElementById('modalTitle').innerText = '📝 企業情報の修正';
-        document.getElementById('editId').value = item.id;
-        document.getElementById('companyInput').value = item.company || '';
-        document.getElementById('locationInput').value = item.location || '';
-        document.getElementById('sessionDateInput').value = item.sessionDate || '';
-        document.getElementById('sessionStatusSelect').value = item.sessionStatus || '未申込';
-        document.getElementById('esDeadlineInput').value = item.esDeadline || '';
-        document.getElementById('interviewDateInput').value = item.interviewDate || '';
-        document.getElementById('mypageUrlInput').value = item.mypageUrl || '';
-        document.getElementById('mypageIdInput').value = item.mypageId || '';
-        document.getElementById('mypagePassInput').value = item.mypagePass || '';
-        document.getElementById('memoInput').value = item.memo || '';
-
-        document.getElementById('internDatesContainer').innerHTML = '';
-        (item.internDates || []).forEach(d => { window.addInternDateRow(d.title, d.start, d.end); });
-
-        // 選考ツリーを作業用バッファにディープコピー
-        const existingFlow = (item.companyResearch && item.companyResearch.selectionFlow) ? item.companyResearch.selectionFlow : [];
-        tempSelectionFlow = existingFlow.map(s => ({ ...s }));
-        renderFlowTreeStructure(tempSelectionFlow, document.getElementById('modalSelectionFlowEditor'), true, true);
-        updateModalTemplateSelect();
-
-        const modal = new bootstrap.Modal(document.getElementById('addModal'));
-        modal.show();
+        const data = window.shukatsuData.find(item => item.id === id); if (!data) return;
+        document.getElementById('editId').value = data.id; document.getElementById('addModalLabel').innerText = '企業の編集';
+        ['company','internStart','location','mypageUrl','mypageId','mypagePass','hasSession','sessionStatus','sessionDate','sessionMemo','esDeadline'].forEach(k => { if(document.getElementById(k+'Input')) document.getElementById(k+'Input').value = data[k]||''; });
+        const c = document.getElementById('internDatesContainer'); c.innerHTML = '';
+        let dates = data.internDates || []; if (dates.length === 0) addInternDateRow(); else dates.forEach(d => addInternDateRow(d));
+        tempSelectionFlow = (data.companyResearch && data.companyResearch.selectionFlow) ? JSON.parse(JSON.stringify(data.companyResearch.selectionFlow)) : [];
+        goToStep(1); bootstrap.Modal.getOrCreateInstance(document.getElementById('addModal')).show();
     };
 
-    window.saveData = async function() {
-        const compName = document.getElementById('companyInput').value.trim();
-        if(!compName) { alert("企業名を入力してください。"); return; }
+    // ★ モーダル内選考フロー操作 ★
+    window.renderModalSelectionFlow = function() {
+        const editor = document.getElementById('modalSelectionFlowEditor'); const progressBar = document.getElementById('modalSelectionFlowProgressBar'); editor.innerHTML = ''; progressBar.innerHTML = '';
+        if (tempSelectionFlow.length === 0) { progressBar.innerHTML = '<span class="text-muted fw-bold ms-2" style="font-size:0.85rem;">追加ボタンからステップを登録して下さい</span>'; }
+        tempSelectionFlow.forEach((step, index) => {
+            const row = document.createElement('div'); row.className = 'd-flex align-items-center mb-2 gap-2 bg-white p-2 rounded shadow-sm border border-light';
+            row.innerHTML = `<div class="fw-bold text-primary" style="min-width: 20px;">${index + 1}.</div><div class="fw-bold flex-grow-1 text-truncate">${step.name}</div><select class="form-select form-select-sm w-auto fw-bold ${step.status==='completed'?'bg-success text-white':(step.status==='current'?'bg-primary text-white':'bg-light text-secondary')}" onchange="updateModalFlowStatus(${index}, this.value)"><option value="not_started" ${step.status === 'not_started' ? 'selected' : ''} class="text-dark bg-white">未着手</option><option value="current" ${step.status === 'current' ? 'selected' : ''} class="text-dark bg-white">進行中</option><option value="completed" ${step.status === 'completed' ? 'selected' : ''} class="text-dark bg-white">完了</option></select><button type="button" class="btn btn-sm btn-outline-danger border-0" onclick="removeModalFlowStep(${index})">✖</button>`; editor.appendChild(row);
+            const isLast = index === tempSelectionFlow.length - 1;
+            const cClass = step.status === 'completed' ? 'bg-success text-white border-success' : (step.status === 'current' ? 'bg-primary text-white border-info border-3' : 'bg-secondary text-white border-secondary');
+            let lClass = 'bg-secondary'; if (step.status === 'completed') { if (!isLast && (tempSelectionFlow[index+1].status === 'completed' || tempSelectionFlow[index+1].status === 'current')) { lClass = 'bg-success'; } else { lClass = 'bg-primary opacity-50'; } }
+            const stepContainer = document.createElement('div'); stepContainer.className = 'flow-step-wrapper'; stepContainer.innerHTML = `<div class="flow-step-container"><div class="flow-step-circle ${cClass}">${step.status === 'completed' ? '✓' : index + 1}</div><div class="flow-step-label">${step.name}</div></div>${!isLast ? `<div class="flow-step-line ${lClass}"></div>` : ''}`; progressBar.appendChild(stepContainer);
+        });
+    };
+    window.addModalSelectionFlowStep = function() { const input = document.getElementById('modalNewFlowStepName'); const name = input.value.trim(); if (!name) return; tempSelectionFlow.push({ name: name, status: 'not_started' }); input.value = ''; renderModalSelectionFlow(); };
+    window.updateModalFlowStatus = function(index, status) { tempSelectionFlow[index].status = status; renderModalSelectionFlow(); };
+    window.removeModalFlowStep = function(index) { if(!confirm('このステップを削除しますか？')) return; tempSelectionFlow.splice(index, 1); renderModalSelectionFlow(); };
 
+    window.updateModalFlowTemplateSelect = function() {
+        const select = document.getElementById('modalFlowTemplateSelect'); if (!select) return; const currentVal = select.value; select.innerHTML = '<option value="">-- 選択 --</option>'; window.appSettings.flowTemplates = window.appSettings.flowTemplates || {};
+        Object.keys(window.appSettings.flowTemplates).forEach(name => { const opt = document.createElement('option'); opt.value = name; opt.innerText = name; select.appendChild(opt); }); select.value = currentVal;
+    };
+    window.applyModalFlowTemplate = function() {
+        const select = document.getElementById('modalFlowTemplateSelect'); if (!select || !select.value) { alert('適用する型を選択してください。'); return; }
+        if (tempSelectionFlow.length > 0) { if (!confirm('現在のフローが上書きされます。よろしいですか？')) return; }
+        const templateFlow = window.appSettings.flowTemplates[select.value]; if (!templateFlow) return;
+        tempSelectionFlow = JSON.parse(JSON.stringify(templateFlow)); if (tempSelectionFlow.length > 0) tempSelectionFlow[0].status = 'current'; renderModalSelectionFlow(); alert(`「${select.value}」の選考フローを展開しました。`);
+    };
+    window.saveModalAsFlowTemplate = async function() {
+        if (tempSelectionFlow.length === 0) { alert('保存するフローが空です。'); return; } const templateName = prompt('この選考フローに名前をつけて保存します:'); if (!templateName || templateName.trim() === '') return;
+        window.appSettings.flowTemplates = window.appSettings.flowTemplates || {}; window.appSettings.flowTemplates[templateName.trim()] = tempSelectionFlow.map(step => ({ name: step.name, status: 'not_started' }));
+        window.updateModalFlowTemplateSelect(); if(window.updateFlowTemplateSelect) window.updateFlowTemplateSelect(); await window.saveToServer(); alert(`テンプレート「${templateName}」を保存しました！`);
+    };
+
+    window.saveData = async function(isSkip = false) {
+        if (!document.getElementById('companyInput').value.trim()) { alert('企業名を入力してください。'); return; }
         const id = document.getElementById('editId').value;
-        const internDates = [];
-        document.querySelectorAll('.intern-date-row').forEach(row => {
-            const title = row.querySelector('.intern-title').value.trim();
-            const start = row.querySelector('.intern-start').value;
-            const end = row.querySelector('.intern-end').value;
-            if (title || start || end) internDates.push({ title, start, end });
-        });
+        const internDates = []; document.querySelectorAll('.intern-date-row').forEach(row => { const title = row.querySelector('.intern-title').value, start = row.querySelector('.intern-start').value, end = row.querySelector('.intern-end').value; if (title || start || end) internDates.push({ title, start, end }); });
+        
+        const data = { id: id || Date.now().toString(), company: document.getElementById('companyInput').value, internStart: document.getElementById('internStartInput').value, location: document.getElementById('locationInput').value, mypageUrl: document.getElementById('mypageUrlInput').value, mypageId: document.getElementById('mypageIdInput').value, mypagePass: document.getElementById('mypagePassInput').value, hasSession: document.getElementById('hasSessionInput').value, sessionStatus: document.getElementById('sessionStatusInput').value, sessionDate: document.getElementById('sessionDateInput').value, sessionMemo: document.getElementById('sessionMemoInput').value, esDeadline: document.getElementById('esDeadlineInput').value, internDates: internDates };
+        let existingData = {};
+        if (id) { const idx = window.shukatsuData.findIndex(item => item.id === id); if (idx !== -1) { existingData = window.shukatsuData[idx]; data.esQuestions = existingData.esQuestions || []; data.esText = existingData.esText || ''; data.interviewNote = existingData.interviewNote || ''; data.interviewDate = existingData.interviewDate || ''; data.companyResearch = existingData.companyResearch || {}; } } else { data.companyResearch = {}; }
+        data.companyResearch.selectionFlow = tempSelectionFlow;
 
-        const updatedObject = {
-            id: id ? id : "comp_" + Date.now(),
-            company: compName,
-            location: document.getElementById('locationInput').value.trim(),
-            sessionDate: document.getElementById('sessionDateInput').value,
-            sessionStatus: document.getElementById('sessionStatusSelect').value,
-            esDeadline: document.getElementById('esDeadlineInput').value,
-            interviewDate: document.getElementById('interviewDateInput').value,
-            mypageUrl: document.getElementById('mypageUrlInput').value.trim(),
-            mypageId: document.getElementById('mypageIdInput').value.trim(),
-            mypagePass: document.getElementById('mypagePassInput').value.trim(),
-            memo: document.getElementById('memoInput').value.trim(),
-            internDates: internDates
-        };
+        let eventsToSync = [];
+        if (data.interviewDate && data.interviewDate !== existingData.interviewDate) { eventsToSync.push({ title: `[面接] ${data.company}`, date: data.interviewDate, type: 'time' }); }
+        if (data.esDeadline && data.esDeadline !== existingData.esDeadline) { eventsToSync.push({ title: `[ES締切] ${data.company}`, date: data.esDeadline, type: 'time' }); }
+        const oldInterns = existingData.internDates || [];
+        (data.internDates || []).forEach(newD => { if (newD.start) { const isAlreadyExists = oldInterns.some(oldD => oldD.start === newD.start && oldD.end === newD.end && oldD.title === newD.title); if (!isAlreadyExists) eventsToSync.push({ title: `[ｲﾝﾀｰﾝ] ${data.company} ${newD.title}`, date: newD.start, end: newD.end, type: 'allday' }); } });
 
-        if(id) {
-            // 既存修正時、他のタブ（企業研究やES）のサブデータを引き継ぐ
-            const old = window.shukatsuData.find(i => i.id == id);
-            if(old) {
-                updatedObject.companyResearch = old.companyResearch || {};
-                updatedObject.esAnswers = old.esAnswers || [];
-                updatedObject.interviewPreps = old.interviewPreps || {};
+        if (document.getElementById('autoCalSyncToggle').checked && eventsToSync.length > 0) { window.syncToGoogleCalendarAPI(eventsToSync, data.location); }
+
+        if (id) { const idx = window.shukatsuData.findIndex(item => item.id === id); if (idx !== -1) { window.shukatsuData[idx] = data; } } else { window.shukatsuData.push(data); }
+        await window.saveToServer(); bootstrap.Modal.getInstance(document.getElementById('addModal')).hide();
+    };
+
+    window.deleteData = async function(id) { if(confirm('本当に削除しますか？')){ window.shukatsuData = window.shukatsuData.filter(item => item.id !== id); await window.saveToServer(); } }
+    window.sortTable = function(key) { if (currentSortKey === key) currentSortAsc = !currentSortAsc; else { currentSortKey = key; currentSortAsc = true; } renderTable(); };
+
+    function renderTable() {
+        const tbody = document.getElementById('companyTableBody'); tbody.innerHTML = ''; let displayList = [...window.shukatsuData];
+        if (currentSortKey) { displayList.sort((a, b) => { let valA = a[currentSortKey], valB = b[currentSortKey]; if (currentSortKey === 'internStart') { let aDates = a.internDates || [], bDates = b.internDates || []; valA = aDates.length > 0 ? aDates[0].start : ''; valB = bDates.length > 0 ? bDates[0].start : ''; } if (valA === undefined || valA === null) valA = ''; if (valB === undefined || valB === null) valB = ''; if (typeof valA === 'boolean') { valA = valA ? 1 : 0; valB = valB ? 1 : 0; } if (typeof valA === 'string' && typeof valB === 'string') return currentSortAsc ? valA.localeCompare(valB, 'ja') : valB.localeCompare(valA, 'ja'); return currentSortAsc ? (valA > valB ? 1 : -1) : (valA > valB ? -1 : 1); }); }
+        
+        displayList.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.onclick = (e) => { if (window.innerWidth <= 768 && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'A') { tr.classList.toggle('is-open'); } };
+            let dates = item.internDates || []; let periodHtml = dates.length > 0 ? dates.map(d => { let t = d.title ? `<span class="badge bg-secondary me-1">${d.title}</span>` : ''; let s = d.start || '', e = d.end || ''; let p = (s && e) ? `${s} 〜 ${e}` : (s ? s : e); return p ? `${t}${p}` : ''; }).filter(v => v).join('<br>') : '';
+            let mypageCell = item.mypageUrl ? `<a href="${item.mypageUrl}" target="_blank" class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation()">開く</a>` : 'ー';
+            let accountBtn = `<button class="btn btn-sm btn-outline-secondary me-1" onclick="event.stopPropagation(); openAccountSidebar('${item.id}')" title="アカウント情報">🔐</button>`;
+            let memoCell = `<span class="memo-clickable text-truncate" title="${item.sessionMemo || ''}">${item.sessionMemo || '（空欄）'}</span>`;
+            
+            const flow = (item.companyResearch && item.companyResearch.selectionFlow) ? item.companyResearch.selectionFlow : [];
+            let progressHtml = '-';
+            if (flow.length > 0) {
+                const compCount = flow.filter(s => s.status === 'completed').length;
+                let currentStep = flow.find(s => s.status === 'current');
+                let statusText = currentStep ? `${currentStep.name} 進行中` : (compCount === flow.length ? '全完了🎉' : '未着手');
+                progressHtml = `<span class="badge bg-info text-dark">${statusText}</span> <span style="font-size:0.8rem;" class="text-secondary fw-bold ms-1">(${compCount}/${flow.length})</span>`;
             }
-        } else {
-            updatedObject.companyResearch = {};
-            updatedObject.esAnswers = [];
-            updatedObject.interviewPreps = {};
-        }
 
-        // モーダル側で編集した選考ツリーを反映
-        if(!updatedObject.companyResearch) updatedObject.companyResearch = {};
-        updatedObject.companyResearch.selectionFlow = tempSelectionFlow.map(s => ({ ...s }));
-
-        if(id) {
-            const idx = window.shukatsuData.findIndex(i => i.id == id);
-            window.shukatsuData[idx] = updatedObject;
-        } else {
-            window.shukatsuData.push(updatedObject);
-        }
-
-        await window.saveToServer();
-        bootstrap.Modal.getInstance(document.getElementById('addModal')).hide();
-        renderAll();
-    };
-
-    window.deleteData = function(id) {
-        if(!confirm("この企業データを削除しますか？クラウド上の全タブの記録、選考状況も完全に消去されます。")) return;
-        window.shukatsuData = window.shukatsuData.filter(i => i.id != id);
-        window.saveToServer();
-        renderAll();
-    };
-
-    // モーダル用選考フロー処理
-    window.addModalSelectionFlowStep = function() {
-        const input = document.getElementById('modalNewFlowStepName');
-        const name = input.value.trim();
-        if(!name) return;
-        tempSelectionFlow.push({
-            id: "step_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5),
-            name: name,
-            status: 'not_started',
-            parentId: null
+            tr.innerHTML = `<td data-label="社名" class="fw-bold sticky-col fs-5 text-primary">${item.company}</td><td data-label="インターン">${periodHtml}</td><td data-label="場所">${item.location || ''}</td><td data-label="説明会">${item.hasSession||'-'}</td><td data-label="説明会申込">${item.sessionStatus||'-'}</td><td data-label="説明会メモ">${memoCell}</td><td data-label="マイページ">${mypageCell}</td><td data-label="ES締切" class="text-danger fw-bold">${item.esDeadline ? item.esDeadline.replace('T', ' ') : ''}</td><td data-label="選考進捗">${progressHtml}</td><td data-label="操作" class="d-flex flex-wrap gap-1 justify-content-end">${accountBtn}<button class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation(); editData('${item.id}')">編集</button><button class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation(); deleteData('${item.id}')">削除</button></td>`; tbody.appendChild(tr);
         });
-        input.value = '';
-        renderFlowTreeStructure(tempSelectionFlow, document.getElementById('modalSelectionFlowEditor'), true, true);
-    };
+        setTimeout(syncScrollWidth, 50);
+    }
 
-    function updateModalTemplateSelect() {
-        const s = document.getElementById('modalFlowTemplateSelect');
-        if(!s) return;
-        s.innerHTML = '<option value="">-- 選択 --</option>';
-        Object.keys(window.appSettings.flowTemplates || {}).forEach(tName => {
-            const op = document.createElement('option'); op.value = tName; op.innerText = tName; s.appendChild(op);
+    function renderMypageTable() { const tbody = document.getElementById('mypageTableBody'); tbody.innerHTML = ''; window.shukatsuData.forEach(item => { const tr = document.createElement('tr'); tr.onclick = (e) => { if (window.innerWidth <= 768 && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'A') { tr.classList.toggle('is-open'); } }; tr.innerHTML = `<td data-label="社名" class="fw-bold text-primary">${item.company}</td><td data-label="マイページ">${item.mypageUrl ? `<a href="${item.mypageUrl}" target="_blank" class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation()">開く</a>` : 'ー'}</td><td data-label="ログインID">${item.mypageId ? `<input type="text" class="form-control form-control-sm text-md-start text-end" value="${item.mypageId}" readonly>` : 'ー'}</td><td data-label="パスワード">${item.mypagePass ? `<input type="password" class="form-control form-control-sm text-md-start text-end" value="${item.mypagePass}" readonly>` : 'ー'}</td><td data-label="操作" class="text-end"><button class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation(); editData('${item.id}')">編集</button></td>`; tbody.appendChild(tr); }); }
+    window.openAccountSidebar = function(id) { const data = window.shukatsuData.find(item => item.id === id); if (!data) return; document.getElementById('sidebarCompanyName').innerText = data.company; document.getElementById('sidebarLoginId').value = data.mypageId || ''; document.getElementById('sidebarPassword').value = data.mypagePass || ''; document.getElementById('sidebarPassword').type = 'password'; document.getElementById('togglePasswordBtn').innerText = '表示'; const link = document.getElementById('sidebarMypageLink'); if (data.mypageUrl) { link.href = data.mypageUrl; link.style.display = 'block'; } else { link.style.display = 'none'; } new bootstrap.Offcanvas(document.getElementById('accountSidebar')).show(); }
+    window.copyText = function(elementId) { const input = document.getElementById(elementId); input.type = 'text'; input.select(); document.execCommand('copy'); if(elementId==='sidebarPassword') input.type='password'; alert('コピーしました'); }
+    window.togglePasswordVisibility = function() { const p = document.getElementById('sidebarPassword'); const b = document.getElementById('togglePasswordBtn'); if (p.type === 'password') { p.type = 'text'; b.innerText = '隠す'; } else { p.type = 'password'; b.innerText = '表示'; } }
+
+    /* 企業研究ロジック */
+    function loadResearchView() {
+        const detailArea = document.getElementById('researchDetailArea'); const emptyMsg = document.getElementById('researchEmptyMessage'); const rightCol = document.querySelector('#research-view .col-md-9');
+        if (detailArea && rightCol && emptyMsg && !rightCol.contains(detailArea)) { rightCol.insertBefore(detailArea, emptyMsg); }
+        const list = document.getElementById('researchCompanyList'); list.innerHTML = '';
+        window.shukatsuData.forEach(item => {
+            const btn = document.createElement('button'); btn.className = `list-group-item list-group-item-action fw-bold d-flex justify-content-between align-items-center ${item.id === currentResearchCompanyId ? 'active' : ''}`;
+            const isTarget = item.id === currentResearchCompanyId; const arrowText = window.innerWidth <= 768 ? (isTarget ? '▲' : '▼') : ''; btn.innerHTML = `<span>${item.company}</span><span class="research-arrow">${arrowText}</span>`;
+            btn.onclick = () => { 
+                if (currentResearchCompanyId === item.id && window.innerWidth <= 768) { currentResearchCompanyId = null; document.getElementById('researchDetailArea').style.display = 'none'; document.getElementById('researchEmptyMessage').style.display = 'block'; btn.classList.remove('active'); if(btn.querySelector('.research-arrow')) btn.querySelector('.research-arrow').innerText = '▼'; } else { currentResearchCompanyId = item.id; Array.from(list.children).forEach(c => { c.classList.remove('active'); const a = c.querySelector('.research-arrow'); if(a) a.innerText = '▼'; }); btn.classList.add('active'); const a = btn.querySelector('.research-arrow'); if(a) a.innerText = '▲'; selectResearchCompany(item.id); }
+            }; list.appendChild(btn);
+        });
+        if (currentResearchCompanyId && window.shukatsuData.some(i=>i.id===currentResearchCompanyId)) { selectResearchCompany(currentResearchCompanyId); } else { if(detailArea) detailArea.style.display = 'none'; if(emptyMsg) emptyMsg.style.display = 'block'; }
+    }
+    
+    function renderSelectionFlow() {
+        const data = window.shukatsuData.find(item => item.id === currentResearchCompanyId); if (!data) return;
+        const flow = (data.companyResearch && data.companyResearch.selectionFlow) ? data.companyResearch.selectionFlow : [];
+        const editor = document.getElementById('selectionFlowEditor'); const progressBar = document.getElementById('selectionFlowProgressBar');
+        editor.innerHTML = ''; progressBar.innerHTML = '';
+
+        if (flow.length === 0) { progressBar.innerHTML = '<span class="text-muted fw-bold ms-2" style="font-size:0.85rem;">追加ボタンからステップを登録して下さい</span>'; }
+
+        flow.forEach((step, index) => {
+            const row = document.createElement('div'); row.className = 'd-flex align-items-center mb-2 gap-2 bg-white p-2 rounded shadow-sm border border-light';
+            row.innerHTML = `<div class="fw-bold text-primary" style="min-width: 20px;">${index + 1}.</div><div class="fw-bold flex-grow-1 text-truncate">${step.name}</div><select class="form-select form-select-sm w-auto fw-bold ${step.status==='completed'?'bg-success text-white':(step.status==='current'?'bg-primary text-white':'bg-light text-secondary')}" onchange="updateFlowStatus(${index}, this.value)"><option value="not_started" ${step.status === 'not_started' ? 'selected' : ''} class="text-dark bg-white">未着手</option><option value="current" ${step.status === 'current' ? 'selected' : ''} class="text-dark bg-white">進行中</option><option value="completed" ${step.status === 'completed' ? 'selected' : ''} class="text-dark bg-white">完了</option></select><button class="btn btn-sm btn-outline-danger border-0" onclick="removeFlowStep(${index})">✖</button>`; editor.appendChild(row);
+            const isLast = index === flow.length - 1;
+            const cClass = step.status === 'completed' ? 'bg-success text-white border-success' : (step.status === 'current' ? 'bg-primary text-white border-info border-3' : 'bg-secondary text-white border-secondary');
+            let lClass = 'bg-secondary'; if (step.status === 'completed') { if (!isLast && (flow[index+1].status === 'completed' || flow[index+1].status === 'current')) { lClass = 'bg-success'; } else { lClass = 'bg-primary opacity-50'; } }
+            const stepContainer = document.createElement('div'); stepContainer.className = 'flow-step-wrapper'; stepContainer.innerHTML = `<div class="flow-step-container"><div class="flow-step-circle ${cClass}">${step.status === 'completed' ? '✓' : index + 1}</div><div class="flow-step-label">${step.name}</div></div>${!isLast ? `<div class="flow-step-line ${lClass}"></div>` : ''}`; progressBar.appendChild(stepContainer);
         });
     }
 
-    window.applyModalFlowTemplate = function() {
-        const tName = document.getElementById('modalFlowTemplateSelect').value;
-        if(!tName) return;
-        const src = window.appSettings.flowTemplates[tName] || [];
-        const idMapping = {};
-        src.forEach(s => { idMapping[s.id] = "step_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5); });
-        
-        tempSelectionFlow = src.map(s => ({
-            id: idMapping[s.id],
-            name: s.name,
-            status: 'not_started',
-            parentId: s.parentId ? idMapping[s.parentId] : null
-        }));
-        renderFlowTreeStructure(tempSelectionFlow, document.getElementById('modalSelectionFlowEditor'), true, true);
+    window.addSelectionFlowStep = async function() { const input = document.getElementById('newFlowStepName'); const name = input.value.trim(); if (!name) return; const data = window.shukatsuData.find(item => item.id === currentResearchCompanyId); if (!data) return; if (!data.companyResearch) data.companyResearch = {}; if (!data.companyResearch.selectionFlow) data.companyResearch.selectionFlow = []; data.companyResearch.selectionFlow.push({ name: name, status: 'not_started' }); input.value = ''; renderSelectionFlow(); await window.saveToServer(); };
+    window.updateFlowStatus = async function(index, status) { const data = window.shukatsuData.find(item => item.id === currentResearchCompanyId); data.companyResearch.selectionFlow[index].status = status; renderSelectionFlow(); await window.saveToServer(); };
+    window.removeFlowStep = async function(index) { if(!confirm('このステップを削除しますか？')) return; const data = window.shukatsuData.find(item => item.id === currentResearchCompanyId); data.companyResearch.selectionFlow.splice(index, 1); renderSelectionFlow(); await window.saveToServer(); };
+
+    window.updateFlowTemplateSelect = function() {
+        const select = document.getElementById('flowTemplateSelect'); if (!select) return; const currentVal = select.value; select.innerHTML = '<option value="">-- 選択 --</option>'; window.appSettings.flowTemplates = window.appSettings.flowTemplates || {};
+        Object.keys(window.appSettings.flowTemplates).forEach(name => { const opt = document.createElement('option'); opt.value = name; opt.innerText = name; select.appendChild(opt); }); select.value = currentVal;
+    };
+    window.saveAsFlowTemplate = async function() {
+        const data = window.shukatsuData.find(item => item.id === currentResearchCompanyId); if (!data) { alert('企業を選択してください。'); return; }
+        const flow = (data.companyResearch && data.companyResearch.selectionFlow) ? data.companyResearch.selectionFlow : []; if (flow.length === 0) { alert('保存するフローが空です。'); return; }
+        const templateName = prompt('この選考フローに名前をつけて保存します:'); if (!templateName || templateName.trim() === '') return;
+        window.appSettings.flowTemplates = window.appSettings.flowTemplates || {}; window.appSettings.flowTemplates[templateName.trim()] = flow.map(step => ({ name: step.name, status: 'not_started' }));
+        window.updateFlowTemplateSelect(); if(window.updateModalFlowTemplateSelect) window.updateModalFlowTemplateSelect(); await window.saveToServer(); alert(`テンプレート「${templateName}」を保存しました！`);
+    };
+    window.applyFlowTemplate = async function() {
+        const select = document.getElementById('flowTemplateSelect'); if (!select || !select.value) { alert('適用する型を選択してください。'); return; }
+        const data = window.shukatsuData.find(item => item.id === currentResearchCompanyId); if (!data) { alert('企業を選択してください。'); return; }
+        if (data.companyResearch && data.companyResearch.selectionFlow && data.companyResearch.selectionFlow.length > 0) { if (!confirm('現在のフローが上書きされます。よろしいですか？')) return; }
+        const templateFlow = window.appSettings.flowTemplates[select.value]; if (!templateFlow) return;
+        data.companyResearch = data.companyResearch || {}; data.companyResearch.selectionFlow = JSON.parse(JSON.stringify(templateFlow)); if (data.companyResearch.selectionFlow.length > 0) data.companyResearch.selectionFlow[0].status = 'current';
+        renderSelectionFlow(); if(window.renderDashboardCompanyFlows) window.renderDashboardCompanyFlows(); await window.saveToServer(); alert(`「${select.value}」の選考フローを展開しました。`);
     };
 
-    window.saveAsModalFlowTemplate = async function() {
-        if(tempSelectionFlow.length === 0) { alert('フローがありません。'); return; }
-        const tName = prompt("型(テンプレート)の名前:");
-        if(!tName || !tName.trim()) return;
-        window.appSettings.flowTemplates[tName.trim()] = tempSelectionFlow.map(s => ({
-            id: s.id, name: s.name, status: 'not_started', parentId: s.parentId
-        }));
-        window.updateFlowTemplateSelects();
-        await window.saveToServer();
-        alert("保存しました。");
+    window.selectResearchCompany = function(id) {
+        currentResearchCompanyId = id; const data = window.shukatsuData.find(item => item.id === id);
+        if (data) {
+            document.getElementById('researchTargetCompany').innerText = data.company; document.getElementById('researchTargetId').value = data.id;
+            const res = data.companyResearch || {};
+            document.getElementById('resFounderInput').value = res.founder || ''; document.getElementById('resIndustryInput').value = res.industry || ''; document.getElementById('resRivalsInput').value = res.rivals || ''; document.getElementById('resStrengthsInput').value = res.strengths || ''; document.getElementById('resSalaryInput').value = res.salary || ''; document.getElementById('resVacationInput').value = res.vacation || ''; document.getElementById('resBonusInput').value = res.bonus || '';
+            renderSelectionFlow(); 
+            const detailArea = document.getElementById('researchDetailArea'); detailArea.style.display = 'block'; document.getElementById('researchEmptyMessage').style.display = 'none';
+            if (window.innerWidth <= 768) { const activeBtn = Array.from(document.getElementById('researchCompanyList').children).find(btn => btn.classList.contains('active')); if (activeBtn) activeBtn.after(detailArea); detailArea.classList.add('mb-4', 'p-3'); } else { document.querySelector('#research-view .col-md-9').insertBefore(detailArea, document.getElementById('researchEmptyMessage')); detailArea.classList.remove('mb-4', 'p-3'); }
+            if (window.updateFlowTemplateSelect) window.updateFlowTemplateSelect();
+        }
+    };
+    window.saveResearchDetails = async function() {
+        const id = document.getElementById('researchTargetId').value; const data = window.shukatsuData.find(item => item.id === id); if (!data) return;
+        data.companyResearch = { ...(data.companyResearch || {}), founder: document.getElementById('resFounderInput').value, industry: document.getElementById('resIndustryInput').value, rivals: document.getElementById('resRivalsInput').value, strengths: document.getElementById('resStrengthsInput').value, salary: document.getElementById('resSalaryInput').value, vacation: document.getElementById('resVacationInput').value, bonus: document.getElementById('resBonusInput').value };
+        await window.saveToServer(); alert('企業研究内容を保存しました！');
     };
 
-    // ==========================================
-    // ⚙️ 各種設定（ICSエクスポート等）
-    // ==========================================
-    window.saveSettings = async function() {
-        window.appSettings.googleApiKey = document.getElementById('settingApiKey').value.trim();
-        window.appSettings.googleClientId = document.getElementById('settingClientId').value.trim();
-        await window.saveToServer();
-        bootstrap.Modal.getInstance(document.getElementById('settingsModal')).hide();
-        alert("基本設定をローカル/クラウドへ保存しました。");
-    };
+    function loadEsView() { const detailArea = document.getElementById('esDetailArea'); const emptyMsg = document.getElementById('esEmptyMessage'); const rightCol = document.querySelector('#es-view .col-md-9'); if (detailArea && rightCol && emptyMsg && !rightCol.contains(detailArea)) { rightCol.insertBefore(detailArea, emptyMsg); } const list = document.getElementById('esCompanyList'); list.innerHTML = ''; window.shukatsuData.forEach(item => { const btn = document.createElement('button'); btn.className = `list-group-item list-group-item-action fw-bold d-flex justify-content-between align-items-center ${item.id === currentEsCompanyId ? 'active' : ''}`; const isTarget = item.id === currentEsCompanyId; const arrowText = window.innerWidth <= 768 ? (isTarget ? '▲' : '▼') : ''; btn.innerHTML = `<span>${item.company}</span><span class="es-arrow">${arrowText}</span>`; btn.onclick = () => { if (currentEsCompanyId === item.id && window.innerWidth <= 768) { currentEsCompanyId = null; document.getElementById('esDetailArea').style.display = 'none'; document.getElementById('esEmptyMessage').style.display = 'block'; btn.classList.remove('active'); if(btn.querySelector('.es-arrow')) btn.querySelector('.es-arrow').innerText = '▼'; } else { currentEsCompanyId = item.id; Array.from(list.children).forEach(c => { c.classList.remove('active'); const a = c.querySelector('.es-arrow'); if(a) a.innerText = '▼'; }); btn.classList.add('active'); const a = btn.querySelector('.es-arrow'); if(a) a.innerText = '▲'; selectEsCompany(item.id); } }; list.appendChild(btn); }); if (currentEsCompanyId && window.shukatsuData.some(i=>i.id===currentEsCompanyId)) { selectEsCompany(currentEsCompanyId); } else { if(detailArea) detailArea.style.display = 'none'; if(emptyMsg) emptyMsg.style.display = 'block'; } }
+    window.addEsQuestionRow = function(qData = { id: '', question: '', finalAnswer: '', memoAnswer: '' }) { const container = document.getElementById('esQuestionsContainer'); const card = document.createElement('div'); card.className = 'card p-3 mb-3 border-secondary es-question-card shadow-sm'; card.dataset.qId = qData.id || 'q_' + Date.now() + Math.random().toString(36).substring(2, 5); card.innerHTML = `<div class="d-flex justify-content-between align-items-center mb-2"><h6 class="fw-bold text-secondary mb-0">📝 設問</h6><button class="btn btn-sm btn-outline-danger" onclick="this.closest('.es-question-card').remove()">削除</button></div><div class="mb-3"><textarea class="form-control es-q-text" rows="2" placeholder="設問内容">${qData.question || ''}</textarea></div><div class="row"><div class="col-12 mb-3"><label class="form-label text-info fw-bold" style="font-size:0.85rem;">💡 メモ・構成案</label><textarea class="form-control es-q-memo" rows="4" placeholder="書きたいポイントや箇条書き">${qData.memoAnswer || ''}</textarea></div><div class="col-12 mb-3"><div class="d-flex justify-content-between align-items-end mb-1"><label class="form-label text-success fw-bold mb-0" style="font-size:0.85rem;">✨ 清書</label><span class="text-secondary fw-bold" style="font-size:0.85rem;"><span class="char-count">0</span> 文字</span></div><textarea class="form-control es-q-final" rows="6" placeholder="清書欄" oninput="updateCharCount(this)">${qData.finalAnswer || ''}</textarea></div></div>`; container.appendChild(card); window.updateCharCount(card.querySelector('.es-q-final')); };
+    window.updateCharCount = function(textarea) { textarea.closest('.col-12').querySelector('.char-count').innerText = textarea.value.length; };
+    window.selectEsCompany = function(id) { currentEsCompanyId = id; const data = window.shukatsuData.find(item => item.id === id); if (data) { document.getElementById('esTargetCompany').innerText = data.company; document.getElementById('esTargetId').value = data.id; const container = document.getElementById('esQuestionsContainer'); container.innerHTML = ''; const questions = data.esQuestions || []; questions.forEach(q => addEsQuestionRow(q)); if(questions.length === 0) addEsQuestionRow(); const detailArea = document.getElementById('esDetailArea'); detailArea.style.display = 'block'; document.getElementById('esEmptyMessage').style.display = 'none'; if (window.innerWidth <= 768) { const activeBtn = Array.from(document.getElementById('esCompanyList').children).find(btn => btn.classList.contains('active')); if (activeBtn) activeBtn.after(detailArea); detailArea.classList.add('mb-4', 'p-3'); } else { document.querySelector('#es-view .col-md-9').insertBefore(detailArea, document.getElementById('esEmptyMessage')); detailArea.classList.remove('mb-4', 'p-3'); } setTimeout(() => { container.querySelectorAll('.es-q-final').forEach(ta => window.updateCharCount(ta)); }, 50); } };
+    window.saveEsDetails = async function() { const id = document.getElementById('esTargetId').value; const data = window.shukatsuData.find(item => item.id === id); if (!data) return; const qs = []; document.querySelectorAll('.es-question-card').forEach(card => { qs.push({ id: card.dataset.qId, question: card.querySelector('.es-q-text').value, memoAnswer: card.querySelector('.es-q-memo').value, finalAnswer: card.querySelector('.es-q-final').value }); }); data.esQuestions = qs; await window.saveToServer(); alert('ES内容を保存しました！'); };
 
+    function loadInterviewView() { const detailArea = document.getElementById('interviewDetailArea'); const emptyMsg = document.getElementById('interviewEmptyMessage'); const rightCol = document.querySelector('#interview-view .col-md-9'); if (detailArea && rightCol && emptyMsg && !rightCol.contains(detailArea)) { rightCol.insertBefore(detailArea, emptyMsg); } const list = document.getElementById('interviewCompanyList'); list.innerHTML = ''; window.shukatsuData.forEach(item => { const btn = document.createElement('button'); btn.className = `list-group-item list-group-item-action fw-bold d-flex justify-content-between align-items-center ${item.id === currentInterviewCompanyId ? 'active' : ''}`; const isTarget = item.id === currentInterviewCompanyId; const arrowText = window.innerWidth <= 768 ? (isTarget ? '▲' : '▼') : ''; btn.innerHTML = `<span>${item.company}</span><span class="interview-arrow">${arrowText}</span>`; btn.onclick = () => { if (currentInterviewCompanyId === item.id && window.innerWidth <= 768) { currentInterviewCompanyId = null; document.getElementById('interviewDetailArea').style.display = 'none'; document.getElementById('interviewEmptyMessage').style.display = 'block'; btn.classList.remove('active'); if(btn.querySelector('.interview-arrow')) btn.querySelector('.interview-arrow').innerText = '▼'; } else { currentInterviewCompanyId = item.id; Array.from(list.children).forEach(c => { c.classList.remove('active'); const a = c.querySelector('.interview-arrow'); if(a) a.innerText = '▼'; }); btn.classList.add('active'); const a = btn.querySelector('.interview-arrow'); if(a) a.innerText = '▲'; selectInterviewCompany(item.id); } }; list.appendChild(btn); }); if (currentInterviewCompanyId && window.shukatsuData.some(i=>i.id===currentInterviewCompanyId)) { selectInterviewCompany(currentInterviewCompanyId); } else { if(detailArea) detailArea.style.display = 'none'; if(emptyMsg) emptyMsg.style.display = 'block'; } }
+    window.selectInterviewCompany = function(id) { currentInterviewCompanyId = id; const data = window.shukatsuData.find(item => item.id === id); if (data) { document.getElementById('interviewTargetCompany').innerText = data.company; document.getElementById('interviewTargetId').value = data.id; document.getElementById('interviewDateInput').value = data.interviewDate || ''; document.getElementById('esTextInput').value = data.esText || ''; document.getElementById('interviewNoteInput').value = data.interviewNote || ''; const detailArea = document.getElementById('interviewDetailArea'); detailArea.style.display = 'block'; document.getElementById('interviewEmptyMessage').style.display = 'none'; if (window.innerWidth <= 768) { const activeBtn = Array.from(document.getElementById('interviewCompanyList').children).find(btn => btn.classList.contains('active')); if (activeBtn) activeBtn.after(detailArea); detailArea.classList.add('mb-4', 'p-3'); } else { document.querySelector('#interview-view .col-md-9').insertBefore(detailArea, document.getElementById('interviewEmptyMessage')); detailArea.classList.remove('mb-4', 'p-3'); } } };
+    window.saveInterviewDetails = async function() { const id = document.getElementById('interviewTargetId').value; const data = window.shukatsuData.find(item => item.id === id); if (!data) return; const oldDate = data.interviewDate; const newDate = document.getElementById('interviewDateInput').value; if (document.getElementById('autoCalSyncToggle').checked && newDate && newDate !== oldDate) { window.syncToGoogleCalendarAPI([{ title: `[面接] ${data.company}`, date: newDate, type: 'time' }], data.location); } data.interviewDate = newDate; data.esText = document.getElementById('esTextInput').value; data.interviewNote = document.getElementById('interviewNoteInput').value; await window.saveToServer(); alert('面接対策内容を保存しました！'); };
+
+    window.downloadTXTBackup = function() { const str = JSON.stringify({ data: window.shukatsuData, todos: window.todos }, null, 2); const blob = new Blob([str], { type: 'text/plain' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'shukatsu_backup.txt'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); };
+    window.importTXTBackup = function(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = async function(e) { try { const json = JSON.parse(e.target.result); if (json && (json.data || Array.isArray(json))) { let rawData = json.data || json; window.shukatsuData = Array.isArray(rawData) ? rawData : Object.values(rawData).filter(item => item !== null); window.todos = json.todos || { today: [], week: [] }; await window.saveToServer(); alert('データを正常に復元しました！'); bootstrap.Modal.getInstance(document.getElementById('settingsModal')).hide(); } else { alert('有効なファイルではありません。'); } } catch (err) { alert('読み込みに失敗しました。'); } }; reader.readAsText(file); };
     window.downloadICSForGoogleCalendar = function() {
-        let icsLines = [
-            'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//SyuukatuApp//CalendarSync//JA',
-            'CALSCALE:GREGORIAN', 'METHOD:PUBLISH'
-        ];
-        
-        function formatToICSDate(dtStr, isAllDay=false) {
-            if(!dtStr) return '';
-            let raw = dtStr.replace(/[-:]/g, '');
-            if(isAllDay) return raw.split('T')[0];
-            if(!raw.includes('T')) raw += 'T000000';
-            return raw.replace('.000', '') + 'Z';
-        }
-        function addDayToDateString(dtStr) {
-            let d = new Date(dtStr); d.setDate(d.getDate() + 1);
-            return d.toISOString().split('T')[0];
-        }
-        function escapeICS(str) { return (str || '').replace(/\\/g, '\\\\').replace(/,/g, '\\,').replace(/;/g, '\\;').replace(/\n/g, '\\n'); }
-
+        if (!window.shukatsuData || window.shukatsuData.length === 0) { alert("登録されている企業データがありません。"); return; }
+        let icsLines = [ 'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Syuukatu App//Calendar Export//JA', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH' ]; const pad = (n) => String(n).padStart(2, '0');
+        function formatToICSDate(dateStr, isAllDay = false) { if (!dateStr) return ''; if (isAllDay) { const parts = dateStr.split('-'); if (parts.length === 3) return `${parts[0]}${parts[1]}${parts[2]}`; const ld = new Date(dateStr); return `${ld.getFullYear()}${pad(ld.getMonth() + 1)}${pad(ld.getDate())}`; } else { const d = new Date(dateStr); if (isNaN(d.getTime())) return ''; return `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`; } }
+        function addDayToDateString(dateStr) { const parts = dateStr.split('-'); if (parts.length === 3) { const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2])); d.setDate(d.getDate() + 1); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; } const d = new Date(dateStr); d.setDate(d.getDate() + 1); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
+        function escapeICS(str) { if (!str) return ''; return str.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n'); }
         window.shukatsuData.forEach(data => {
-            if (data.sessionDate) {
-                const start = formatToICSDate(data.sessionDate);
-                if (start) {
-                    icsLines.push('BEGIN:VEVENT', `UID:session_${data.id}@syuukatu.app`, `DTSTART:${start}`, `SUMMARY:${escapeICS('説明会: ' + data.company)}`);
-                    if (data.location) icsLines.push(`LOCATION:${escapeICS(data.location)}`);
-                    icsLines.push('END:VEVENT');
-                }
-            }
-            if (data.esDeadline) {
-                const start = formatToICSDate(data.esDeadline);
-                if (start) {
-                    icsLines.push('BEGIN:VEVENT', `UID:es_${data.id}@syuukatu.app`, `DTSTART:${start}`, `SUMMARY:${escapeICS('📄ES締切: ' + data.company)}`);
-                    icsLines.push('END:VEVENT');
-                }
-            }
-            if (data.interviewDate) {
-                const start = formatToICSDate(data.interviewDate);
-                if (start) {
-                    let end = formatToICSDate(new Date(new Date(data.interviewDate).getTime() + 60*60*1000).toISOString());
-                    icsLines.push('BEGIN:VEVENT', `UID:interview_${data.id}@syuukatu.app`, `DTSTART:${start}`, `DTEND:${end}`, `SUMMARY:${escapeICS('面接: ' + data.company)}`);
-                    if (data.location) icsLines.push(`LOCATION:${escapeICS(data.location)}`);
-                    if (data.interviewNote) icsLines.push(`DESCRIPTION:${escapeICS(data.interviewNote)}`);
-                    icsLines.push('END:VEVENT');
-                }
-            }
-            let dates = data.internDates || [];
-            dates.forEach((d, idx) => {
-                if (d.start) {
-                    const start = formatToICSDate(d.start, true);
-                    const end = formatToICSDate(addDayToDateString(d.end || d.start), true);
-                    if (start && end) {
-                        icsLines.push('BEGIN:VEVENT', `UID:intern_${data.id}_${idx}@syuukatu.app`, `DTSTART;VALUE=DATE:${start}`, `DTEND;VALUE=DATE:${end}`, `SUMMARY:${escapeICS('ｲﾝﾀｰﾝ: ' + data.company + (d.title ? ' ' + d.title : ''))}`);
-                        if (data.location) icsLines.push(`LOCATION:${escapeICS(data.location)}`);
-                        icsLines.push('END:VEVENT');
-                    }
-                }
-            });
+            if (data.esDeadline) { const start = formatToICSDate(data.esDeadline); const end = formatToICSDate(new Date(new Date(data.esDeadline).getTime() + 30 * 60 * 1000).toISOString()); if (start && end) { icsLines.push('BEGIN:VEVENT', `UID:es_${data.id}@syuukatu.app`, `DTSTART:${start}`, `DTEND:${end}`, `SUMMARY:${escapeICS('締切: ' + data.company)}`); if (data.location) icsLines.push(`LOCATION:${escapeICS(data.location)}`); icsLines.push('END:VEVENT'); } }
+            if (data.interviewDate) { const start = formatToICSDate(data.interviewDate); const end = formatToICSDate(new Date(new Date(data.interviewDate).getTime() + 60 * 60 * 1000).toISOString()); if (start && end) { icsLines.push('BEGIN:VEVENT', `UID:interview_${data.id}@syuukatu.app`, `DTSTART:${start}`, `DTEND:${end}`, `SUMMARY:${escapeICS('面接: ' + data.company)}`); if (data.location) icsLines.push(`LOCATION:${escapeICS(data.location)}`); if (data.interviewNote) icsLines.push(`DESCRIPTION:${escapeICS(data.interviewNote)}`); icsLines.push('END:VEVENT'); } }
+            let dates = data.internDates || []; if (dates.length === 0 && (data.internStart || data.internEnd)) dates = [{ title: '', start: data.internStart, end: data.internEnd }];
+            dates.forEach((d, idx) => { if (d.start) { const start = formatToICSDate(d.start, true); const end = formatToICSDate(addDayToDateString(d.end || d.start), true); if (start && end) { icsLines.push('BEGIN:VEVENT', `UID:intern_${data.id}_${idx}@syuukatu.app`, `DTSTART;VALUE=DATE:${start}`, `DTEND;VALUE=DATE:${end}`, `SUMMARY:${escapeICS('ｲﾝﾀｰﾝ: ' + data.company + (d.title ? ' ' + d.title : ''))}`); if (data.location) icsLines.push(`LOCATION:${escapeICS(data.location)}`); icsLines.push('END:VEVENT'); } } });
         });
         icsLines.push('END:VCALENDAR');
-        
-        const blob = new Blob([icsLines.join('\r\n')], { type: 'text/calendar;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = 'shukatsu_schedule.ics';
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        const blob = new Blob([icsLines.join('\r\n')], { type: 'text/calendar;charset=utf-8;' }); const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.setAttribute("download", `就活予定_Google一括連携_${new Date().toISOString().split('T')[0]}.ics`); document.body.appendChild(link); link.click(); document.body.removeChild(link);
     };
 </script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
