@@ -147,7 +147,7 @@
                                     <div class="card-body"><div class="input-group mb-3"><input type="text" id="todoWeekInput" class="form-control border-info" placeholder="タスクを入力" onkeypress="if(event.key==='Enter') addTodo('week')"><button class="btn btn-info fw-bold text-dark" onclick="addTodo('week')">追加</button></div><ul class="list-group list-group-flush" id="todoWeekList"></ul></div>
                                 </div>
                             </div>
-
+                            
                             <div class="col-md-12 mb-4">  
                                 <div class="card shadow-sm border-0">  
                                     <div class="card-header bg-dark text-white fw-bold fs-5 py-3 d-flex justify-content-between align-items-center">
@@ -160,6 +160,7 @@
                                     </div>  
                                 </div>  
                             </div>
+
                         </div>
                     </div>
 
@@ -176,11 +177,8 @@
                                         <th onclick="sortTable('sessionStatus')">説明会申込 <span id="sort_sessionStatus" style="font-size: 0.8rem;"></span></th>
                                         <th onclick="sortTable('sessionMemo')">説明会メモ <span id="sort_sessionMemo" style="font-size: 0.8rem;"></span></th>
                                         <th onclick="sortTable('mypageUrl')">マイページ <span id="sort_mypageUrl" style="font-size: 0.8rem;"></span></th>
-                                        <th onclick="sortTable('esProgress')">ES進捗 <span id="sort_esProgress" style="font-size: 0.8rem;"></span></th>
-                                        <th onclick="sortTable('esSubmitted')">ES提出 <span id="sort_esSubmitted" style="font-size: 0.8rem;"></span></th>
                                         <th onclick="sortTable('esDeadline')">ES締切 <span id="sort_esDeadline" style="font-size: 0.8rem;"></span></th>
-                                        <th onclick="sortTable('testStatus')">適性検査 <span id="sort_testStatus" style="font-size: 0.8rem;"></span></th>
-                                        <th onclick="sortTable('passStatus')">通過状況 <span id="sort_passStatus" style="font-size: 0.8rem;"></span></th>
+                                        <th>選考進捗（フロー）</th>
                                         <th>操作</th>
                                     </tr>
                                 </thead>
@@ -228,14 +226,11 @@
                                                 <div class="d-flex flex-wrap gap-2 align-items-center border-top pt-3 mt-3">
                                                     <div class="d-flex align-items-center gap-1">
                                                         <label class="form-label fw-bold text-secondary mb-0 text-nowrap" style="font-size:0.85rem;">📁 フロー型:</label>
-                                                        <select id="flowTemplateSelect" class="form-select form-select-sm" style="max-width: 180px;">
-                                                            <option value="">-- 選択 --</option>
-                                                        </select>
+                                                        <select id="flowTemplateSelect" class="form-select form-select-sm" style="max-width: 180px;"><option value="">-- 選択 --</option></select>
                                                     </div>
                                                     <button class="btn btn-sm btn-outline-primary fw-bold" onclick="applyFlowTemplate()">適用</button>
                                                     <button class="btn btn-sm btn-outline-success fw-bold ms-auto" onclick="saveAsFlowTemplate()">💾 現在のフローを型として保存</button>
                                                 </div>
-                                                
                                             </div>
                                         </div>
 
@@ -290,7 +285,90 @@
 
 <div class="offcanvas offcanvas-end" tabindex="-1" id="accountSidebar"><div class="offcanvas-header bg-light border-bottom"><h5 id="accountSidebarLabel" class="mb-0 fw-bold">🔐 アカウント情報</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div><div class="offcanvas-body"><h4 id="sidebarCompanyName" class="text-primary mb-4 fw-bold">企業名</h4><div class="mb-3"><label class="form-label fw-bold">ログインID / 会員番号</label><div class="input-group"><input type="text" class="form-control" id="sidebarLoginId" readonly><button class="btn btn-outline-secondary" type="button" onclick="copyText('sidebarLoginId')">コピー</button></div></div><div class="mb-4"><label class="form-label fw-bold">パスワード</label><div class="input-group"><input type="password" class="form-control" id="sidebarPassword" readonly><button class="btn btn-outline-secondary" type="button" id="togglePasswordBtn" onclick="togglePasswordVisibility()">表示</button><button class="btn btn-outline-secondary" type="button" onclick="copyText('sidebarPassword')">コピー</button></div></div><div class="d-grid gap-2"><a id="sidebarMypageLink" href="#" target="_blank" class="btn btn-primary fw-bold py-2">マイページを開く</a></div></div></div>
 
-<div class="modal fade" id="addModal" tabindex="-1"><div class="modal-dialog modal-lg modal-dialog-scrollable"><div class="modal-content"><div class="modal-header bg-light"><h5 class="modal-title fw-bold" id="addModalLabel">企業の追加</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body p-4"><input type="hidden" id="editId"><div class="row"><div class="col-md-6 mb-3"><label class="form-label fw-bold">企業名</label><input type="text" class="form-control" id="companyInput" required></div><div class="col-md-6 mb-3"><label class="form-label fw-bold">インターン時期</label><select class="form-select" id="internStartInput"><option value="">選択してください</option><option value="夏">夏</option><option value="秋">秋</option><option value="冬">冬</option><option value="春">春</option></select></div><div class="col-12 mb-3 p-3 bg-light rounded border"><div class="d-flex justify-content-between align-items-center mb-2"><label class="form-label fw-bold text-secondary mb-0">インターン日程（複数登録OK）</label><button type="button" class="btn btn-sm btn-outline-primary fw-bold" onclick="addInternDateRow()">＋ 追加</button></div><div id="internDatesContainer" class="col-12"></div></div><div class="col-md-6 mb-3"><label class="form-label fw-bold">勤務場所・形式</label><input type="text" class="form-control" id="locationInput" placeholder="オンライン, 東京など"></div><div class="col-md-6 mb-3"><label class="form-label fw-bold">マイページURL</label><input type="url" class="form-control" id="mypageUrlInput"></div><div class="col-md-6 mb-3"><label class="form-label fw-bold">マイページ ログインID</label><input type="text" class="form-control" id="mypageIdInput"></div><div class="col-md-6 mb-3"><label class="form-label fw-bold">マイページ パスワード</label><input type="text" class="form-control" id="mypagePassInput"></div><div class="col-12 mt-3 mb-2"><h6 class="fw-bold border-bottom pb-2 text-primary">説明会関連</h6></div><div class="col-md-6 mb-3"><label class="form-label fw-bold">説明会開催の有無</label><select class="form-select" id="hasSessionInput"><option value="">-</option><option value="あり">あり</option><option value="なし">なし</option></select></div><div class="col-md-6 mb-3"><label class="form-label fw-bold">説明会申込・参加状況</label><select class="form-select" id="sessionStatusInput"><option value="">-</option><option value="未申込">未申込</option><option value="申込済">申込済</option><option value="参加済">参加済</option><option value="アーカイブ視聴">アーカイブ視聴</option></select></div><div class="col-md-6 mb-3"><label class="form-label fw-bold">説明会・イベント日時</label><input type="datetime-local" class="form-control" id="sessionDateInput"></div><div class="col-md-12 mb-3"><label class="form-label fw-bold">説明会メモ</label><textarea class="form-control" id="sessionMemoInput" rows="2" placeholder="社員名や印象など"></textarea></div><div class="col-12 mt-3 mb-2"><h6 class="fw-bold border-bottom pb-2 text-primary">選考関連</h6></div><div class="col-md-4 mb-3"><label class="form-label fw-bold">ES進捗</label><select class="form-select" id="esProgressInput"><option value="">-</option><option value="未着手">未着手</option><option value="作成中">作成中</option><option value="完了">完了</option></select></div><div class="col-md-4 mb-3"><label class="form-label fw-bold">ES提出状況</label><select class="form-select" id="esSubmittedInput"><option value="">-</option><option value="未提出">未提出</option><option value="提出済">提出済</option></select></div><div class="col-md-4 mb-3"><label class="form-label fw-bold">ES締切日時</label><input type="datetime-local" class="form-control" id="esDeadlineInput"></div><div class="col-md-6 mb-3"><label class="form-label fw-bold">適性検査</label><select class="form-select" id="testStatusInput"><option value="">-</option><option value="未受検">未受検</option><option value="受検済">受検済</option><option value="免除">免除</option></select></div><div class="col-md-6 mb-3"><label class="form-label fw-bold">通過状況</label><select class="form-select" id="passStatusInput"><option value="">-</option><option value="結果待ち">結果待ち</option><option value="書類通過">書類通過</option><option value="面接待ち">面接待ち</option><option value="通過(内定/合格)">通過(内定/合格)</option><option value="お見送り">お見送り</option></select></div></div></div><div class="modal-footer bg-light"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button><button type="button" class="btn btn-primary fw-bold px-4" onclick="saveData()">保存</button></div></div></div></div>
+<div class="modal fade" id="addModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-light">
+        <h5 class="modal-title fw-bold" id="addModalLabel">企業の追加</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <input type="hidden" id="editId">
+        
+        <div class="d-flex justify-content-center mb-4">
+           <div id="step1Indicator" class="fw-bold text-primary">1. 基本情報</div>
+           <div class="mx-3 text-secondary">➔</div>
+           <div id="step2Indicator" class="fw-bold text-secondary">2. 選考フロー設定</div>
+        </div>
+
+        <div id="addStep1">
+            <div class="row">
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">企業名</label><input type="text" class="form-control" id="companyInput" required></div>
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">インターン時期</label><select class="form-select" id="internStartInput"><option value="">選択してください</option><option value="夏">夏</option><option value="秋">秋</option><option value="冬">冬</option><option value="春">春</option></select></div>
+                
+                <div class="col-12 mb-3 p-3 bg-light rounded border">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label class="form-label fw-bold text-secondary mb-0">インターン日程（複数登録OK）</label>
+                        <button type="button" class="btn btn-sm btn-outline-primary fw-bold" onclick="addInternDateRow()">＋ 追加</button>
+                    </div>
+                    <div id="internDatesContainer" class="col-12"></div>
+                </div>
+
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">勤務場所・形式</label><input type="text" class="form-control" id="locationInput" placeholder="オンライン, 東京など"></div>
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">マイページURL</label><input type="url" class="form-control" id="mypageUrlInput"></div>
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">マイページ ログインID</label><input type="text" class="form-control" id="mypageIdInput"></div>
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">マイページ パスワード</label><input type="text" class="form-control" id="mypagePassInput"></div>
+                
+                <div class="col-12 mt-3 mb-2"><h6 class="fw-bold border-bottom pb-2 text-primary">説明会関連</h6></div>
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">説明会開催の有無</label><select class="form-select" id="hasSessionInput"><option value="">-</option><option value="あり">あり</option><option value="なし">なし</option></select></div>
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">説明会申込・参加状況</label><select class="form-select" id="sessionStatusInput"><option value="">-</option><option value="未申込">未申込</option><option value="申込済">申込済</option><option value="参加済">参加済</option><option value="アーカイブ視聴">アーカイブ視聴</option></select></div>
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">説明会・イベント日時</label><input type="datetime-local" class="form-control" id="sessionDateInput"></div>
+                <div class="col-md-12 mb-3"><label class="form-label fw-bold">説明会メモ</label><textarea class="form-control" id="sessionMemoInput" rows="2" placeholder="社員名や印象など"></textarea></div>
+
+                <div class="col-12 mt-3 mb-2"><h6 class="fw-bold border-bottom pb-2 text-primary">ES関連</h6></div>
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">ES締切日時</label><input type="datetime-local" class="form-control" id="esDeadlineInput"></div>
+            </div>
+        </div>
+
+        <div id="addStep2" style="display: none;">
+            <div class="row">
+                <div class="col-12 mb-4">
+                    <h5 class="fw-bold text-dark border-start border-warning border-4 ps-2 mb-3">🚀 選考フローの設定</h5>
+                    <div id="modalSelectionFlowProgressBar" class="d-flex align-items-center mb-3 overflow-auto pb-3 pt-2" style="white-space: nowrap;"></div>
+                    <div class="bg-light p-3 rounded border">
+                        <div id="modalSelectionFlowEditor" class="mb-2"></div>
+                        <div class="input-group">
+                            <input type="text" id="modalNewFlowStepName" class="form-control" placeholder="新しいステップ（例：ES提出, 1次面接）" list="modalFlowStepSuggestions" onkeypress="if(event.key==='Enter') addModalSelectionFlowStep()">
+                            <datalist id="modalFlowStepSuggestions"><option value="ES提出"><option value="適性検査"><option value="インターンシップ通過"><option value="座談会"><option value="1次面接"><option value="2次面接"><option value="最終面接"><option value="内定"><option value="本選考"></datalist>
+                            <button type="button" class="btn btn-outline-primary fw-bold" onclick="addModalSelectionFlowStep()">＋ 追加</button>
+                        </div>
+
+                        <div class="d-flex flex-wrap gap-2 align-items-center border-top pt-3 mt-3">
+                            <div class="d-flex align-items-center gap-1">
+                                <label class="form-label fw-bold text-secondary mb-0 text-nowrap" style="font-size:0.85rem;">📁 フロー型:</label>
+                                <select id="modalFlowTemplateSelect" class="form-select form-select-sm" style="max-width: 180px;"><option value="">-- 選択 --</option></select>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-primary fw-bold" onclick="applyModalFlowTemplate()">適用</button>
+                            <button type="button" class="btn btn-sm btn-outline-success fw-bold ms-auto" onclick="saveModalAsFlowTemplate()">💾 現在のフローを型として保存</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+      </div>
+      <div class="modal-footer bg-light" id="addModalFooter1">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+        <button type="button" class="btn btn-outline-success fw-bold px-3" onclick="saveData(true)">スキップして保存</button>
+        <button type="button" class="btn btn-primary fw-bold px-4" onclick="goToStep(2)">次へ（フロー設定）</button>
+      </div>
+      <div class="modal-footer bg-light" id="addModalFooter2" style="display: none;">
+        <button type="button" class="btn btn-secondary me-auto" onclick="goToStep(1)">戻る</button>
+        <button type="button" class="btn btn-primary fw-bold px-4" onclick="saveData()">この内容で保存</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://apis.google.com/js/api.js" onload="gapiLoaded()" async defer></script>
@@ -338,7 +416,6 @@
                 document.getElementById('settingApiKey').value = window.appSettings.googleApiKey || ''; document.getElementById('settingClientId').value = window.appSettings.googleClientId || '';
                 window.tryInitGoogleAPI();
 
-                // ToDoの日/週またぎの自動整理を実行
                 if(window.checkAndUpdateTodos) window.checkAndUpdateTodos();
                 
                 if(window.renderAll) window.renderAll();
@@ -356,32 +433,20 @@
     window.shukatsuData = []; window.appSettings = { googleApiKey: '', googleClientId: '' }; window.todos = { today: [], week: [] };
     let calendar, currentInterviewCompanyId = null, currentEsCompanyId = null, currentResearchCompanyId = null, currentSortKey = '', currentSortAsc = true;
     let isSyncingTopScroll = false, isSyncingTableScroll = false;
+    let tempSelectionFlow = []; // モーダル編集用の一時フロー保持変数
 
-    // ToDo自動リフレッシュ処理 (日・週が変わっていたら完了タスクを消す)
     window.checkAndUpdateTodos = function() {
-        const now = new Date();
-        const todayStr = now.toLocaleDateString();
+        const now = new Date(); const todayStr = now.toLocaleDateString();
         const getWeek = d => { const date = new Date(d.getTime()); date.setHours(0, 0, 0, 0); date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7); const week1 = new Date(date.getFullYear(), 0, 4); return date.getFullYear() + '-W' + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7); };
         const weekStr = getWeek(now);
-
         let changed = false;
-        if (!window.appSettings.lastTodoDay || window.appSettings.lastTodoDay !== todayStr) {
-            window.todos.today = window.todos.today.filter(t => !t.done); // 完了分は削除して持ち越し
-            window.appSettings.lastTodoDay = todayStr;
-            changed = true;
-        }
-        if (!window.appSettings.lastTodoWeek || window.appSettings.lastTodoWeek !== weekStr) {
-            window.todos.week = window.todos.week.filter(t => !t.done); // 完了分は削除して持ち越し
-            window.appSettings.lastTodoWeek = weekStr;
-            changed = true;
-        }
+        if (!window.appSettings.lastTodoDay || window.appSettings.lastTodoDay !== todayStr) { window.todos.today = window.todos.today.filter(t => !t.done); window.appSettings.lastTodoDay = todayStr; changed = true; }
+        if (!window.appSettings.lastTodoWeek || window.appSettings.lastTodoWeek !== weekStr) { window.todos.week = window.todos.week.filter(t => !t.done); window.appSettings.lastTodoWeek = weekStr; changed = true; }
         if (changed) window.saveToServer();
     };
 
     document.addEventListener('DOMContentLoaded', async function() {
-        const isAutoSync = localStorage.getItem('autoCalSync') === 'true';
-        if (document.getElementById('autoCalSyncToggle')) document.getElementById('autoCalSyncToggle').checked = isAutoSync;
-        
+        const isAutoSync = localStorage.getItem('autoCalSync') === 'true'; if (document.getElementById('autoCalSyncToggle')) document.getElementById('autoCalSyncToggle').checked = isAutoSync;
         document.querySelectorAll('#myTab .nav-link').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 document.getElementById('topTitle').innerText = e.target.innerText; 
@@ -394,7 +459,6 @@
                 if(e.target.id === 'table-tab') { setTimeout(syncScrollWidth, 100); }
             });
         });
-
         const topScrollWrapper = document.getElementById('topScrollWrapper'); const tableWrapper = document.getElementById('tableWrapper');
         if(topScrollWrapper && tableWrapper) {
             topScrollWrapper.addEventListener('scroll', () => { if (!isSyncingTopScroll) { isSyncingTableScroll = true; tableWrapper.scrollLeft = topScrollWrapper.scrollLeft; } isSyncingTopScroll = false; });
@@ -404,17 +468,7 @@
         initializeCalendar();
     });
 
-    window.renderAll = function() { 
-        renderTable(); 
-        renderMypageTable(); 
-        loadDashboard(); 
-        loadResearchView(); 
-        loadEsView(); 
-        loadInterviewView(); 
-        syncScrollWidth(); 
-        if (calendar) renderCalendarEvents(); 
-        if (window.updateFlowTemplateSelect) window.updateFlowTemplateSelect(); 
-    };
+    window.renderAll = function() { renderTable(); renderMypageTable(); loadDashboard(); loadResearchView(); loadEsView(); loadInterviewView(); syncScrollWidth(); if (calendar) renderCalendarEvents(); if (window.updateFlowTemplateSelect) window.updateFlowTemplateSelect(); if (window.updateModalFlowTemplateSelect) window.updateModalFlowTemplateSelect(); };
 
     let tokenClient; let isGapiScriptLoaded = false; let isGisScriptLoaded = false;
     window.gapiLoaded = function() { gapi.load('client', () => { isGapiScriptLoaded = true; window.tryInitGoogleAPI(); }); };
@@ -441,6 +495,7 @@
 
     function syncScrollWidth() { const mainTable = document.getElementById('mainTable'); const fakeContent = document.getElementById('topScrollFakeContent'); if (mainTable && fakeContent) fakeContent.style.width = mainTable.offsetWidth + 'px'; }
 
+    // 掲示板ロジック
     window.loadDashboard = function() {
         const tbody = document.getElementById('dashboardScheduleBody'); tbody.innerHTML = ''; let events = []; const now = new Date(); now.setHours(0,0,0,0);
         window.shukatsuData.forEach(data => {
@@ -457,91 +512,35 @@
             });
         }
         renderTodos();
-        
-        // ★ 掲示板へフロー図を追加描画 ★
         if (window.renderDashboardCompanyFlows) window.renderDashboardCompanyFlows();
     };
 
-    // ==========================================
-    // 追加要件①＆③：掲示板へ選考フローを「達成数が多い順」に描画する処理
-    // ==========================================
     window.renderDashboardCompanyFlows = function() {
-        const container = document.getElementById('dashboardCompanyFlowsContainer');
-        const badge = document.getElementById('dashboardFlowCountBadge');
-        if (!container) return;
-        container.innerHTML = '';
-
-        // 各企業の選考フローを解析し、達成数（completed）が多い順に降順ソート
+        const container = document.getElementById('dashboardCompanyFlowsContainer'); const badge = document.getElementById('dashboardFlowCountBadge'); if (!container) return; container.innerHTML = '';
         let list = [...window.shukatsuData];
-        
         list.sort((a, b) => {
             const flowA = (a.companyResearch && a.companyResearch.selectionFlow) ? a.companyResearch.selectionFlow : [];
             const flowB = (b.companyResearch && b.companyResearch.selectionFlow) ? b.companyResearch.selectionFlow : [];
-            const compA = flowA.filter(s => s.status === 'completed').length;
-            const compB = flowB.filter(s => s.status === 'completed').length;
-            
-            if (compB !== compA) {
-                return compB - compA; // 達成ステップ数が多い順
-            }
-            return flowB.length - flowA.length; // 達成数が同じなら総ステップ数が多い順
+            const compA = flowA.filter(s => s.status === 'completed').length; const compB = flowB.filter(s => s.status === 'completed').length;
+            if (compB !== compA) return compB - compA; return flowB.length - flowA.length;
         });
-
         if (badge) badge.innerText = `${list.length}社`;
+        if (list.length === 0) { container.innerHTML = '<div class="col-12 text-center text-muted py-3">企業データがありません。「新規企業を追加」から登録してください。</div>'; return; }
 
-        if (list.length === 0) {
-            container.innerHTML = '<div class="col-12 text-center text-muted py-3">企業データがありません。「新規企業を追加」から登録してください。</div>';
-            return;
-        }
-
-        // ソートされた順に各企業のカードと進捗フロー（ロケット鉛筆UI）を表示
         list.forEach(item => {
             const flow = (item.companyResearch && item.companyResearch.selectionFlow) ? item.companyResearch.selectionFlow : [];
             const compCount = flow.filter(s => s.status === 'completed').length;
-            
-            const col = document.createElement('div');
-            col.className = 'col-12 border-bottom pb-3 mb-2';
-            
-            // 掲示板用に最適化したコンパクトなロケット鉛筆UIの組み立て
+            const col = document.createElement('div'); col.className = 'col-12 border-bottom pb-3 mb-2';
             let flowHtml = '';
-            if (flow.length === 0) {
-                flowHtml = '<span class="text-muted" style="font-size:0.75rem;">⚠️ 選考フローが未設定です（企業研究タブから設定可能）</span>';
-            } else {
+            if (flow.length === 0) { flowHtml = '<span class="text-muted" style="font-size:0.75rem;">⚠️ 選考フローが未設定です（企業研究タブから設定可能）</span>'; } else {
                 flowHtml = '<div class="d-flex align-items-center overflow-auto pb-2 pt-1" style="white-space: nowrap;">';
                 flow.forEach((step, index) => {
-                    let circleClass = 'bg-light text-secondary';
-                    if (step.status === 'completed') circleClass = 'bg-success text-white';
-                    else if (step.status === 'current') circleClass = 'bg-primary text-white';
-                    
-                    flowHtml += `
-                        <div class="flow-step-container" style="margin: 0 4px;">
-                            <div class="flow-step-circle ${circleClass}" style="width: 26px; height: 26px; font-size: 0.7rem; box-shadow: none;">${step.status === 'completed' ? '✓' : index + 1}</div>
-                            <div class="flow-step-label text-truncate" style="width: 65px; font-size: 0.68rem; margin-top: 4px;" title="${step.name}">${step.name}</div>
-                        </div>
-                    `;
-                    
-                    if (index < flow.length - 1) {
-                        let nextStep = flow[index + 1];
-                        let lineClass = (step.status === 'completed' && (nextStep.status === 'completed' || nextStep.status === 'current')) ? 'bg-success' : 'bg-light';
-                        flowHtml += `<div class="flow-step-line ${lineClass}" style="width: 20px; height: 3px; margin: 0 -6px; transform: translateY(-10px);"></div>`;
-                    }
-                });
-                flowHtml += '</div>';
+                    let circleClass = 'bg-light text-secondary'; if (step.status === 'completed') circleClass = 'bg-success text-white'; else if (step.status === 'current') circleClass = 'bg-primary text-white';
+                    flowHtml += `<div class="flow-step-container" style="margin: 0 4px;"><div class="flow-step-circle ${circleClass}" style="width: 26px; height: 26px; font-size: 0.7rem; box-shadow: none;">${step.status === 'completed' ? '✓' : index + 1}</div><div class="flow-step-label text-truncate" style="width: 65px; font-size: 0.68rem; margin-top: 4px;" title="${step.name}">${step.name}</div></div>`;
+                    if (index < flow.length - 1) { let nextStep = flow[index + 1]; let lineClass = (step.status === 'completed' && (nextStep.status === 'completed' || nextStep.status === 'current')) ? 'bg-success' : 'bg-light'; flowHtml += `<div class="flow-step-line ${lineClass}" style="width: 20px; height: 3px; margin: 0 -6px; transform: translateY(-10px);"></div>`; }
+                }); flowHtml += '</div>';
             }
-
-            col.innerHTML = `
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                    <div class="fw-bold text-dark fs-6">
-                        🏢 ${item.company} 
-                        <span class="badge bg-secondary ms-1" style="font-size:0.7rem;">通過状況: ${item.passStatus || '未設定'}</span>
-                    </div>
-                    <div class="text-secondary fw-bold" style="font-size:0.75rem;">
-                        達成数: <span class="text-success fs-6 fw-bold">${compCount}</span> / ${flow.length}
-                    </div>
-                </div>
-                <div class="ps-2">
-                    ${flowHtml}
-                </div>
-            `;
+            col.innerHTML = `<div class="d-flex justify-content-between align-items-center mb-1"><div class="fw-bold text-dark fs-6">🏢 ${item.company}</div><div class="text-secondary fw-bold" style="font-size:0.75rem;">達成数: <span class="text-success fs-6 fw-bold">${compCount}</span> / ${flow.length}</div></div><div class="ps-2">${flowHtml}</div>`;
             container.appendChild(col);
         });
     };
@@ -573,28 +572,76 @@
         });
     }
 
+    // ★ モーダル（ステップ方式）の制御 ★
+    window.goToStep = function(step) {
+        if (step === 1) {
+            document.getElementById('addStep1').style.display = 'block'; document.getElementById('addStep2').style.display = 'none'; document.getElementById('addModalFooter1').style.display = 'flex'; document.getElementById('addModalFooter2').style.display = 'none'; document.getElementById('step1Indicator').className = 'fw-bold text-primary'; document.getElementById('step2Indicator').className = 'fw-bold text-secondary';
+        } else {
+            if (!document.getElementById('companyInput').value.trim()) { alert('企業名を入力してください。'); return; }
+            document.getElementById('addStep1').style.display = 'none'; document.getElementById('addStep2').style.display = 'block'; document.getElementById('addModalFooter1').style.display = 'none'; document.getElementById('addModalFooter2').style.display = 'flex'; document.getElementById('step1Indicator').className = 'fw-bold text-secondary'; document.getElementById('step2Indicator').className = 'fw-bold text-primary';
+            renderModalSelectionFlow(); if(window.updateModalFlowTemplateSelect) window.updateModalFlowTemplateSelect();
+        }
+    };
+
     window.prepareAdd = function() { 
         document.getElementById('editId').value = ''; document.getElementById('addModalLabel').innerText = '企業の追加'; 
-        ['companyInput','internStartInput','locationInput','mypageUrlInput','mypageIdInput','mypagePassInput','hasSessionInput','sessionStatusInput','sessionDateInput','sessionMemoInput','esProgressInput','esSubmittedInput','esDeadlineInput','testStatusInput','passStatusInput'].forEach(id=>document.getElementById(id).value=''); 
-        document.getElementById('internDatesContainer').innerHTML = ''; addInternDateRow();
+        ['companyInput','internStartInput','locationInput','mypageUrlInput','mypageIdInput','mypagePassInput','hasSessionInput','sessionStatusInput','sessionDateInput','sessionMemoInput','esDeadlineInput'].forEach(id=>{ if(document.getElementById(id)) document.getElementById(id).value=''; }); 
+        document.getElementById('internDatesContainer').innerHTML = ''; addInternDateRow(); tempSelectionFlow = []; goToStep(1);
     };
     window.addInternDateRow = function(data = {title: '', start: '', end: ''}) { const c = document.getElementById('internDatesContainer'); const r = document.createElement('div'); r.className = 'row mb-2 intern-date-row g-2'; r.innerHTML = `<div class="col-12 col-md-4"><input type="text" class="form-control intern-title" placeholder="日程名" value="${data.title}"></div><div class="col-5 col-md-3"><input type="date" class="form-control intern-start" value="${data.start}"></div><div class="col-2 col-md-1 text-center align-self-center">〜</div><div class="col-5 col-md-3"><input type="date" class="form-control intern-end" value="${data.end}"></div><div class="col-12 col-md-1 text-end"><button type="button" class="btn btn-sm btn-outline-danger w-100 h-100" onclick="this.closest('.intern-date-row').remove()">×</button></div>`; c.appendChild(r); };
 
     window.editData = function(id) {
         const data = window.shukatsuData.find(item => item.id === id); if (!data) return;
         document.getElementById('editId').value = data.id; document.getElementById('addModalLabel').innerText = '企業の編集';
-        ['company','internStart','location','mypageUrl','mypageId','mypagePass','hasSession','sessionStatus','sessionDate','sessionMemo','esProgress','esSubmitted','esDeadline','testStatus','passStatus'].forEach(k => document.getElementById(k+'Input').value = data[k]||'');
+        ['company','internStart','location','mypageUrl','mypageId','mypagePass','hasSession','sessionStatus','sessionDate','sessionMemo','esDeadline'].forEach(k => { if(document.getElementById(k+'Input')) document.getElementById(k+'Input').value = data[k]||''; });
         const c = document.getElementById('internDatesContainer'); c.innerHTML = '';
         let dates = data.internDates || []; if (dates.length === 0) addInternDateRow(); else dates.forEach(d => addInternDateRow(d));
-        bootstrap.Modal.getOrCreateInstance(document.getElementById('addModal')).show();
+        tempSelectionFlow = (data.companyResearch && data.companyResearch.selectionFlow) ? JSON.parse(JSON.stringify(data.companyResearch.selectionFlow)) : [];
+        goToStep(1); bootstrap.Modal.getOrCreateInstance(document.getElementById('addModal')).show();
     };
 
-    window.saveData = async function() {
+    // ★ モーダル内選考フロー操作 ★
+    window.renderModalSelectionFlow = function() {
+        const editor = document.getElementById('modalSelectionFlowEditor'); const progressBar = document.getElementById('modalSelectionFlowProgressBar'); editor.innerHTML = ''; progressBar.innerHTML = '';
+        if (tempSelectionFlow.length === 0) { progressBar.innerHTML = '<span class="text-muted fw-bold ms-2" style="font-size:0.85rem;">追加ボタンからステップを登録して下さい</span>'; }
+        tempSelectionFlow.forEach((step, index) => {
+            const row = document.createElement('div'); row.className = 'd-flex align-items-center mb-2 gap-2 bg-white p-2 rounded shadow-sm border border-light';
+            row.innerHTML = `<div class="fw-bold text-primary" style="min-width: 20px;">${index + 1}.</div><div class="fw-bold flex-grow-1 text-truncate">${step.name}</div><select class="form-select form-select-sm w-auto fw-bold ${step.status==='completed'?'bg-success text-white':(step.status==='current'?'bg-primary text-white':'bg-light text-secondary')}" onchange="updateModalFlowStatus(${index}, this.value)"><option value="not_started" ${step.status === 'not_started' ? 'selected' : ''} class="text-dark bg-white">未着手</option><option value="current" ${step.status === 'current' ? 'selected' : ''} class="text-dark bg-white">進行中</option><option value="completed" ${step.status === 'completed' ? 'selected' : ''} class="text-dark bg-white">完了</option></select><button type="button" class="btn btn-sm btn-outline-danger border-0" onclick="removeModalFlowStep(${index})">✖</button>`; editor.appendChild(row);
+            const isLast = index === tempSelectionFlow.length - 1;
+            const cClass = step.status === 'completed' ? 'bg-success text-white border-success' : (step.status === 'current' ? 'bg-primary text-white border-info border-3' : 'bg-secondary text-white border-secondary');
+            let lClass = 'bg-secondary'; if (step.status === 'completed') { if (!isLast && (tempSelectionFlow[index+1].status === 'completed' || tempSelectionFlow[index+1].status === 'current')) { lClass = 'bg-success'; } else { lClass = 'bg-primary opacity-50'; } }
+            const stepContainer = document.createElement('div'); stepContainer.className = 'flow-step-wrapper'; stepContainer.innerHTML = `<div class="flow-step-container"><div class="flow-step-circle ${cClass}">${step.status === 'completed' ? '✓' : index + 1}</div><div class="flow-step-label">${step.name}</div></div>${!isLast ? `<div class="flow-step-line ${lClass}"></div>` : ''}`; progressBar.appendChild(stepContainer);
+        });
+    };
+    window.addModalSelectionFlowStep = function() { const input = document.getElementById('modalNewFlowStepName'); const name = input.value.trim(); if (!name) return; tempSelectionFlow.push({ name: name, status: 'not_started' }); input.value = ''; renderModalSelectionFlow(); };
+    window.updateModalFlowStatus = function(index, status) { tempSelectionFlow[index].status = status; renderModalSelectionFlow(); };
+    window.removeModalFlowStep = function(index) { if(!confirm('このステップを削除しますか？')) return; tempSelectionFlow.splice(index, 1); renderModalSelectionFlow(); };
+
+    window.updateModalFlowTemplateSelect = function() {
+        const select = document.getElementById('modalFlowTemplateSelect'); if (!select) return; const currentVal = select.value; select.innerHTML = '<option value="">-- 選択 --</option>'; window.appSettings.flowTemplates = window.appSettings.flowTemplates || {};
+        Object.keys(window.appSettings.flowTemplates).forEach(name => { const opt = document.createElement('option'); opt.value = name; opt.innerText = name; select.appendChild(opt); }); select.value = currentVal;
+    };
+    window.applyModalFlowTemplate = function() {
+        const select = document.getElementById('modalFlowTemplateSelect'); if (!select || !select.value) { alert('適用する型を選択してください。'); return; }
+        if (tempSelectionFlow.length > 0) { if (!confirm('現在のフローが上書きされます。よろしいですか？')) return; }
+        const templateFlow = window.appSettings.flowTemplates[select.value]; if (!templateFlow) return;
+        tempSelectionFlow = JSON.parse(JSON.stringify(templateFlow)); if (tempSelectionFlow.length > 0) tempSelectionFlow[0].status = 'current'; renderModalSelectionFlow(); alert(`「${select.value}」の選考フローを展開しました。`);
+    };
+    window.saveModalAsFlowTemplate = async function() {
+        if (tempSelectionFlow.length === 0) { alert('保存するフローが空です。'); return; } const templateName = prompt('この選考フローに名前をつけて保存します:'); if (!templateName || templateName.trim() === '') return;
+        window.appSettings.flowTemplates = window.appSettings.flowTemplates || {}; window.appSettings.flowTemplates[templateName.trim()] = tempSelectionFlow.map(step => ({ name: step.name, status: 'not_started' }));
+        window.updateModalFlowTemplateSelect(); if(window.updateFlowTemplateSelect) window.updateFlowTemplateSelect(); await window.saveToServer(); alert(`テンプレート「${templateName}」を保存しました！`);
+    };
+
+    window.saveData = async function(isSkip = false) {
+        if (!document.getElementById('companyInput').value.trim()) { alert('企業名を入力してください。'); return; }
         const id = document.getElementById('editId').value;
         const internDates = []; document.querySelectorAll('.intern-date-row').forEach(row => { const title = row.querySelector('.intern-title').value, start = row.querySelector('.intern-start').value, end = row.querySelector('.intern-end').value; if (title || start || end) internDates.push({ title, start, end }); });
-        const data = { id: id || Date.now().toString(), company: document.getElementById('companyInput').value, internStart: document.getElementById('internStartInput').value, location: document.getElementById('locationInput').value, mypageUrl: document.getElementById('mypageUrlInput').value, mypageId: document.getElementById('mypageIdInput').value, mypagePass: document.getElementById('mypagePassInput').value, hasSession: document.getElementById('hasSessionInput').value, sessionStatus: document.getElementById('sessionStatusInput').value, sessionDate: document.getElementById('sessionDateInput').value, sessionMemo: document.getElementById('sessionMemoInput').value, esProgress: document.getElementById('esProgressInput').value, esSubmitted: document.getElementById('esSubmittedInput').value, esDeadline: document.getElementById('esDeadlineInput').value, testStatus: document.getElementById('testStatusInput').value, passStatus: document.getElementById('passStatusInput').value, internDates: internDates };
+        
+        const data = { id: id || Date.now().toString(), company: document.getElementById('companyInput').value, internStart: document.getElementById('internStartInput').value, location: document.getElementById('locationInput').value, mypageUrl: document.getElementById('mypageUrlInput').value, mypageId: document.getElementById('mypageIdInput').value, mypagePass: document.getElementById('mypagePassInput').value, hasSession: document.getElementById('hasSessionInput').value, sessionStatus: document.getElementById('sessionStatusInput').value, sessionDate: document.getElementById('sessionDateInput').value, sessionMemo: document.getElementById('sessionMemoInput').value, esDeadline: document.getElementById('esDeadlineInput').value, internDates: internDates };
         let existingData = {};
-        if (id) { const idx = window.shukatsuData.findIndex(item => item.id === id); if (idx !== -1) { existingData = window.shukatsuData[idx]; data.esQuestions = existingData.esQuestions || []; data.esText = existingData.esText || ''; data.interviewNote = existingData.interviewNote || ''; data.interviewDate = existingData.interviewDate || ''; data.companyResearch = existingData.companyResearch || {}; } }
+        if (id) { const idx = window.shukatsuData.findIndex(item => item.id === id); if (idx !== -1) { existingData = window.shukatsuData[idx]; data.esQuestions = existingData.esQuestions || []; data.esText = existingData.esText || ''; data.interviewNote = existingData.interviewNote || ''; data.interviewDate = existingData.interviewDate || ''; data.companyResearch = existingData.companyResearch || {}; } } else { data.companyResearch = {}; }
+        data.companyResearch.selectionFlow = tempSelectionFlow;
 
         let eventsToSync = [];
         if (data.interviewDate && data.interviewDate !== existingData.interviewDate) { eventsToSync.push({ title: `[面接] ${data.company}`, date: data.interviewDate, type: 'time' }); }
@@ -622,7 +669,17 @@
             let mypageCell = item.mypageUrl ? `<a href="${item.mypageUrl}" target="_blank" class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation()">開く</a>` : 'ー';
             let accountBtn = `<button class="btn btn-sm btn-outline-secondary me-1" onclick="event.stopPropagation(); openAccountSidebar('${item.id}')" title="アカウント情報">🔐</button>`;
             let memoCell = `<span class="memo-clickable text-truncate" title="${item.sessionMemo || ''}">${item.sessionMemo || '（空欄）'}</span>`;
-            tr.innerHTML = `<td data-label="社名" class="fw-bold sticky-col fs-5 text-primary">${item.company}</td><td data-label="インターン">${periodHtml}</td><td data-label="場所">${item.location || ''}</td><td data-label="説明会">${item.hasSession||'-'}</td><td data-label="説明会申込">${item.sessionStatus||'-'}</td><td data-label="説明会メモ">${memoCell}</td><td data-label="マイページ">${mypageCell}</td><td data-label="ES進捗"><span class="badge ${item.esProgress === '完了' ? 'bg-success' : (item.esProgress === '未着手' ? 'bg-secondary' : 'bg-primary')}">${item.esProgress||'-'}</span></td><td data-label="ES提出">${item.esSubmitted||'-'}</td><td data-label="ES締切" class="text-danger fw-bold">${item.esDeadline ? item.esDeadline.replace('T', ' ') : ''}</td><td data-label="適性検査">${item.testStatus||'-'}</td><td data-label="通過状況"><span class="badge ${item.passStatus === '結果待ち' ? 'bg-secondary' : 'bg-info text-dark'}">${item.passStatus||'-'}</span></td><td data-label="操作" class="d-flex flex-wrap gap-1 justify-content-end">${accountBtn}<button class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation(); editData('${item.id}')">編集</button><button class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation(); deleteData('${item.id}')">削除</button></td>`; tbody.appendChild(tr);
+            
+            const flow = (item.companyResearch && item.companyResearch.selectionFlow) ? item.companyResearch.selectionFlow : [];
+            let progressHtml = '-';
+            if (flow.length > 0) {
+                const compCount = flow.filter(s => s.status === 'completed').length;
+                let currentStep = flow.find(s => s.status === 'current');
+                let statusText = currentStep ? `${currentStep.name} 進行中` : (compCount === flow.length ? '全完了🎉' : '未着手');
+                progressHtml = `<span class="badge bg-info text-dark">${statusText}</span> <span style="font-size:0.8rem;" class="text-secondary fw-bold ms-1">(${compCount}/${flow.length})</span>`;
+            }
+
+            tr.innerHTML = `<td data-label="社名" class="fw-bold sticky-col fs-5 text-primary">${item.company}</td><td data-label="インターン">${periodHtml}</td><td data-label="場所">${item.location || ''}</td><td data-label="説明会">${item.hasSession||'-'}</td><td data-label="説明会申込">${item.sessionStatus||'-'}</td><td data-label="説明会メモ">${memoCell}</td><td data-label="マイページ">${mypageCell}</td><td data-label="ES締切" class="text-danger fw-bold">${item.esDeadline ? item.esDeadline.replace('T', ' ') : ''}</td><td data-label="選考進捗">${progressHtml}</td><td data-label="操作" class="d-flex flex-wrap gap-1 justify-content-end">${accountBtn}<button class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation(); editData('${item.id}')">編集</button><button class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation(); deleteData('${item.id}')">削除</button></td>`; tbody.appendChild(tr);
         });
         setTimeout(syncScrollWidth, 50);
     }
@@ -648,8 +705,7 @@
     }
     
     function renderSelectionFlow() {
-        const data = window.shukatsuData.find(item => item.id === currentResearchCompanyId);
-        if (!data) return;
+        const data = window.shukatsuData.find(item => item.id === currentResearchCompanyId); if (!data) return;
         const flow = (data.companyResearch && data.companyResearch.selectionFlow) ? data.companyResearch.selectionFlow : [];
         const editor = document.getElementById('selectionFlowEditor'); const progressBar = document.getElementById('selectionFlowProgressBar');
         editor.innerHTML = ''; progressBar.innerHTML = '';
@@ -658,24 +714,11 @@
 
         flow.forEach((step, index) => {
             const row = document.createElement('div'); row.className = 'd-flex align-items-center mb-2 gap-2 bg-white p-2 rounded shadow-sm border border-light';
-            row.innerHTML = `
-                <div class="fw-bold text-primary" style="min-width: 20px;">${index + 1}.</div>
-                <div class="fw-bold flex-grow-1 text-truncate">${step.name}</div>
-                <select class="form-select form-select-sm w-auto fw-bold ${step.status==='completed'?'bg-success text-white':(step.status==='current'?'bg-primary text-white':'bg-light text-secondary')}" onchange="updateFlowStatus(${index}, this.value)">
-                    <option value="not_started" ${step.status === 'not_started' ? 'selected' : ''} class="text-dark bg-white">未着手</option>
-                    <option value="current" ${step.status === 'current' ? 'selected' : ''} class="text-dark bg-white">進行中</option>
-                    <option value="completed" ${step.status === 'completed' ? 'selected' : ''} class="text-dark bg-white">完了</option>
-                </select>
-                <button class="btn btn-sm btn-outline-danger border-0" onclick="removeFlowStep(${index})">✖</button>
-            `; editor.appendChild(row);
-
+            row.innerHTML = `<div class="fw-bold text-primary" style="min-width: 20px;">${index + 1}.</div><div class="fw-bold flex-grow-1 text-truncate">${step.name}</div><select class="form-select form-select-sm w-auto fw-bold ${step.status==='completed'?'bg-success text-white':(step.status==='current'?'bg-primary text-white':'bg-light text-secondary')}" onchange="updateFlowStatus(${index}, this.value)"><option value="not_started" ${step.status === 'not_started' ? 'selected' : ''} class="text-dark bg-white">未着手</option><option value="current" ${step.status === 'current' ? 'selected' : ''} class="text-dark bg-white">進行中</option><option value="completed" ${step.status === 'completed' ? 'selected' : ''} class="text-dark bg-white">完了</option></select><button class="btn btn-sm btn-outline-danger border-0" onclick="removeFlowStep(${index})">✖</button>`; editor.appendChild(row);
             const isLast = index === flow.length - 1;
             const cClass = step.status === 'completed' ? 'bg-success text-white border-success' : (step.status === 'current' ? 'bg-primary text-white border-info border-3' : 'bg-secondary text-white border-secondary');
-            let lClass = 'bg-secondary';
-            if (step.status === 'completed') { if (!isLast && (flow[index+1].status === 'completed' || flow[index+1].status === 'current')) { lClass = 'bg-success'; } else { lClass = 'bg-primary opacity-50'; } }
-            const stepContainer = document.createElement('div'); stepContainer.className = 'flow-step-wrapper';
-            stepContainer.innerHTML = `<div class="flow-step-container"><div class="flow-step-circle ${cClass}">${step.status === 'completed' ? '✓' : index + 1}</div><div class="flow-step-label">${step.name}</div></div>${!isLast ? `<div class="flow-step-line ${lClass}"></div>` : ''}`;
-            progressBar.appendChild(stepContainer);
+            let lClass = 'bg-secondary'; if (step.status === 'completed') { if (!isLast && (flow[index+1].status === 'completed' || flow[index+1].status === 'current')) { lClass = 'bg-success'; } else { lClass = 'bg-primary opacity-50'; } }
+            const stepContainer = document.createElement('div'); stepContainer.className = 'flow-step-wrapper'; stepContainer.innerHTML = `<div class="flow-step-container"><div class="flow-step-circle ${cClass}">${step.status === 'completed' ? '✓' : index + 1}</div><div class="flow-step-label">${step.name}</div></div>${!isLast ? `<div class="flow-step-line ${lClass}"></div>` : ''}`; progressBar.appendChild(stepContainer);
         });
     }
 
@@ -683,59 +726,24 @@
     window.updateFlowStatus = async function(index, status) { const data = window.shukatsuData.find(item => item.id === currentResearchCompanyId); data.companyResearch.selectionFlow[index].status = status; renderSelectionFlow(); await window.saveToServer(); };
     window.removeFlowStep = async function(index) { if(!confirm('このステップを削除しますか？')) return; const data = window.shukatsuData.find(item => item.id === currentResearchCompanyId); data.companyResearch.selectionFlow.splice(index, 1); renderSelectionFlow(); await window.saveToServer(); };
 
-    // ==========================================
-    // 追加要件②：選考フローの項目を型（テンプレート化）して再利用する処理
-    // ==========================================
     window.updateFlowTemplateSelect = function() {
-        const select = document.getElementById('flowTemplateSelect');
-        if (!select) return;
-        const currentVal = select.value;
-        select.innerHTML = '<option value="">-- 選択 --</option>';
-        window.appSettings.flowTemplates = window.appSettings.flowTemplates || {};
-        Object.keys(window.appSettings.flowTemplates).forEach(name => {
-            const opt = document.createElement('option'); opt.value = name; opt.innerText = name; select.appendChild(opt);
-        });
-        select.value = currentVal;
+        const select = document.getElementById('flowTemplateSelect'); if (!select) return; const currentVal = select.value; select.innerHTML = '<option value="">-- 選択 --</option>'; window.appSettings.flowTemplates = window.appSettings.flowTemplates || {};
+        Object.keys(window.appSettings.flowTemplates).forEach(name => { const opt = document.createElement('option'); opt.value = name; opt.innerText = name; select.appendChild(opt); }); select.value = currentVal;
     };
-
     window.saveAsFlowTemplate = async function() {
-        const data = window.shukatsuData.find(item => item.id === currentResearchCompanyId);
-        if (!data) { alert('企業を選択してください。'); return; }
-        const flow = (data.companyResearch && data.companyResearch.selectionFlow) ? data.companyResearch.selectionFlow : [];
-        if (flow.length === 0) { alert('保存する選考フローが空です。先にステップを追加してください。'); return; }
-        
-        const templateName = prompt('この選考フローに名前をつけて保存します（例：IT本選考、メーカーインターン型など）:');
-        if (!templateName || templateName.trim() === '') return;
-        
-        window.appSettings.flowTemplates = window.appSettings.flowTemplates || {};
-        window.appSettings.flowTemplates[templateName.trim()] = flow.map(step => ({ name: step.name, status: 'not_started' }));
-        
-        window.updateFlowTemplateSelect();
-        await window.saveToServer();
-        alert(`テンプレート「${templateName}」を保存しました！`);
+        const data = window.shukatsuData.find(item => item.id === currentResearchCompanyId); if (!data) { alert('企業を選択してください。'); return; }
+        const flow = (data.companyResearch && data.companyResearch.selectionFlow) ? data.companyResearch.selectionFlow : []; if (flow.length === 0) { alert('保存するフローが空です。'); return; }
+        const templateName = prompt('この選考フローに名前をつけて保存します:'); if (!templateName || templateName.trim() === '') return;
+        window.appSettings.flowTemplates = window.appSettings.flowTemplates || {}; window.appSettings.flowTemplates[templateName.trim()] = flow.map(step => ({ name: step.name, status: 'not_started' }));
+        window.updateFlowTemplateSelect(); if(window.updateModalFlowTemplateSelect) window.updateModalFlowTemplateSelect(); await window.saveToServer(); alert(`テンプレート「${templateName}」を保存しました！`);
     };
-
     window.applyFlowTemplate = async function() {
-        const select = document.getElementById('flowTemplateSelect');
-        if (!select || !select.value) { alert('適用する型（テンプレート）を選択してください。'); return; }
-        const data = window.shukatsuData.find(item => item.id === currentResearchCompanyId);
-        if (!data) { alert('企業を選択してください。'); return; }
-        
-        if (data.companyResearch && data.companyResearch.selectionFlow && data.companyResearch.selectionFlow.length > 0) {
-            if (!confirm('現在この企業に設定されている選考フローが上書きされます。よろしいですか？')) return;
-        }
-        
-        const templateFlow = window.appSettings.flowTemplates[select.value];
-        if (!templateFlow) return;
-        
-        data.companyResearch = data.companyResearch || {};
-        data.companyResearch.selectionFlow = JSON.parse(JSON.stringify(templateFlow));
-        if (data.companyResearch.selectionFlow.length > 0) data.companyResearch.selectionFlow[0].status = 'current';
-        
-        renderSelectionFlow();
-        if(window.renderDashboardCompanyFlows) window.renderDashboardCompanyFlows();
-        await window.saveToServer();
-        alert(`「${select.value}」の選考フローを展開しました。`);
+        const select = document.getElementById('flowTemplateSelect'); if (!select || !select.value) { alert('適用する型を選択してください。'); return; }
+        const data = window.shukatsuData.find(item => item.id === currentResearchCompanyId); if (!data) { alert('企業を選択してください。'); return; }
+        if (data.companyResearch && data.companyResearch.selectionFlow && data.companyResearch.selectionFlow.length > 0) { if (!confirm('現在のフローが上書きされます。よろしいですか？')) return; }
+        const templateFlow = window.appSettings.flowTemplates[select.value]; if (!templateFlow) return;
+        data.companyResearch = data.companyResearch || {}; data.companyResearch.selectionFlow = JSON.parse(JSON.stringify(templateFlow)); if (data.companyResearch.selectionFlow.length > 0) data.companyResearch.selectionFlow[0].status = 'current';
+        renderSelectionFlow(); if(window.renderDashboardCompanyFlows) window.renderDashboardCompanyFlows(); await window.saveToServer(); alert(`「${select.value}」の選考フローを展開しました。`);
     };
 
     window.selectResearchCompany = function(id) {
@@ -745,10 +753,8 @@
             const res = data.companyResearch || {};
             document.getElementById('resFounderInput').value = res.founder || ''; document.getElementById('resIndustryInput').value = res.industry || ''; document.getElementById('resRivalsInput').value = res.rivals || ''; document.getElementById('resStrengthsInput').value = res.strengths || ''; document.getElementById('resSalaryInput').value = res.salary || ''; document.getElementById('resVacationInput').value = res.vacation || ''; document.getElementById('resBonusInput').value = res.bonus || '';
             renderSelectionFlow(); 
-            
             const detailArea = document.getElementById('researchDetailArea'); detailArea.style.display = 'block'; document.getElementById('researchEmptyMessage').style.display = 'none';
             if (window.innerWidth <= 768) { const activeBtn = Array.from(document.getElementById('researchCompanyList').children).find(btn => btn.classList.contains('active')); if (activeBtn) activeBtn.after(detailArea); detailArea.classList.add('mb-4', 'p-3'); } else { document.querySelector('#research-view .col-md-9').insertBefore(detailArea, document.getElementById('researchEmptyMessage')); detailArea.classList.remove('mb-4', 'p-3'); }
-            
             if (window.updateFlowTemplateSelect) window.updateFlowTemplateSelect();
         }
     };
