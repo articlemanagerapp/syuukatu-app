@@ -51,15 +51,43 @@
         .btn-branch { padding: 2px 6px; font-size: 0.8rem; margin-left: 5px; }
 
         /* 📊 タイムライン（ガントチャート）表示用スタイル */
-        .timeline-table { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 1000px; }
-        .timeline-table th, .timeline-table td { border: 1px solid #dee2e6; padding: 6px 4px; text-align: center; min-width: 50px; vertical-align: top; background-color: #fff; }
-        .timeline-company { position: sticky; left: 0; background-color: #f8f9fa !important; z-index: 2; font-weight: bold; text-align: left !important; min-width: 180px; max-width: 180px; box-shadow: 2px 0 4px rgba(0,0,0,0.05); }
-        .timeline-header { position: sticky; top: 0; background-color: #f8f9fa !important; z-index: 1; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .timeline-header-company { z-index: 3; }
-        .tl-event { font-size: 0.7rem; padding: 3px 4px; border-radius: 4px; color: #fff; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: bold; }
-        .tl-intern { background-color: #0d6efd; }
-        .tl-interview { background-color: #dc3545; }
-        .tl-info { background-color: #198754; }
+        .timeline-table { border-collapse: separate; border-spacing: 0; width: 100%; }
+        .timeline-table th, .timeline-table td { border-bottom: 1px solid #dee2e6; padding: 6px 4px; text-align: center; vertical-align: middle; background-color: #fff; }
+        .timeline-company { position: sticky; left: 0; background-color: #f8f9fa !important; z-index: 3; font-weight: bold; text-align: left !important; min-width: 180px; max-width: 180px; box-shadow: 2px 0 4px rgba(0,0,0,0.05); border-right: 1px solid #dee2e6; }
+        .timeline-header { position: sticky; top: 0; background-color: #f8f9fa !important; z-index: 2; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-bottom: 1px solid #dee2e6; }
+        .timeline-header-company { z-index: 4; }
+        
+        /* タイムラインの横長バー表示エリア */
+        .timeline-grid {
+            position: relative;
+            padding: 0 !important;
+            border-left: none !important;
+            border-right: none !important;
+            /* 1週間ごとの区切り線をうっすら背景に描画（26週分割） */
+            background-image: repeating-linear-gradient(to right, transparent, transparent calc(100% / 26 - 1px), #f1f3f5 calc(100% / 26 - 1px), #f1f3f5 calc(100% / 26));
+        }
+        .tl-event-bar {
+            position: absolute;
+            height: 24px;
+            line-height: 24px;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: bold;
+            padding: 0 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+            z-index: 10;
+            cursor: pointer;
+            text-align: left;
+        }
+        .tl-bar-intern { background-color: #0d6efd; } /* 青: インターン */
+        .tl-bar-interview { background-color: #dc3545; } /* 赤: 面接 */
+        .tl-bar-info { background-color: #198754; } /* 緑: 説明会 */
+        .tl-bar-es { background-color: #fd7e14; } /* オレンジ: ES */
+        .tl-bar-test { background-color: #6f42c1; } /* 紫: 適性検査 */
 
         /* スマホ向けレスポンシブ＆アコーディオン化 */
         @media (max-width: 768px) {
@@ -206,12 +234,21 @@
                     <div class="tab-pane fade" id="calendar-view" role="tabpanel">
                         <div class="mb-3 d-flex gap-2">
                             <button class="btn btn-primary fw-bold" id="btnCalendar" onclick="switchCalendarView('calendar')">📅 カレンダー表示</button>
-                            <button class="btn btn-outline-primary fw-bold" id="btnTimeline" onclick="switchCalendarView('timeline')">📊 タイムライン表示</button>
+                            <button class="btn btn-outline-primary fw-bold" id="btnTimeline" onclick="switchCalendarView('timeline')">📊 タイムライン（ガントチャート）表示</button>
                         </div>
+                        
+                        <div class="d-flex flex-wrap gap-2 mb-3" id="timelineLegend" style="display: none !important;">
+                            <span class="badge" style="background-color: #0d6efd;">インターン</span>
+                            <span class="badge" style="background-color: #fd7e14;">ES締切</span>
+                            <span class="badge" style="background-color: #198754;">説明会</span>
+                            <span class="badge" style="background-color: #6f42c1;">適性検査</span>
+                            <span class="badge" style="background-color: #dc3545;">面接</span>
+                        </div>
+
                         <div id="calendarContainer">
                             <div id="calendar"></div>
                         </div>
-                        <div id="timelineContainer" class="d-none table-wrapper" style="overflow-x: auto; max-height: 70vh; padding: 0;">
+                        <div id="timelineContainer" class="d-none table-wrapper" style="overflow-x: auto; max-height: 75vh; padding: 0;">
                             </div>
                     </div>
                     
@@ -345,14 +382,14 @@
                 <div class="col-md-6 mb-3"><label class="form-label fw-bold">マイページ ログインID</label><input type="text" class="form-control" id="mypageIdInput"></div>
                 <div class="col-md-6 mb-3"><label class="form-label fw-bold">マイページ パスワード</label><input type="text" class="form-control" id="mypagePassInput"></div>
                 
-                <div class="col-12 mt-3 mb-2"><h6 class="fw-bold border-bottom pb-2 text-primary">説明会関連</h6></div>
+                <div class="col-12 mt-3 mb-2"><h6 class="fw-bold border-bottom pb-2 text-primary">説明会・選考イベント関連</h6></div>
                 <div class="col-md-6 mb-3"><label class="form-label fw-bold">説明会開催の有無</label><select class="form-select" id="hasSessionInput"><option value="">-</option><option value="あり">あり</option><option value="なし">なし</option></select></div>
                 <div class="col-md-6 mb-3"><label class="form-label fw-bold">説明会申込・参加状況</label><select class="form-select" id="sessionStatusInput"><option value="">-</option><option value="未申込">未申込</option><option value="申込済">申込済</option><option value="参加済">参加済</option><option value="アーカイブ視聴">アーカイブ視聴</option></select></div>
                 <div class="col-md-6 mb-3"><label class="form-label fw-bold">説明会・イベント日時</label><input type="datetime-local" class="form-control" id="sessionDateInput"></div>
-                <div class="col-md-12 mb-3"><label class="form-label fw-bold">説明会メモ</label><textarea class="form-control" id="sessionMemoInput" rows="2" placeholder="社員名や印象など"></textarea></div>
-
-                <div class="col-12 mt-3 mb-2"><h6 class="fw-bold border-bottom pb-2 text-primary">ES関連</h6></div>
                 <div class="col-md-6 mb-3"><label class="form-label fw-bold">ES締切日時</label><input type="datetime-local" class="form-control" id="esDeadlineInput"></div>
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">適性検査 受検日時・期限</label><input type="datetime-local" class="form-control" id="testDateInput"></div>
+                
+                <div class="col-md-12 mb-3"><label class="form-label fw-bold">メモ（説明会や選考の印象など）</label><textarea class="form-control" id="sessionMemoInput" rows="2"></textarea></div>
             </div>
         </div>
 
@@ -597,72 +634,114 @@
     window.toggleTodo = async function(type, index) { window.todos[type][index].done = !window.todos[type][index].done; await window.saveToServer(); };
     window.removeTodo = async function(type, index) { window.todos[type].splice(index, 1); await window.saveToServer(); };
 
-    // カレンダー ＆ タイムライン処理
+    // カレンダー ＆ タイムライン切り替え処理
     window.switchCalendarView = function(viewType) {
         const calContainer = document.getElementById('calendarContainer'); const tlContainer = document.getElementById('timelineContainer');
         const btnCal = document.getElementById('btnCalendar'); const btnTl = document.getElementById('btnTimeline');
+        const tlLegend = document.getElementById('timelineLegend');
         if (viewType === 'calendar') {
             calContainer.classList.remove('d-none'); tlContainer.classList.add('d-none');
+            tlLegend.style.setProperty('display', 'none', 'important');
             btnCal.classList.replace('btn-outline-primary', 'btn-primary'); btnTl.classList.replace('btn-primary', 'btn-outline-primary');
             if(calendar) calendar.render();
         } else {
             calContainer.classList.add('d-none'); tlContainer.classList.remove('d-none');
+            tlLegend.style.setProperty('display', 'flex', 'important');
             btnCal.classList.replace('btn-primary', 'btn-outline-primary'); btnTl.classList.replace('btn-outline-primary', 'btn-primary');
             window.renderTimeline();
         }
     };
 
+    // タイムライン（ガントチャート）描画処理
     window.renderTimeline = function() {
         const container = document.getElementById('timelineContainer');
-        const startDate = new Date(); startDate.setDate(startDate.getDate() - 7); const daysToShow = 60; 
+        
+        // 開始日（今週の日曜）と期間（6ヶ月＝26週）の設定
+        const today = new Date(); today.setHours(0,0,0,0);
+        const startOfWeek = new Date(today); startOfWeek.setDate(today.getDate() - today.getDay());
+        
+        const weeksToShow = 26; 
+        const daysToShow = weeksToShow * 7;
+        const endOfWeek = new Date(startOfWeek); endOfWeek.setDate(startOfWeek.getDate() + daysToShow);
+        const totalMs = daysToShow * 24 * 60 * 60 * 1000;
         
         let theadHtml = `<tr><th class="timeline-header timeline-company timeline-header-company">企業名</th>`;
-        const dateList = [];
-        for (let i = 0; i < daysToShow; i++) {
-            const d = new Date(startDate); d.setDate(d.getDate() + i); dateList.push(d);
-            const m = d.getMonth() + 1; const day = d.getDate(); const dayOfWeek = ['日','月','火','水','木','金','土'][d.getDay()];
-            let color = d.getDay() === 0 ? '#dc3545' : (d.getDay() === 6 ? '#0d6efd' : '#212529');
-            theadHtml += `<th class="timeline-header"><div style="color:${color};font-size:0.75rem">${m}/${day}<br>(${dayOfWeek})</div></th>`;
+        for (let i = 0; i < weeksToShow; i++) {
+            const d = new Date(startOfWeek); d.setDate(d.getDate() + i * 7);
+            const m = d.getMonth() + 1; const day = d.getDate();
+            theadHtml += `<th class="timeline-header text-start" style="min-width: 100px; font-weight: normal; border-left: 1px dashed #dee2e6;"><div style="font-size:0.75rem; color:#495057;">${m}/${day}〜</div></th>`;
         }
         theadHtml += `</tr>`;
         
         let tbodyHtml = '';
         window.shukatsuData.forEach(data => {
             const compName = data.company || '名称未設定';
-            tbodyHtml += `<tr><td class="timeline-company text-truncate" title="${compName}">${compName}</td>`;
-            dateList.forEach(d => {
-                const y = d.getFullYear(); const m = String(d.getMonth() + 1).padStart(2, '0'); const day = String(d.getDate()).padStart(2, '0');
-                const dateStr = `${y}-${m}-${day}`;
-                let cellHtml = '';
+            let rowHtml = `<tr><td class="timeline-company text-truncate" title="${compName}">${compName}</td>`;
+            let eventsHtml = ''; let yOffsets = []; let maxLevel = 0;
+            
+            // イベントバー追加用ヘルパー関数
+            const addEventBar = (name, startStr, endStr, colorClass) => {
+                if (!startStr) return; const sDate = new Date(startStr); if (isNaN(sDate)) return;
+                const eDate = endStr ? new Date(endStr) : new Date(sDate); if (isNaN(eDate)) return;
+                if (eDate < startOfWeek || sDate > endOfWeek) return; // 範囲外はスキップ
                 
-                if (data.interviewDate && data.interviewDate.startsWith(dateStr)) { cellHtml += `<div class="tl-event tl-interview">面接</div>`; }
-                if (data.sessionDate && data.sessionDate.startsWith(dateStr)) { cellHtml += `<div class="tl-event tl-info">説明会</div>`; }
+                let leftMs = sDate.getTime() - startOfWeek.getTime(); if (leftMs < 0) leftMs = 0;
+                const leftPct = (leftMs / totalMs) * 100;
                 
-                let isInternDay = false;
-                if (data.internDates && data.internDates.length > 0) {
-                    data.internDates.forEach(idate => { const startD = idate.start; const endD = idate.end || idate.start; if (startD <= dateStr && endD >= dateStr) isInternDay = true; });
-                } else if (data.internStart && data.internStart.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                    if (data.internStart <= dateStr && data.internStart >= dateStr) isInternDay = true;
+                let widthMs = eDate.getTime() - sDate.getTime() + (24 * 60 * 60 * 1000); 
+                if (sDate.getTime() + widthMs > endOfWeek.getTime()) { widthMs = endOfWeek.getTime() - Math.max(sDate.getTime(), startOfWeek.getTime()); }
+                const widthPct = (widthMs / totalMs) * 100;
+                
+                // 重なり回避の計算
+                let level = 0;
+                while(true) {
+                    let overlap = false;
+                    for(let i=0; i<yOffsets.length; i++) {
+                        if(yOffsets[i].level === level && !(eDate < yOffsets[i].start || sDate > yOffsets[i].end)) { overlap = true; break; }
+                    }
+                    if(!overlap) break;
+                    level++;
                 }
-                if (isInternDay) { cellHtml += `<div class="tl-event tl-intern">ｲﾝﾀｰﾝ</div>`; }
-                tbodyHtml += `<td>${cellHtml}</td>`;
-            });
-            tbodyHtml += `</tr>`;
+                yOffsets.push({start: sDate, end: eDate, level: level});
+                if (level > maxLevel) maxLevel = level;
+                
+                const topPx = 8 + level * 28; // バーの縦位置
+                eventsHtml += `<div class="tl-event-bar ${colorClass}" style="left: ${leftPct}%; width: ${Math.max(widthPct, 0.5)}%; top: ${topPx}px;" title="${name} (${startStr.split('T')[0]})">${name}</div>`;
+            };
+            
+            // 各種イベントを描画
+            if (data.interviewDate) addEventBar('面接', data.interviewDate, data.interviewDate, 'tl-bar-interview');
+            if (data.sessionDate) addEventBar('説明会', data.sessionDate, data.sessionDate, 'tl-bar-info');
+            if (data.esDeadline) addEventBar('ES締切', data.esDeadline, data.esDeadline, 'tl-bar-es');
+            if (data.testDate) addEventBar('適性検査', data.testDate, data.testDate, 'tl-bar-test');
+            if (data.internDates && data.internDates.length > 0) {
+                data.internDates.forEach(idate => {
+                    const title = idate.title ? `ｲﾝﾀｰﾝ:${idate.title}` : 'ｲﾝﾀｰﾝ';
+                    addEventBar(title, idate.start, idate.end || idate.start, 'tl-bar-intern');
+                });
+            }
+            
+            const rowHeight = Math.max(45, 8 + (maxLevel + 1) * 28 + 8);
+            rowHtml += `<td colspan="${weeksToShow}" class="timeline-grid" style="height: ${rowHeight}px;">${eventsHtml}</td></tr>`;
+            tbodyHtml += rowHtml;
         });
-        container.innerHTML = `<table class="timeline-table"><thead>${theadHtml}</thead><tbody>${tbodyHtml}</tbody></table>`;
+        
+        container.innerHTML = `<table class="timeline-table" style="min-width: ${180 + weeksToShow * 100}px;"><thead>${theadHtml}</thead><tbody>${tbodyHtml}</tbody></table>`;
     };
 
     function initializeCalendar() {
         const el = document.getElementById('calendar'); if(!el) return;
-        calendar = new FullCalendar.Calendar(el, { initialView: 'dayGridMonth', locale: 'ja', height: window.innerWidth <= 768 ? 480 : 650, dayMaxEvents: true, headerToolbar: { left: 'prev,next today', center: 'title', right: window.innerWidth <= 768 ? 'dayGridMonth,timeGridWeek' : 'dayGridMonth,timeGridWeek,multiMonthFourMonth' }, views: { multiMonthFourMonth: { type: 'multiMonth', duration: { months: 4 }, buttonText: '4ヶ月' } }, eventClick: function(info) { editData(info.event.id.replace(/^(es_|interview_|intern_)/, '').split('_')[0]); } });
+        calendar = new FullCalendar.Calendar(el, { initialView: 'dayGridMonth', locale: 'ja', height: window.innerWidth <= 768 ? 480 : 650, dayMaxEvents: true, headerToolbar: { left: 'prev,next today', center: 'title', right: window.innerWidth <= 768 ? 'dayGridMonth,timeGridWeek' : 'dayGridMonth,timeGridWeek,multiMonthFourMonth' }, views: { multiMonthFourMonth: { type: 'multiMonth', duration: { months: 4 }, buttonText: '4ヶ月' } }, eventClick: function(info) { editData(info.event.id.replace(/^(es_|interview_|intern_|test_)/, '').split('_')[0]); } });
         calendar.render(); renderCalendarEvents();
     }
+    
     function renderCalendarEvents() {
         if (!calendar) return; calendar.removeAllEvents();
         window.shukatsuData.forEach(item => {
-            if (item.sessionDate) calendar.addEvent({ id: `session_${item.id}`, title: `[説明会] ${item.company}`, start: item.sessionDate, backgroundColor: '#0dcaf0', borderColor: '#0dcaf0' });
-            if (item.esDeadline) calendar.addEvent({ id: `es_${item.id}`, title: `[ES締切] ${item.company}`, start: item.esDeadline, backgroundColor: '#dc3545', borderColor: '#dc3545' });
-            if (item.interviewDate) calendar.addEvent({ id: `interview_${item.id}`, title: `[面接] ${item.company}`, start: item.interviewDate, backgroundColor: '#198754', borderColor: '#198754' });
+            if (item.sessionDate) calendar.addEvent({ id: `session_${item.id}`, title: `[説明会] ${item.company}`, start: item.sessionDate, backgroundColor: '#198754', borderColor: '#198754' });
+            if (item.esDeadline) calendar.addEvent({ id: `es_${item.id}`, title: `[ES締切] ${item.company}`, start: item.esDeadline, backgroundColor: '#fd7e14', borderColor: '#fd7e14' });
+            if (item.interviewDate) calendar.addEvent({ id: `interview_${item.id}`, title: `[面接] ${item.company}`, start: item.interviewDate, backgroundColor: '#dc3545', borderColor: '#dc3545' });
+            if (item.testDate) calendar.addEvent({ id: `test_${item.id}`, title: `[適性検査] ${item.company}`, start: item.testDate, backgroundColor: '#6f42c1', borderColor: '#6f42c1' });
             (item.internDates || []).forEach((d, idx) => { if (d.start) { let endObj = new Date(d.end || d.start); endObj.setDate(endObj.getDate() + 1); calendar.addEvent({ id: `intern_${item.id}_${idx}`, title: `ｲﾝﾀｰﾝ: ${item.company}`, start: d.start, end: endObj.toISOString().split('T')[0], backgroundColor: '#0d6efd', borderColor: '#0d6efd', allDay: true }); } });
         });
     }
@@ -680,7 +759,7 @@
 
     window.prepareAdd = function() { 
         document.getElementById('editId').value = ''; document.getElementById('addModalLabel').innerText = '企業の追加'; 
-        ['companyInput','internStartInput','locationInput','mypageUrlInput','mypageIdInput','mypagePassInput','hasSessionInput','sessionStatusInput','sessionDateInput','sessionMemoInput','esDeadlineInput'].forEach(id=>{ if(document.getElementById(id)) document.getElementById(id).value=''; }); 
+        ['companyInput','internStartInput','locationInput','mypageUrlInput','mypageIdInput','mypagePassInput','hasSessionInput','sessionStatusInput','sessionDateInput','sessionMemoInput','esDeadlineInput','testDateInput'].forEach(id=>{ if(document.getElementById(id)) document.getElementById(id).value=''; }); 
         document.getElementById('internDatesContainer').innerHTML = ''; addInternDateRow(); tempSelectionFlow = []; goToStep(1);
     };
     window.addInternDateRow = function(data = {title: '', start: '', end: ''}) { const c = document.getElementById('internDatesContainer'); const r = document.createElement('div'); r.className = 'row mb-2 intern-date-row g-2'; r.innerHTML = `<div class="col-12 col-md-4"><input type="text" class="form-control intern-title" placeholder="日程名" value="${data.title}"></div><div class="col-5 col-md-3"><input type="date" class="form-control intern-start" value="${data.start}"></div><div class="col-2 col-md-1 text-center align-self-center">〜</div><div class="col-5 col-md-3"><input type="date" class="form-control intern-end" value="${data.end}"></div><div class="col-12 col-md-1 text-end"><button type="button" class="btn btn-sm btn-outline-danger w-100 h-100" onclick="this.closest('.intern-date-row').remove()">×</button></div>`; c.appendChild(r); };
@@ -688,7 +767,7 @@
     window.editData = function(id) {
         const data = window.shukatsuData.find(item => item.id === id); if (!data) return;
         document.getElementById('editId').value = data.id; document.getElementById('addModalLabel').innerText = '企業の編集';
-        ['company','internStart','location','mypageUrl','mypageId','mypagePass','hasSession','sessionStatus','sessionDate','sessionMemo','esDeadline'].forEach(k => { if(document.getElementById(k+'Input')) document.getElementById(k+'Input').value = data[k]||''; });
+        ['company','internStart','location','mypageUrl','mypageId','mypagePass','hasSession','sessionStatus','sessionDate','sessionMemo','esDeadline','testDate'].forEach(k => { if(document.getElementById(k+'Input')) document.getElementById(k+'Input').value = data[k]||''; });
         const c = document.getElementById('internDatesContainer'); c.innerHTML = '';
         let dates = data.internDates || []; if (dates.length === 0) addInternDateRow(); else dates.forEach(d => addInternDateRow(d));
         tempSelectionFlow = (data.companyResearch && data.companyResearch.selectionFlow) ? JSON.parse(JSON.stringify(data.companyResearch.selectionFlow)) : [];
@@ -700,7 +779,6 @@
         const editor = document.getElementById('modalSelectionFlowEditor'); const progressBar = document.getElementById('modalSelectionFlowProgressBar'); editor.innerHTML = ''; progressBar.innerHTML = '';
         if (tempSelectionFlow.length === 0) { progressBar.innerHTML = '<span class="text-muted fw-bold ms-2" style="font-size:0.85rem;">追加ボタンからステップを登録して下さい</span>'; }
 
-        // データ互換性（古いデータにid, parentIdを付与）
         tempSelectionFlow.forEach((s, i) => { if(!s.id) s.id = 'step_o_' + i + '_' + Date.now(); if(s.parentId === undefined) s.parentId = null; });
 
         function drawEditor(parentId, depth) {
@@ -709,14 +787,13 @@
                 const row = document.createElement('div'); row.className = `d-flex align-items-center mb-2 gap-2 bg-white p-2 rounded shadow-sm border border-light ${depth > 0 ? 'flow-step-branch' : ''}`;
                 let statusClass = 'bg-light text-secondary'; if(step.status === 'completed') statusClass = 'bg-success text-white'; if(step.status === 'current') statusClass = 'bg-primary text-white'; if(step.status === 'rejected') statusClass = 'status-rejected';
                 
-                row.innerHTML = `<div class="fw-bold text-primary" style="min-width: 20px;">${depth===0 ? index+1+'.' : ''}</div><div class="fw-bold flex-grow-1 text-truncate">${step.name}</div><select class="form-select form-select-sm w-auto fw-bold ${statusClass}" onchange="updateModalFlowStatus('${step.id}', this.value)"><option value="not_started" ${step.status === 'not_started' ? 'selected' : ''} class="text-dark bg-white">未着手</option><option value="current" ${step.status === 'current' ? 'selected' : ''} class="text-dark bg-white">進行中</option><option value="completed" ${step.status === 'completed' ? 'selected' : ''} class="text-dark bg-white">完了</option><option value="rejected" ${step.status === 'rejected' ? 'selected' : ''} class="status-rejected">落選</option></select>${step.status === 'rejected' ? `<button class="btn btn-outline-danger btn-branch fw-bold" onclick="addModalBranchStep('${step.id}')">↳ 枝分かれ</button>` : ''}<button type="button" class="btn btn-sm btn-outline-danger border-0" onclick="removeModalFlowStep('${step.id}')">✖</button>`;
+                row.innerHTML = `<div class="fw-bold text-primary" style="min-width: 20px;">${depth===0 ? index+1+'.' : ''}</div><div class="fw-bold flex-grow-1 text-truncate">${step.name}</div><select class="form-select form-select-sm w-auto fw-bold ${statusClass}" onchange="updateModalFlowStatus('${step.id}', this.value)"><option value="not_started" ${step.status === 'not_started' ? 'selected' : ''} class="text-dark bg-white">未着手</option><option value="current" ${step.status === 'current' ? 'selected' : ''} class="text-dark bg-white">進行中</option><option value="completed" ${step.status === 'completed' ? 'selected' : ''} class="text-dark bg-white">完了</option><option value="rejected" ${step.status === 'rejected' ? 'selected' : ''} class="status-rejected">落選</option></select>${step.status === 'rejected' ? `<button type="button" class="btn btn-outline-danger btn-branch fw-bold" onclick="addModalBranchStep('${step.id}')">↳ 枝分かれ</button>` : ''}<button type="button" class="btn btn-sm btn-outline-danger border-0" onclick="removeModalFlowStep('${step.id}')">✖</button>`;
                 editor.appendChild(row);
                 drawEditor(step.id, depth + 1);
             });
         }
         drawEditor(null, 0);
 
-        // プログレスバー（ロケット鉛筆風）はフラットに表示
         tempSelectionFlow.forEach((step, index) => {
             const isLast = index === tempSelectionFlow.length - 1;
             const cClass = step.status === 'completed' ? 'bg-success text-white border-success' : (step.status === 'current' ? 'bg-primary text-white border-info border-3' : (step.status === 'rejected' ? 'status-rejected' : 'bg-secondary text-white border-secondary'));
@@ -758,7 +835,7 @@
         const id = document.getElementById('editId').value;
         const internDates = []; document.querySelectorAll('.intern-date-row').forEach(row => { const title = row.querySelector('.intern-title').value, start = row.querySelector('.intern-start').value, end = row.querySelector('.intern-end').value; if (title || start || end) internDates.push({ title, start, end }); });
         
-        const data = { id: id || Date.now().toString(), company: document.getElementById('companyInput').value, internStart: document.getElementById('internStartInput').value, location: document.getElementById('locationInput').value, mypageUrl: document.getElementById('mypageUrlInput').value, mypageId: document.getElementById('mypageIdInput').value, mypagePass: document.getElementById('mypagePassInput').value, hasSession: document.getElementById('hasSessionInput').value, sessionStatus: document.getElementById('sessionStatusInput').value, sessionDate: document.getElementById('sessionDateInput').value, sessionMemo: document.getElementById('sessionMemoInput').value, esDeadline: document.getElementById('esDeadlineInput').value, internDates: internDates };
+        const data = { id: id || Date.now().toString(), company: document.getElementById('companyInput').value, internStart: document.getElementById('internStartInput').value, location: document.getElementById('locationInput').value, mypageUrl: document.getElementById('mypageUrlInput').value, mypageId: document.getElementById('mypageIdInput').value, mypagePass: document.getElementById('mypagePassInput').value, hasSession: document.getElementById('hasSessionInput').value, sessionStatus: document.getElementById('sessionStatusInput').value, sessionDate: document.getElementById('sessionDateInput').value, sessionMemo: document.getElementById('sessionMemoInput').value, esDeadline: document.getElementById('esDeadlineInput').value, testDate: document.getElementById('testDateInput').value, internDates: internDates };
         let existingData = {};
         if (id) { const idx = window.shukatsuData.findIndex(item => item.id === id); if (idx !== -1) { existingData = window.shukatsuData[idx]; data.esQuestions = existingData.esQuestions || []; data.esText = existingData.esText || ''; data.interviewNote = existingData.interviewNote || ''; data.interviewDate = existingData.interviewDate || ''; data.companyResearch = existingData.companyResearch || {}; } } else { data.companyResearch = {}; }
         data.companyResearch.selectionFlow = tempSelectionFlow;
