@@ -57,37 +57,13 @@
         .timeline-header { position: sticky; top: 0; background-color: #f8f9fa !important; z-index: 2; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-bottom: 1px solid #dee2e6; }
         .timeline-header-company { z-index: 4; }
         
-        /* タイムラインの横長バー表示エリア */
-        .timeline-grid {
-            position: relative;
-            padding: 0 !important;
-            border-left: none !important;
-            border-right: none !important;
-            /* 1週間ごとの区切り線をうっすら背景に描画（26週分割） */
-            background-image: repeating-linear-gradient(to right, transparent, transparent calc(100% / 26 - 1px), #f1f3f5 calc(100% / 26 - 1px), #f1f3f5 calc(100% / 26));
-        }
-        .tl-event-bar {
-            position: absolute;
-            height: 24px;
-            line-height: 24px;
-            border-radius: 6px;
-            color: #fff;
-            font-size: 0.75rem;
-            font-weight: bold;
-            padding: 0 8px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
-            z-index: 10;
-            cursor: pointer;
-            text-align: left;
-        }
-        .tl-bar-intern { background-color: #0d6efd; } /* 青: インターン */
-        .tl-bar-interview { background-color: #dc3545; } /* 赤: 面接 */
-        .tl-bar-info { background-color: #198754; } /* 緑: 説明会 */
-        .tl-bar-es { background-color: #fd7e14; } /* オレンジ: ES */
-        .tl-bar-test { background-color: #6f42c1; } /* 紫: 適性検査 */
+        .timeline-grid { position: relative; padding: 0 !important; border-left: none !important; border-right: none !important; background-image: repeating-linear-gradient(to right, transparent, transparent calc(100% / 26 - 1px), #f1f3f5 calc(100% / 26 - 1px), #f1f3f5 calc(100% / 26)); }
+        .tl-event-bar { position: absolute; height: 24px; line-height: 24px; border-radius: 6px; color: #fff; font-size: 0.75rem; font-weight: bold; padding: 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: 0 2px 5px rgba(0,0,0,0.15); z-index: 10; cursor: pointer; text-align: left; }
+        .tl-bar-intern { background-color: #0d6efd; }
+        .tl-bar-interview { background-color: #dc3545; }
+        .tl-bar-info { background-color: #198754; }
+        .tl-bar-es { background-color: #fd7e14; }
+        .tl-bar-test { background-color: #6f42c1; }
 
         /* スマホ向けレスポンシブ＆アコーディオン化 */
         @media (max-width: 768px) {
@@ -249,7 +225,7 @@
                             <div id="calendar"></div>
                         </div>
                         <div id="timelineContainer" class="d-none table-wrapper" style="overflow-x: auto; max-height: 75vh; padding: 0;">
-                            </div>
+                        </div>
                     </div>
                     
                     <div class="tab-pane fade" id="research-view" role="tabpanel">
@@ -313,16 +289,99 @@
                     </div>
 
                     <div class="tab-pane fade" id="es-view" role="tabpanel">
-                        <div class="row"><div class="col-md-3"><div class="card p-2 mb-3"><h6 class="fw-bold mb-2">企業一覧</h6><div class="list-group" id="esCompanyList"></div></div></div><div class="col-md-9"><div id="esDetailArea" class="table-wrapper bg-white shadow-sm" style="display:none; border-radius: 8px;"><div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2"><h4 id="esTargetCompany" class="text-primary mb-0 fw-bold">企業名</h4><input type="hidden" id="esTargetId"><div class="d-flex gap-2"><button class="btn btn-outline-primary" onclick="addEsQuestionRow()">＋ 新しい設問</button><button class="btn btn-success fw-bold" onclick="saveEsDetails()">💾 保存</button></div></div><div id="esQuestionsContainer"></div></div><div id="esEmptyMessage" class="table-wrapper text-center text-muted p-5">左側の企業一覧から企業を選択してください。</div></div></div>
+                        <div class="row">
+                            <div class="col-md-3"><div class="card p-2 mb-3"><h6 class="fw-bold mb-2">企業一覧</h6><div class="list-group" id="esCompanyList"></div></div></div>
+                            <div class="col-md-9">
+                                <div id="esDetailArea" class="table-wrapper bg-white shadow-sm" style="display:none; border-radius: 8px;">
+                                    <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                                        <h4 id="esTargetCompany" class="text-primary mb-0 fw-bold">企業名</h4>
+                                        <input type="hidden" id="esTargetId">
+                                        <div class="d-flex gap-2"><button class="btn btn-outline-primary" onclick="addEsQuestionRow()">＋ 新しい設問</button><button class="btn btn-success fw-bold" onclick="saveEsDetails()">💾 保存</button></div>
+                                    </div>
+                                    <div id="esQuestionsContainer"></div>
+                                </div>
+                                <div id="esEmptyMessage" class="table-wrapper text-center text-muted p-5">左側の企業一覧から企業を選択してください。</div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="tab-pane fade" id="mypage-view" role="tabpanel"><div class="table-wrapper" style="padding:0;"><table class="table table-hover" id="mypageTable"><thead class="table-light"><tr><th>社名</th><th>マイページ</th><th>ログインID</th><th>パスワード</th><th>操作</th></tr></thead><tbody id="mypageTableBody"></tbody></table></div></div>
 
-                    <div class="tab-pane fade" id="interview-view" role="tabpanel"><div class="row"><div class="col-md-3"><div class="card p-2 mb-3"><h6 class="fw-bold mb-2">企業一覧</h6><div class="list-group" id="interviewCompanyList"></div></div></div><div class="col-md-9"><div id="interviewDetailArea" class="table-wrapper bg-white shadow-sm" style="display:none; border-radius: 8px;"><div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2"><h4 id="interviewTargetCompany" class="text-primary mb-0 fw-bold">企業名</h4><input type="hidden" id="interviewTargetId"><button class="btn btn-success fw-bold" onclick="saveInterviewDetails()">💾 保存</button></div><div class="mb-4" style="max-width: 300px;"><label class="form-label fw-bold">🗣️ 面接日時</label><input type="datetime-local" class="form-control" id="interviewDateInput"></div><div class="row"><div class="col-12 mb-4"><label class="form-label fw-bold text-success">📝 提出したES内容（控え）</label><textarea class="form-control" id="esTextInput" rows="8" placeholder="提出した志望動機や自己PR"></textarea></div><div class="col-12 mb-3"><label class="form-label fw-bold text-info">💡 面接対策メモ・想定問答</label><textarea class="form-control" id="interviewNoteInput" rows="10" placeholder="深掘り対策、逆質問など"></textarea></div></div></div><div id="interviewEmptyMessage" class="table-wrapper text-center text-muted p-5">左側の企業一覧から企業を選択してください。</div></div></div></div>
+                    <div class="tab-pane fade" id="interview-view" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-3"><div class="card p-2 mb-3"><h6 class="fw-bold mb-2">企業一覧</h6><div class="list-group" id="interviewCompanyList"></div></div></div>
+                            <div class="col-md-9">
+                                <div id="interviewDetailArea" class="table-wrapper bg-white shadow-sm" style="display:none; border-radius: 8px;">
+                                    <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                                        <h4 id="interviewTargetCompany" class="text-primary mb-0 fw-bold">企業名</h4>
+                                        <input type="hidden" id="interviewTargetId">
+                                        <button class="btn btn-success fw-bold" onclick="saveInterviewDetails()">💾 保存</button>
+                                    </div>
+                                    
+                                    <div class="mb-4">
+                                        <label class="form-label fw-bold text-primary fs-5">🎯 この企業に対する「就活の軸・面接の軸」</label>
+                                        <textarea class="form-control border-primary" id="interviewAxisInput" rows="3" placeholder="なぜこの企業なのか、自分のどの軸と一致しているか、絶対に伝えたいことなどを記録"></textarea>
+                                    </div>
+                                    
+                                    <div class="mb-4" style="max-width: 300px;"><label class="form-label fw-bold">🗣️ 面接日時</label><input type="datetime-local" class="form-control" id="interviewDateInput"></div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-4"><label class="form-label fw-bold text-info">💡 面接対策メモ・想定問答</label><textarea class="form-control" id="interviewNoteInput" rows="8" placeholder="深掘り対策、逆質問など"></textarea></div>
+                                        <div class="col-md-6 mb-4"><label class="form-label fw-bold text-success">📝 手動メモ用：提出したES内容など</label><textarea class="form-control" id="esTextInput" rows="8" placeholder="手動で残しておきたいメモ（※アプリ内で書いたESは下部の参照エリアから確認できます）"></textarea></div>
+                                    </div>
+
+                                    <hr class="my-4">
+                                    <h5 class="fw-bold text-secondary mb-3">🔍 企業情報・ES 参照エリア</h5>
+                                    <div class="accordion shadow-sm" id="interviewReferenceAccordion">
+                                        <div class="accordion-item border-0 mb-2">
+                                            <h2 class="accordion-header">
+                                                <button class="accordion-button collapsed fw-bold bg-light rounded" type="button" data-bs-toggle="collapse" data-bs-target="#refCompanyInfo">
+                                                    🏢 企業基本情報・福利厚生
+                                                </button>
+                                            </h2>
+                                            <div id="refCompanyInfo" class="accordion-collapse collapse" data-bs-parent="#interviewReferenceAccordion">
+                                                <div class="accordion-body bg-white border border-light rounded-bottom" id="interviewRefCompanyArea">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="accordion-item border-0">
+                                            <h2 class="accordion-header">
+                                                <button class="accordion-button collapsed fw-bold bg-light rounded" type="button" data-bs-toggle="collapse" data-bs-target="#refEsInfo">
+                                                    📝 アプリ内で作成したES（清書）
+                                                </button>
+                                            </h2>
+                                            <div id="refEsInfo" class="accordion-collapse collapse" data-bs-parent="#interviewReferenceAccordion">
+                                                <div class="accordion-body bg-white border border-light rounded-bottom" id="interviewRefEsArea">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                                <div id="interviewEmptyMessage" class="table-wrapper text-center text-muted p-5">左側の企業一覧から企業を選択してください。</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
     </div>
+</div>
+
+<div class="modal fade" id="esReferenceModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-light">
+        <h5 class="modal-title fw-bold">🔍 過去のES参照</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4" id="esReferenceModalBody">
+      </div>
+      <div class="modal-footer bg-light">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="modal fade" id="settingsModal" tabindex="-1">
@@ -357,7 +416,6 @@
       </div>
       <div class="modal-body p-4">
         <input type="hidden" id="editId">
-        
         <div class="d-flex justify-content-center mb-4">
            <div id="step1Indicator" class="fw-bold text-primary">1. 基本情報</div>
            <div class="mx-3 text-secondary">➔</div>
@@ -388,7 +446,6 @@
                 <div class="col-md-6 mb-3"><label class="form-label fw-bold">説明会・イベント日時</label><input type="datetime-local" class="form-control" id="sessionDateInput"></div>
                 <div class="col-md-6 mb-3"><label class="form-label fw-bold">ES締切日時</label><input type="datetime-local" class="form-control" id="esDeadlineInput"></div>
                 <div class="col-md-6 mb-3"><label class="form-label fw-bold">適性検査 受検日時・期限</label><input type="datetime-local" class="form-control" id="testDateInput"></div>
-                
                 <div class="col-md-12 mb-3"><label class="form-label fw-bold">メモ（説明会や選考の印象など）</label><textarea class="form-control" id="sessionMemoInput" rows="2"></textarea></div>
             </div>
         </div>
@@ -405,7 +462,6 @@
                             <datalist id="modalFlowStepSuggestions"><option value="ES提出"><option value="適性検査"><option value="インターンシップ通過"><option value="座談会"><option value="1次面接"><option value="2次面接"><option value="最終面接"><option value="内定"><option value="本選考"></datalist>
                             <button type="button" class="btn btn-outline-primary fw-bold" onclick="addModalSelectionFlowStep()">＋ 追加</button>
                         </div>
-
                         <div class="d-flex flex-wrap gap-2 align-items-center border-top pt-3 mt-3">
                             <div class="d-flex align-items-center gap-1">
                                 <label class="form-label fw-bold text-secondary mb-0 text-nowrap" style="font-size:0.85rem;">📁 フロー型:</label>
@@ -652,14 +708,10 @@
         }
     };
 
-    // タイムライン（ガントチャート）描画処理
     window.renderTimeline = function() {
         const container = document.getElementById('timelineContainer');
-        
-        // 開始日（今週の日曜）と期間（6ヶ月＝26週）の設定
         const today = new Date(); today.setHours(0,0,0,0);
         const startOfWeek = new Date(today); startOfWeek.setDate(today.getDate() - today.getDay());
-        
         const weeksToShow = 26; 
         const daysToShow = weeksToShow * 7;
         const endOfWeek = new Date(startOfWeek); endOfWeek.setDate(startOfWeek.getDate() + daysToShow);
@@ -679,11 +731,10 @@
             let rowHtml = `<tr><td class="timeline-company text-truncate" title="${compName}">${compName}</td>`;
             let eventsHtml = ''; let yOffsets = []; let maxLevel = 0;
             
-            // イベントバー追加用ヘルパー関数
             const addEventBar = (name, startStr, endStr, colorClass) => {
                 if (!startStr) return; const sDate = new Date(startStr); if (isNaN(sDate)) return;
                 const eDate = endStr ? new Date(endStr) : new Date(sDate); if (isNaN(eDate)) return;
-                if (eDate < startOfWeek || sDate > endOfWeek) return; // 範囲外はスキップ
+                if (eDate < startOfWeek || sDate > endOfWeek) return; 
                 
                 let leftMs = sDate.getTime() - startOfWeek.getTime(); if (leftMs < 0) leftMs = 0;
                 const leftPct = (leftMs / totalMs) * 100;
@@ -692,7 +743,6 @@
                 if (sDate.getTime() + widthMs > endOfWeek.getTime()) { widthMs = endOfWeek.getTime() - Math.max(sDate.getTime(), startOfWeek.getTime()); }
                 const widthPct = (widthMs / totalMs) * 100;
                 
-                // 重なり回避の計算
                 let level = 0;
                 while(true) {
                     let overlap = false;
@@ -705,11 +755,10 @@
                 yOffsets.push({start: sDate, end: eDate, level: level});
                 if (level > maxLevel) maxLevel = level;
                 
-                const topPx = 8 + level * 28; // バーの縦位置
+                const topPx = 8 + level * 28; 
                 eventsHtml += `<div class="tl-event-bar ${colorClass}" style="left: ${leftPct}%; width: ${Math.max(widthPct, 0.5)}%; top: ${topPx}px;" title="${name} (${startStr.split('T')[0]})">${name}</div>`;
             };
             
-            // 各種イベントを描画
             if (data.interviewDate) addEventBar('面接', data.interviewDate, data.interviewDate, 'tl-bar-interview');
             if (data.sessionDate) addEventBar('説明会', data.sessionDate, data.sessionDate, 'tl-bar-info');
             if (data.esDeadline) addEventBar('ES締切', data.esDeadline, data.esDeadline, 'tl-bar-es');
@@ -774,7 +823,6 @@
         goToStep(1); bootstrap.Modal.getOrCreateInstance(document.getElementById('addModal')).show();
     };
 
-    // ★ モーダル内 選考フロー（階層対応）★
     window.renderModalSelectionFlow = function() {
         const editor = document.getElementById('modalSelectionFlowEditor'); const progressBar = document.getElementById('modalSelectionFlowProgressBar'); editor.innerHTML = ''; progressBar.innerHTML = '';
         if (tempSelectionFlow.length === 0) { progressBar.innerHTML = '<span class="text-muted fw-bold ms-2" style="font-size:0.85rem;">追加ボタンからステップを登録して下さい</span>'; }
@@ -837,7 +885,7 @@
         
         const data = { id: id || Date.now().toString(), company: document.getElementById('companyInput').value, internStart: document.getElementById('internStartInput').value, location: document.getElementById('locationInput').value, mypageUrl: document.getElementById('mypageUrlInput').value, mypageId: document.getElementById('mypageIdInput').value, mypagePass: document.getElementById('mypagePassInput').value, hasSession: document.getElementById('hasSessionInput').value, sessionStatus: document.getElementById('sessionStatusInput').value, sessionDate: document.getElementById('sessionDateInput').value, sessionMemo: document.getElementById('sessionMemoInput').value, esDeadline: document.getElementById('esDeadlineInput').value, testDate: document.getElementById('testDateInput').value, internDates: internDates };
         let existingData = {};
-        if (id) { const idx = window.shukatsuData.findIndex(item => item.id === id); if (idx !== -1) { existingData = window.shukatsuData[idx]; data.esQuestions = existingData.esQuestions || []; data.esText = existingData.esText || ''; data.interviewNote = existingData.interviewNote || ''; data.interviewDate = existingData.interviewDate || ''; data.companyResearch = existingData.companyResearch || {}; } } else { data.companyResearch = {}; }
+        if (id) { const idx = window.shukatsuData.findIndex(item => item.id === id); if (idx !== -1) { existingData = window.shukatsuData[idx]; data.esQuestions = existingData.esQuestions || []; data.esText = existingData.esText || ''; data.interviewNote = existingData.interviewNote || ''; data.interviewDate = existingData.interviewDate || ''; data.interviewAxis = existingData.interviewAxis || ''; data.companyResearch = existingData.companyResearch || {}; } } else { data.companyResearch = {}; }
         data.companyResearch.selectionFlow = tempSelectionFlow;
 
         let eventsToSync = [];
@@ -975,15 +1023,115 @@
         await window.saveToServer(); alert('企業研究内容を保存しました！');
     };
 
+    // ★ ES管理ロジック（カテゴリ分類と参照機能追加） ★
     function loadEsView() { const detailArea = document.getElementById('esDetailArea'); const emptyMsg = document.getElementById('esEmptyMessage'); const rightCol = document.querySelector('#es-view .col-md-9'); if (detailArea && rightCol && emptyMsg && !rightCol.contains(detailArea)) { rightCol.insertBefore(detailArea, emptyMsg); } const list = document.getElementById('esCompanyList'); list.innerHTML = ''; window.shukatsuData.forEach(item => { const btn = document.createElement('button'); btn.className = `list-group-item list-group-item-action fw-bold d-flex justify-content-between align-items-center ${item.id === currentEsCompanyId ? 'active' : ''}`; const isTarget = item.id === currentEsCompanyId; const arrowText = window.innerWidth <= 768 ? (isTarget ? '▲' : '▼') : ''; btn.innerHTML = `<span>${item.company}</span><span class="es-arrow">${arrowText}</span>`; btn.onclick = () => { if (currentEsCompanyId === item.id && window.innerWidth <= 768) { currentEsCompanyId = null; document.getElementById('esDetailArea').style.display = 'none'; document.getElementById('esEmptyMessage').style.display = 'block'; btn.classList.remove('active'); if(btn.querySelector('.es-arrow')) btn.querySelector('.es-arrow').innerText = '▼'; } else { currentEsCompanyId = item.id; Array.from(list.children).forEach(c => { c.classList.remove('active'); const a = c.querySelector('.es-arrow'); if(a) a.innerText = '▼'; }); btn.classList.add('active'); const a = btn.querySelector('.es-arrow'); if(a) a.innerText = '▲'; selectEsCompany(item.id); } }; list.appendChild(btn); }); if (currentEsCompanyId && window.shukatsuData.some(i=>i.id===currentEsCompanyId)) { selectEsCompany(currentEsCompanyId); } else { if(detailArea) detailArea.style.display = 'none'; if(emptyMsg) emptyMsg.style.display = 'block'; } }
-    window.addEsQuestionRow = function(qData = { id: '', question: '', finalAnswer: '', memoAnswer: '' }) { const container = document.getElementById('esQuestionsContainer'); const card = document.createElement('div'); card.className = 'card p-3 mb-3 border-secondary es-question-card shadow-sm'; card.dataset.qId = qData.id || 'q_' + Date.now() + Math.random().toString(36).substring(2, 5); card.innerHTML = `<div class="d-flex justify-content-between align-items-center mb-2"><h6 class="fw-bold text-secondary mb-0">📝 設問</h6><button class="btn btn-sm btn-outline-danger" onclick="this.closest('.es-question-card').remove()">削除</button></div><div class="mb-3"><textarea class="form-control es-q-text" rows="2" placeholder="設問内容">${qData.question || ''}</textarea></div><div class="row"><div class="col-12 mb-3"><label class="form-label text-info fw-bold" style="font-size:0.85rem;">💡 メモ・構成案</label><textarea class="form-control es-q-memo" rows="4" placeholder="書きたいポイントや箇条書き">${qData.memoAnswer || ''}</textarea></div><div class="col-12 mb-3"><div class="d-flex justify-content-between align-items-end mb-1"><label class="form-label text-success fw-bold mb-0" style="font-size:0.85rem;">✨ 清書</label><span class="text-secondary fw-bold" style="font-size:0.85rem;"><span class="char-count">0</span> 文字</span></div><textarea class="form-control es-q-final" rows="6" placeholder="清書欄" oninput="updateCharCount(this)">${qData.finalAnswer || ''}</textarea></div></div>`; container.appendChild(card); window.updateCharCount(card.querySelector('.es-q-final')); };
+    
+    window.addEsQuestionRow = function(qData = { id: '', category: '', question: '', finalAnswer: '', memoAnswer: '' }) { 
+        const container = document.getElementById('esQuestionsContainer'); const card = document.createElement('div'); card.className = 'card p-3 mb-3 border-secondary es-question-card shadow-sm'; card.dataset.qId = qData.id || 'q_' + Date.now() + Math.random().toString(36).substring(2, 5); 
+        
+        const catOptions = ['ガクチカ', '自己PR', '志望動機', '研究概要', '長所・短所', '希望職種', 'その他'];
+        let catHtml = `<option value="">カテゴリ未設定</option>`;
+        catOptions.forEach(opt => { catHtml += `<option value="${opt}" ${qData.category === opt ? 'selected' : ''}>${opt}</option>`; });
+
+        card.innerHTML = `<div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2"><h6 class="fw-bold text-secondary mb-0 d-flex align-items-center gap-2">📝 設問 <select class="form-select form-select-sm es-q-category" style="width:140px;">${catHtml}</select></h6><div class="d-flex gap-2"><button type="button" class="btn btn-sm btn-outline-info fw-bold" onclick="showEsReference(this)">🔍 過去のES参照</button><button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.es-question-card').remove()">削除</button></div></div><div class="mb-3"><textarea class="form-control es-q-text" rows="2" placeholder="設問内容">${qData.question || ''}</textarea></div><div class="row"><div class="col-12 mb-3"><label class="form-label text-info fw-bold" style="font-size:0.85rem;">💡 メモ・構成案</label><textarea class="form-control es-q-memo" rows="4" placeholder="書きたいポイントや箇条書き">${qData.memoAnswer || ''}</textarea></div><div class="col-12 mb-3"><div class="d-flex justify-content-between align-items-end mb-1"><label class="form-label text-success fw-bold mb-0" style="font-size:0.85rem;">✨ 清書</label><span class="text-secondary fw-bold" style="font-size:0.85rem;"><span class="char-count">0</span> 文字</span></div><textarea class="form-control es-q-final" rows="6" placeholder="清書欄" oninput="updateCharCount(this)">${qData.finalAnswer || ''}</textarea></div></div>`; container.appendChild(card); window.updateCharCount(card.querySelector('.es-q-final')); 
+    };
+    
     window.updateCharCount = function(textarea) { textarea.closest('.col-12').querySelector('.char-count').innerText = textarea.value.length; };
     window.selectEsCompany = function(id) { currentEsCompanyId = id; const data = window.shukatsuData.find(item => item.id === id); if (data) { document.getElementById('esTargetCompany').innerText = data.company; document.getElementById('esTargetId').value = data.id; const container = document.getElementById('esQuestionsContainer'); container.innerHTML = ''; const questions = data.esQuestions || []; questions.forEach(q => addEsQuestionRow(q)); if(questions.length === 0) addEsQuestionRow(); const detailArea = document.getElementById('esDetailArea'); detailArea.style.display = 'block'; document.getElementById('esEmptyMessage').style.display = 'none'; if (window.innerWidth <= 768) { const activeBtn = Array.from(document.getElementById('esCompanyList').children).find(btn => btn.classList.contains('active')); if (activeBtn) activeBtn.after(detailArea); detailArea.classList.add('mb-4', 'p-3'); } else { document.querySelector('#es-view .col-md-9').insertBefore(detailArea, document.getElementById('esEmptyMessage')); detailArea.classList.remove('mb-4', 'p-3'); } setTimeout(() => { container.querySelectorAll('.es-q-final').forEach(ta => window.updateCharCount(ta)); }, 50); } };
-    window.saveEsDetails = async function() { const id = document.getElementById('esTargetId').value; const data = window.shukatsuData.find(item => item.id === id); if (!data) return; const qs = []; document.querySelectorAll('.es-question-card').forEach(card => { qs.push({ id: card.dataset.qId, question: card.querySelector('.es-q-text').value, memoAnswer: card.querySelector('.es-q-memo').value, finalAnswer: card.querySelector('.es-q-final').value }); }); data.esQuestions = qs; await window.saveToServer(); alert('ES内容を保存しました！'); };
+    window.saveEsDetails = async function() { const id = document.getElementById('esTargetId').value; const data = window.shukatsuData.find(item => item.id === id); if (!data) return; const qs = []; document.querySelectorAll('.es-question-card').forEach(card => { qs.push({ id: card.dataset.qId, category: card.querySelector('.es-q-category').value, question: card.querySelector('.es-q-text').value, memoAnswer: card.querySelector('.es-q-memo').value, finalAnswer: card.querySelector('.es-q-final').value }); }); data.esQuestions = qs; await window.saveToServer(); alert('ES内容を保存しました！'); };
 
+    // コピー機能
+    window.copyToClipboard = function(btn, text) {
+        navigator.clipboard.writeText(text).then(() => {
+            const originalText = btn.innerText; btn.innerText = 'コピー済！'; btn.classList.replace('btn-outline-primary', 'btn-success');
+            setTimeout(() => { btn.innerText = originalText; btn.classList.replace('btn-success', 'btn-outline-primary'); }, 2000);
+        });
+    };
+
+    // ES参照モーダルの表示
+    window.showEsReference = function(btn) {
+        const card = btn.closest('.es-question-card'); const category = card.querySelector('.es-q-category').value;
+        const modalBody = document.getElementById('esReferenceModalBody');
+        if (!category) {
+            modalBody.innerHTML = '<div class="text-muted p-3 text-center">先に「設問」の横のプルダウンからカテゴリを選択してください。</div>';
+        } else {
+            let html = '';
+            window.shukatsuData.forEach(comp => {
+                const questions = comp.esQuestions || [];
+                questions.filter(q => q.category === category && q.finalAnswer).forEach(q => {
+                    const encodedText = encodeURIComponent(q.finalAnswer);
+                    html += `
+                        <div class="border rounded p-3 mb-3 bg-light shadow-sm">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="fw-bold text-primary fs-5">🏢 ${comp.company}</div>
+                                <button type="button" class="btn btn-sm btn-outline-primary fw-bold" onclick="copyToClipboard(this, decodeURIComponent('${encodedText}'))">コピー</button>
+                            </div>
+                            <div class="text-secondary fw-bold fs-7 mb-2 border-bottom pb-2">Q: ${q.question || '設問なし'}</div>
+                            <div class="bg-white p-3 border rounded" style="white-space: pre-wrap; font-size: 0.95rem; line-height: 1.6;">${q.finalAnswer}</div>
+                        </div>
+                    `;
+                });
+            });
+            if (html === '') { html = `<div class="text-muted p-3 text-center">「${category}」で登録されている過去のESは見つかりませんでした。</div>`; }
+            modalBody.innerHTML = html;
+        }
+        new bootstrap.Modal(document.getElementById('esReferenceModal')).show();
+    };
+
+    // ★ 面接対策ロジック（就活の軸・参照機能追加） ★
     function loadInterviewView() { const detailArea = document.getElementById('interviewDetailArea'); const emptyMsg = document.getElementById('interviewEmptyMessage'); const rightCol = document.querySelector('#interview-view .col-md-9'); if (detailArea && rightCol && emptyMsg && !rightCol.contains(detailArea)) { rightCol.insertBefore(detailArea, emptyMsg); } const list = document.getElementById('interviewCompanyList'); list.innerHTML = ''; window.shukatsuData.forEach(item => { const btn = document.createElement('button'); btn.className = `list-group-item list-group-item-action fw-bold d-flex justify-content-between align-items-center ${item.id === currentInterviewCompanyId ? 'active' : ''}`; const isTarget = item.id === currentInterviewCompanyId; const arrowText = window.innerWidth <= 768 ? (isTarget ? '▲' : '▼') : ''; btn.innerHTML = `<span>${item.company}</span><span class="interview-arrow">${arrowText}</span>`; btn.onclick = () => { if (currentInterviewCompanyId === item.id && window.innerWidth <= 768) { currentInterviewCompanyId = null; document.getElementById('interviewDetailArea').style.display = 'none'; document.getElementById('interviewEmptyMessage').style.display = 'block'; btn.classList.remove('active'); if(btn.querySelector('.interview-arrow')) btn.querySelector('.interview-arrow').innerText = '▼'; } else { currentInterviewCompanyId = item.id; Array.from(list.children).forEach(c => { c.classList.remove('active'); const a = c.querySelector('.interview-arrow'); if(a) a.innerText = '▼'; }); btn.classList.add('active'); const a = btn.querySelector('.interview-arrow'); if(a) a.innerText = '▲'; selectInterviewCompany(item.id); } }; list.appendChild(btn); }); if (currentInterviewCompanyId && window.shukatsuData.some(i=>i.id===currentInterviewCompanyId)) { selectInterviewCompany(currentInterviewCompanyId); } else { if(detailArea) detailArea.style.display = 'none'; if(emptyMsg) emptyMsg.style.display = 'block'; } }
-    window.selectInterviewCompany = function(id) { currentInterviewCompanyId = id; const data = window.shukatsuData.find(item => item.id === id); if (data) { document.getElementById('interviewTargetCompany').innerText = data.company; document.getElementById('interviewTargetId').value = data.id; document.getElementById('interviewDateInput').value = data.interviewDate || ''; document.getElementById('esTextInput').value = data.esText || ''; document.getElementById('interviewNoteInput').value = data.interviewNote || ''; const detailArea = document.getElementById('interviewDetailArea'); detailArea.style.display = 'block'; document.getElementById('interviewEmptyMessage').style.display = 'none'; if (window.innerWidth <= 768) { const activeBtn = Array.from(document.getElementById('interviewCompanyList').children).find(btn => btn.classList.contains('active')); if (activeBtn) activeBtn.after(detailArea); detailArea.classList.add('mb-4', 'p-3'); } else { document.querySelector('#interview-view .col-md-9').insertBefore(detailArea, document.getElementById('interviewEmptyMessage')); detailArea.classList.remove('mb-4', 'p-3'); } } };
-    window.saveInterviewDetails = async function() { const id = document.getElementById('interviewTargetId').value; const data = window.shukatsuData.find(item => item.id === id); if (!data) return; const oldDate = data.interviewDate; const newDate = document.getElementById('interviewDateInput').value; if (document.getElementById('autoCalSyncToggle').checked && newDate && newDate !== oldDate) { window.syncToGoogleCalendarAPI([{ title: `[面接] ${data.company}`, date: newDate, type: 'time' }], data.location); } data.interviewDate = newDate; data.esText = document.getElementById('esTextInput').value; data.interviewNote = document.getElementById('interviewNoteInput').value; await window.saveToServer(); alert('面接対策内容を保存しました！'); };
+    
+    window.selectInterviewCompany = function(id) { 
+        currentInterviewCompanyId = id; const data = window.shukatsuData.find(item => item.id === id); 
+        if (data) { 
+            document.getElementById('interviewTargetCompany').innerText = data.company; document.getElementById('interviewTargetId').value = data.id; 
+            document.getElementById('interviewDateInput').value = data.interviewDate || ''; 
+            document.getElementById('interviewAxisInput').value = data.interviewAxis || ''; 
+            document.getElementById('esTextInput').value = data.esText || ''; 
+            document.getElementById('interviewNoteInput').value = data.interviewNote || ''; 
+
+            // 企業研究エリアの描画
+            const refCompanyArea = document.getElementById('interviewRefCompanyArea');
+            const res = data.companyResearch || {};
+            refCompanyArea.innerHTML = `
+                <div class="row g-3">
+                    <div class="col-md-6"><span class="text-secondary fs-7">業界:</span><br><strong>${res.industry || '-'}</strong></div>
+                    <div class="col-md-6"><span class="text-secondary fs-7">創設者等:</span><br><strong>${res.founder || '-'}</strong></div>
+                    <div class="col-12"><span class="text-secondary fs-7">ライバル:</span><br><strong>${res.rivals || '-'}</strong></div>
+                    <div class="col-12"><span class="text-secondary fs-7">強み:</span><br><strong>${res.strengths || '-'}</strong></div>
+                    <div class="col-md-4"><span class="text-secondary fs-7">初任給:</span><br><strong>${res.salary || '-'}</strong></div>
+                    <div class="col-md-4"><span class="text-secondary fs-7">休暇:</span><br><strong>${res.vacation || '-'}</strong></div>
+                    <div class="col-md-4"><span class="text-secondary fs-7">賞与:</span><br><strong>${res.bonus || '-'}</strong></div>
+                </div>
+            `;
+
+            // 作成済みESの描画
+            const refEsArea = document.getElementById('interviewRefEsArea');
+            const qs = data.esQuestions || [];
+            if (qs.length === 0) {
+                refEsArea.innerHTML = '<div class="text-muted text-center py-3">この企業で登録されたESはありません。</div>';
+            } else {
+                let esHtml = '';
+                qs.forEach((q, i) => {
+                    const encodedText = encodeURIComponent(q.finalAnswer || '');
+                    esHtml += `
+                        <div class="mb-3 p-3 bg-light border rounded shadow-sm">
+                            <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-2">
+                                <div class="fw-bold text-secondary">Q${i+1}. ${q.question || '設問なし'} <span class="badge bg-secondary ms-2">${q.category || '未設定'}</span></div>
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="copyToClipboard(this, decodeURIComponent('${encodedText}'))">コピー</button>
+                            </div>
+                            <div style="white-space: pre-wrap; font-size: 0.95rem; line-height: 1.6;" class="bg-white p-3 border rounded">${q.finalAnswer || '<span class="text-muted">（清書がありません）</span>'}</div>
+                        </div>
+                    `;
+                });
+                refEsArea.innerHTML = esHtml;
+            }
+
+            const detailArea = document.getElementById('interviewDetailArea'); detailArea.style.display = 'block'; document.getElementById('interviewEmptyMessage').style.display = 'none'; if (window.innerWidth <= 768) { const activeBtn = Array.from(document.getElementById('interviewCompanyList').children).find(btn => btn.classList.contains('active')); if (activeBtn) activeBtn.after(detailArea); detailArea.classList.add('mb-4', 'p-3'); } else { document.querySelector('#interview-view .col-md-9').insertBefore(detailArea, document.getElementById('interviewEmptyMessage')); detailArea.classList.remove('mb-4', 'p-3'); } 
+        } 
+    };
+    
+    window.saveInterviewDetails = async function() { const id = document.getElementById('interviewTargetId').value; const data = window.shukatsuData.find(item => item.id === id); if (!data) return; const oldDate = data.interviewDate; const newDate = document.getElementById('interviewDateInput').value; if (document.getElementById('autoCalSyncToggle').checked && newDate && newDate !== oldDate) { window.syncToGoogleCalendarAPI([{ title: `[面接] ${data.company}`, date: newDate, type: 'time' }], data.location); } data.interviewDate = newDate; data.interviewAxis = document.getElementById('interviewAxisInput').value; data.esText = document.getElementById('esTextInput').value; data.interviewNote = document.getElementById('interviewNoteInput').value; await window.saveToServer(); alert('面接対策内容を保存しました！'); };
 
     window.downloadTXTBackup = function() { const str = JSON.stringify({ data: window.shukatsuData, todos: window.todos }, null, 2); const blob = new Blob([str], { type: 'text/plain' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'shukatsu_backup.txt'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); };
     window.importTXTBackup = function(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = async function(e) { try { const json = JSON.parse(e.target.result); if (json && (json.data || Array.isArray(json))) { let rawData = json.data || json; window.shukatsuData = Array.isArray(rawData) ? rawData : Object.values(rawData).filter(item => item !== null); window.todos = json.todos || { today: [], week: [] }; await window.saveToServer(); alert('データを正常に復元しました！'); bootstrap.Modal.getInstance(document.getElementById('settingsModal')).hide(); } else { alert('有効なファイルではありません。'); } } catch (err) { alert('読み込みに失敗しました。'); } }; reader.readAsText(file); };
