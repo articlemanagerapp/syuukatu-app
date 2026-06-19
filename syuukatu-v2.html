@@ -56,7 +56,6 @@
         .timeline-company { position: sticky; left: 0; background-color: #f8f9fa !important; z-index: 3; font-weight: bold; text-align: left !important; min-width: 180px; max-width: 180px; box-shadow: 2px 0 4px rgba(0,0,0,0.05); border-right: 1px solid #dee2e6; }
         .timeline-header { position: sticky; top: 0; background-color: #f8f9fa !important; z-index: 2; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-bottom: 1px solid #dee2e6; }
         .timeline-header-company { z-index: 4; }
-        
         .timeline-grid { position: relative; padding: 0 !important; border-left: none !important; border-right: none !important; background-image: repeating-linear-gradient(to right, transparent, transparent calc(100% / 26 - 1px), #f1f3f5 calc(100% / 26 - 1px), #f1f3f5 calc(100% / 26)); }
         .tl-event-bar { position: absolute; height: 24px; line-height: 24px; border-radius: 6px; color: #fff; font-size: 0.75rem; font-weight: bold; padding: 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: 0 2px 5px rgba(0,0,0,0.15); z-index: 10; cursor: pointer; text-align: left; }
         .tl-bar-intern { background-color: #0d6efd; }
@@ -65,12 +64,59 @@
         .tl-bar-es { background-color: #fd7e14; }
         .tl-bar-test { background-color: #6f42c1; }
 
-        /* スマホ向けレスポンシブ＆アコーディオン化 */
+        /* ▼ プルダウン（アコーディオン）用のカスタムスタイル ▼ */
+        .custom-accordion {
+            background-color: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .custom-accordion summary {
+            cursor: pointer;
+            list-style: none; /* デフォルトの矢印を非表示 */
+            position: relative;
+            padding-right: 35px;
+            outline: none;
+            background-color: #f8f9fa;
+        }
+        .custom-accordion summary::-webkit-details-marker { display: none; }
+        .custom-accordion summary::after {
+            content: "▼";
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+        .custom-accordion[open] summary::after { content: "▲"; }
+        .custom-accordion[open] summary {
+            background-color: #e9ecef;
+            border-bottom: 1px solid #dee2e6 !important;
+        }
+
+        /* ▼ スマホ向けレスポンシブ＆アコーディオン化 ▼ */
         @media (max-width: 768px) {
             header { padding-top: 60px !important; padding-bottom: 15px !important; }
             .sidebar { width: 280px; }
-            input, select, textarea { font-size: 16px !important; } 
-            .btn { font-size: 0.9rem; padding: 0.4rem 0.7rem; margin-bottom: 3px; }
+            
+            /* 横幅を最大限利用するため、余白（padding）を極力減らす */
+            main.flex-grow-1, .container-fluid, .col-md-9, .card-body, .modal-body, .table-wrapper {
+                padding-left: 4px !important;
+                padding-right: 4px !important;
+            }
+            .p-3 { padding: 0.5rem !important; }
+            .p-4 { padding: 0.75rem !important; }
+
+            /* 1行あたり約20文字表示になるようフォントサイズを16pxに統一 */
+            body, p, textarea, input, .form-control, .form-label, select, button, .accordion-button { 
+                font-size: 16px !important; 
+            }
+            
+            /* 設問などのマージンを詰めて表示領域を確保 */
+            .mb-3 { margin-bottom: 0.75rem !important; }
+            .mb-4 { margin-bottom: 1rem !important; }
+
             .top-scrollbar-wrapper { display: none; } 
             .table-wrapper { background: transparent; padding: 0; box-shadow: none; overflow: visible; }
             
@@ -225,7 +271,7 @@
                             <div id="calendar"></div>
                         </div>
                         <div id="timelineContainer" class="d-none table-wrapper" style="overflow-x: auto; max-height: 75vh; padding: 0;">
-                        </div>
+                            </div>
                     </div>
                     
                     <div class="tab-pane fade" id="research-view" role="tabpanel">
@@ -1023,19 +1069,43 @@
         await window.saveToServer(); alert('企業研究内容を保存しました！');
     };
 
-    // ★ ES管理ロジック（カテゴリ分類と参照機能追加） ★
+    // ★ ES管理ロジック（アコーディオン化対応） ★
     function loadEsView() { const detailArea = document.getElementById('esDetailArea'); const emptyMsg = document.getElementById('esEmptyMessage'); const rightCol = document.querySelector('#es-view .col-md-9'); if (detailArea && rightCol && emptyMsg && !rightCol.contains(detailArea)) { rightCol.insertBefore(detailArea, emptyMsg); } const list = document.getElementById('esCompanyList'); list.innerHTML = ''; window.shukatsuData.forEach(item => { const btn = document.createElement('button'); btn.className = `list-group-item list-group-item-action fw-bold d-flex justify-content-between align-items-center ${item.id === currentEsCompanyId ? 'active' : ''}`; const isTarget = item.id === currentEsCompanyId; const arrowText = window.innerWidth <= 768 ? (isTarget ? '▲' : '▼') : ''; btn.innerHTML = `<span>${item.company}</span><span class="es-arrow">${arrowText}</span>`; btn.onclick = () => { if (currentEsCompanyId === item.id && window.innerWidth <= 768) { currentEsCompanyId = null; document.getElementById('esDetailArea').style.display = 'none'; document.getElementById('esEmptyMessage').style.display = 'block'; btn.classList.remove('active'); if(btn.querySelector('.es-arrow')) btn.querySelector('.es-arrow').innerText = '▼'; } else { currentEsCompanyId = item.id; Array.from(list.children).forEach(c => { c.classList.remove('active'); const a = c.querySelector('.es-arrow'); if(a) a.innerText = '▼'; }); btn.classList.add('active'); const a = btn.querySelector('.es-arrow'); if(a) a.innerText = '▲'; selectEsCompany(item.id); } }; list.appendChild(btn); }); if (currentEsCompanyId && window.shukatsuData.some(i=>i.id===currentEsCompanyId)) { selectEsCompany(currentEsCompanyId); } else { if(detailArea) detailArea.style.display = 'none'; if(emptyMsg) emptyMsg.style.display = 'block'; } }
     
     window.addEsQuestionRow = function(qData = { id: '', category: '', question: '', finalAnswer: '', memoAnswer: '' }) { 
-        const container = document.getElementById('esQuestionsContainer'); const card = document.createElement('div'); card.className = 'card p-3 mb-3 border-secondary es-question-card shadow-sm'; card.dataset.qId = qData.id || 'q_' + Date.now() + Math.random().toString(36).substring(2, 5); 
+        const container = document.getElementById('esQuestionsContainer'); 
+        const card = document.createElement('details'); 
+        card.className = 'card mb-3 border-secondary es-question-card shadow-sm custom-accordion'; 
+        card.dataset.qId = qData.id || 'q_' + Date.now() + Math.random().toString(36).substring(2, 5); 
+        if(!qData.question) card.open = true;
         
         const catOptions = ['ガクチカ', '自己PR', '志望動機', '研究概要', '長所・短所', '希望職種', 'その他'];
         let catHtml = `<option value="">カテゴリ未設定</option>`;
         catOptions.forEach(opt => { catHtml += `<option value="${opt}" ${qData.category === opt ? 'selected' : ''}>${opt}</option>`; });
 
-        card.innerHTML = `<div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2"><h6 class="fw-bold text-secondary mb-0 d-flex align-items-center gap-2">📝 設問 <select class="form-select form-select-sm es-q-category" style="width:140px;">${catHtml}</select></h6><div class="d-flex gap-2"><button type="button" class="btn btn-sm btn-outline-info fw-bold" onclick="showEsReference(this)">🔍 過去のES参照</button><button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.es-question-card').remove()">削除</button></div></div><div class="mb-3"><textarea class="form-control es-q-text" rows="2" placeholder="設問内容">${qData.question || ''}</textarea></div><div class="row"><div class="col-12 mb-3"><label class="form-label text-info fw-bold" style="font-size:0.85rem;">💡 メモ・構成案</label><textarea class="form-control es-q-memo" rows="4" placeholder="書きたいポイントや箇条書き">${qData.memoAnswer || ''}</textarea></div><div class="col-12 mb-3"><div class="d-flex justify-content-between align-items-end mb-1"><label class="form-label text-success fw-bold mb-0" style="font-size:0.85rem;">✨ 清書</label><span class="text-secondary fw-bold" style="font-size:0.85rem;"><span class="char-count">0</span> 文字</span></div><textarea class="form-control es-q-final" rows="6" placeholder="清書欄" oninput="updateCharCount(this)">${qData.finalAnswer || ''}</textarea></div></div>`; container.appendChild(card); window.updateCharCount(card.querySelector('.es-q-final')); 
+        let summaryText = qData.question ? qData.question.substring(0, 15) + '...' : '新規設問';
+
+        card.innerHTML = `
+            <summary class="fw-bold text-secondary mb-0 p-3"><span class="es-summary-text">📝 設問: ${summaryText}</span></summary>
+            <div class="p-3 pt-0 border-top mt-2">
+                <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2 pt-2">
+                    <h6 class="fw-bold text-secondary mb-0 d-flex align-items-center gap-2">カテゴリ: <select class="form-select form-select-sm es-q-category" style="width:140px;">${catHtml}</select></h6>
+                    <div class="d-flex gap-2"><button type="button" class="btn btn-sm btn-outline-info fw-bold" onclick="showEsReference(this)">🔍 過去のES参照</button><button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.es-question-card').remove()">削除</button></div>
+                </div>
+                <div class="mb-3"><textarea class="form-control es-q-text" rows="2" placeholder="設問内容" oninput="updateEsSummary(this)">${qData.question || ''}</textarea></div>
+                <div class="row">
+                    <div class="col-12 mb-3"><label class="form-label text-info fw-bold" style="font-size:0.85rem;">💡 メモ・構成案</label><textarea class="form-control es-q-memo" rows="4" placeholder="書きたいポイントや箇条書き">${qData.memoAnswer || ''}</textarea></div>
+                    <div class="col-12 mb-3"><div class="d-flex justify-content-between align-items-end mb-1"><label class="form-label text-success fw-bold mb-0" style="font-size:0.85rem;">✨ 清書</label><span class="text-secondary fw-bold" style="font-size:0.85rem;"><span class="char-count">0</span> 文字</span></div><textarea class="form-control es-q-final" rows="6" placeholder="清書欄" oninput="updateCharCount(this)">${qData.finalAnswer || ''}</textarea></div>
+                </div>
+            </div>`; 
+        container.appendChild(card); window.updateCharCount(card.querySelector('.es-q-final')); 
     };
     
+    window.updateEsSummary = function(textarea) {
+        const summaryText = textarea.closest('details').querySelector('.es-summary-text');
+        summaryText.innerText = '📝 設問: ' + (textarea.value ? textarea.value.substring(0, 15) + '...' : '新規設問');
+    }
+
     window.updateCharCount = function(textarea) { textarea.closest('.col-12').querySelector('.char-count').innerText = textarea.value.length; };
     window.selectEsCompany = function(id) { currentEsCompanyId = id; const data = window.shukatsuData.find(item => item.id === id); if (data) { document.getElementById('esTargetCompany').innerText = data.company; document.getElementById('esTargetId').value = data.id; const container = document.getElementById('esQuestionsContainer'); container.innerHTML = ''; const questions = data.esQuestions || []; questions.forEach(q => addEsQuestionRow(q)); if(questions.length === 0) addEsQuestionRow(); const detailArea = document.getElementById('esDetailArea'); detailArea.style.display = 'block'; document.getElementById('esEmptyMessage').style.display = 'none'; if (window.innerWidth <= 768) { const activeBtn = Array.from(document.getElementById('esCompanyList').children).find(btn => btn.classList.contains('active')); if (activeBtn) activeBtn.after(detailArea); detailArea.classList.add('mb-4', 'p-3'); } else { document.querySelector('#es-view .col-md-9').insertBefore(detailArea, document.getElementById('esEmptyMessage')); detailArea.classList.remove('mb-4', 'p-3'); } setTimeout(() => { container.querySelectorAll('.es-q-final').forEach(ta => window.updateCharCount(ta)); }, 50); } };
     window.saveEsDetails = async function() { const id = document.getElementById('esTargetId').value; const data = window.shukatsuData.find(item => item.id === id); if (!data) return; const qs = []; document.querySelectorAll('.es-question-card').forEach(card => { qs.push({ id: card.dataset.qId, category: card.querySelector('.es-q-category').value, question: card.querySelector('.es-q-text').value, memoAnswer: card.querySelector('.es-q-memo').value, finalAnswer: card.querySelector('.es-q-final').value }); }); data.esQuestions = qs; await window.saveToServer(); alert('ES内容を保存しました！'); };
@@ -1078,7 +1148,7 @@
         new bootstrap.Modal(document.getElementById('esReferenceModal')).show();
     };
 
-    // ★ 面接対策ロジック（就活の軸・参照機能追加） ★
+    // 面接対策ロジック
     function loadInterviewView() { const detailArea = document.getElementById('interviewDetailArea'); const emptyMsg = document.getElementById('interviewEmptyMessage'); const rightCol = document.querySelector('#interview-view .col-md-9'); if (detailArea && rightCol && emptyMsg && !rightCol.contains(detailArea)) { rightCol.insertBefore(detailArea, emptyMsg); } const list = document.getElementById('interviewCompanyList'); list.innerHTML = ''; window.shukatsuData.forEach(item => { const btn = document.createElement('button'); btn.className = `list-group-item list-group-item-action fw-bold d-flex justify-content-between align-items-center ${item.id === currentInterviewCompanyId ? 'active' : ''}`; const isTarget = item.id === currentInterviewCompanyId; const arrowText = window.innerWidth <= 768 ? (isTarget ? '▲' : '▼') : ''; btn.innerHTML = `<span>${item.company}</span><span class="interview-arrow">${arrowText}</span>`; btn.onclick = () => { if (currentInterviewCompanyId === item.id && window.innerWidth <= 768) { currentInterviewCompanyId = null; document.getElementById('interviewDetailArea').style.display = 'none'; document.getElementById('interviewEmptyMessage').style.display = 'block'; btn.classList.remove('active'); if(btn.querySelector('.interview-arrow')) btn.querySelector('.interview-arrow').innerText = '▼'; } else { currentInterviewCompanyId = item.id; Array.from(list.children).forEach(c => { c.classList.remove('active'); const a = c.querySelector('.interview-arrow'); if(a) a.innerText = '▼'; }); btn.classList.add('active'); const a = btn.querySelector('.interview-arrow'); if(a) a.innerText = '▲'; selectInterviewCompany(item.id); } }; list.appendChild(btn); }); if (currentInterviewCompanyId && window.shukatsuData.some(i=>i.id===currentInterviewCompanyId)) { selectInterviewCompany(currentInterviewCompanyId); } else { if(detailArea) detailArea.style.display = 'none'; if(emptyMsg) emptyMsg.style.display = 'block'; } }
     
     window.selectInterviewCompany = function(id) { 
@@ -1090,7 +1160,6 @@
             document.getElementById('esTextInput').value = data.esText || ''; 
             document.getElementById('interviewNoteInput').value = data.interviewNote || ''; 
 
-            // 企業研究エリアの描画
             const refCompanyArea = document.getElementById('interviewRefCompanyArea');
             const res = data.companyResearch || {};
             refCompanyArea.innerHTML = `
@@ -1105,7 +1174,6 @@
                 </div>
             `;
 
-            // 作成済みESの描画
             const refEsArea = document.getElementById('interviewRefEsArea');
             const qs = data.esQuestions || [];
             if (qs.length === 0) {
