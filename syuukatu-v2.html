@@ -65,58 +65,23 @@
         .tl-bar-test { background-color: #6f42c1; }
 
         /* ▼ プルダウン（アコーディオン）用のカスタムスタイル ▼ */
-        .custom-accordion {
-            background-color: #fff;
-            border-radius: 8px;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-        .custom-accordion summary {
-            cursor: pointer;
-            list-style: none; /* デフォルトの矢印を非表示 */
-            position: relative;
-            padding-right: 35px;
-            outline: none;
-            background-color: #f8f9fa;
-        }
+        .custom-accordion { background-color: #fff; border-radius: 8px; overflow: hidden; transition: all 0.3s ease; }
+        .custom-accordion summary { cursor: pointer; list-style: none; position: relative; padding-right: 35px; outline: none; background-color: #f8f9fa; }
         .custom-accordion summary::-webkit-details-marker { display: none; }
-        .custom-accordion summary::after {
-            content: "▼";
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 0.9em;
-            color: #6c757d;
-        }
+        .custom-accordion summary::after { content: "▼"; position: absolute; right: 15px; top: 50%; transform: translateY(-50%); font-size: 0.9em; color: #6c757d; }
         .custom-accordion[open] summary::after { content: "▲"; }
-        .custom-accordion[open] summary {
-            background-color: #e9ecef;
-            border-bottom: 1px solid #dee2e6 !important;
-        }
+        .custom-accordion[open] summary { background-color: #e9ecef; border-bottom: 1px solid #dee2e6 !important; }
 
         /* ▼ スマホ向けレスポンシブ＆アコーディオン化 ▼ */
         @media (max-width: 768px) {
             header { padding-top: 60px !important; padding-bottom: 15px !important; }
             .sidebar { width: 280px; }
-            
-            /* 横幅を最大限利用するため、余白（padding）を極力減らす */
-            main.flex-grow-1, .container-fluid, .col-md-9, .card-body, .modal-body, .table-wrapper {
-                padding-left: 4px !important;
-                padding-right: 4px !important;
-            }
+            main.flex-grow-1, .container-fluid, .col-md-9, .card-body, .modal-body, .table-wrapper { padding-left: 4px !important; padding-right: 4px !important; }
             .p-3 { padding: 0.5rem !important; }
             .p-4 { padding: 0.75rem !important; }
-
-            /* 1行あたり約20文字表示になるようフォントサイズを16pxに統一 */
-            body, p, textarea, input, .form-control, .form-label, select, button, .accordion-button { 
-                font-size: 16px !important; 
-            }
-            
-            /* 設問などのマージンを詰めて表示領域を確保 */
+            body, p, textarea, input, .form-control, .form-label, select, button, .accordion-button { font-size: 16px !important; }
             .mb-3 { margin-bottom: 0.75rem !important; }
             .mb-4 { margin-bottom: 1rem !important; }
-
             .top-scrollbar-wrapper { display: none; } 
             .table-wrapper { background: transparent; padding: 0; box-shadow: none; overflow: visible; }
             
@@ -271,7 +236,7 @@
                             <div id="calendar"></div>
                         </div>
                         <div id="timelineContainer" class="d-none table-wrapper" style="overflow-x: auto; max-height: 75vh; padding: 0;">
-                            </div>
+                        </div>
                     </div>
                     
                     <div class="tab-pane fade" id="research-view" role="tabpanel">
@@ -1069,7 +1034,7 @@
         await window.saveToServer(); alert('企業研究内容を保存しました！');
     };
 
-    // ★ ES管理ロジック（アコーディオン化対応） ★
+    // ★ ES管理ロジック（アコーディオン・自動リサイズ・コピー機能対応） ★
     function loadEsView() { const detailArea = document.getElementById('esDetailArea'); const emptyMsg = document.getElementById('esEmptyMessage'); const rightCol = document.querySelector('#es-view .col-md-9'); if (detailArea && rightCol && emptyMsg && !rightCol.contains(detailArea)) { rightCol.insertBefore(detailArea, emptyMsg); } const list = document.getElementById('esCompanyList'); list.innerHTML = ''; window.shukatsuData.forEach(item => { const btn = document.createElement('button'); btn.className = `list-group-item list-group-item-action fw-bold d-flex justify-content-between align-items-center ${item.id === currentEsCompanyId ? 'active' : ''}`; const isTarget = item.id === currentEsCompanyId; const arrowText = window.innerWidth <= 768 ? (isTarget ? '▲' : '▼') : ''; btn.innerHTML = `<span>${item.company}</span><span class="es-arrow">${arrowText}</span>`; btn.onclick = () => { if (currentEsCompanyId === item.id && window.innerWidth <= 768) { currentEsCompanyId = null; document.getElementById('esDetailArea').style.display = 'none'; document.getElementById('esEmptyMessage').style.display = 'block'; btn.classList.remove('active'); if(btn.querySelector('.es-arrow')) btn.querySelector('.es-arrow').innerText = '▼'; } else { currentEsCompanyId = item.id; Array.from(list.children).forEach(c => { c.classList.remove('active'); const a = c.querySelector('.es-arrow'); if(a) a.innerText = '▼'; }); btn.classList.add('active'); const a = btn.querySelector('.es-arrow'); if(a) a.innerText = '▲'; selectEsCompany(item.id); } }; list.appendChild(btn); }); if (currentEsCompanyId && window.shukatsuData.some(i=>i.id===currentEsCompanyId)) { selectEsCompany(currentEsCompanyId); } else { if(detailArea) detailArea.style.display = 'none'; if(emptyMsg) emptyMsg.style.display = 'block'; } }
     
     window.addEsQuestionRow = function(qData = { id: '', category: '', question: '', finalAnswer: '', memoAnswer: '' }) { 
@@ -1095,10 +1060,30 @@
                 <div class="mb-3"><textarea class="form-control es-q-text" rows="2" placeholder="設問内容" oninput="updateEsSummary(this)">${qData.question || ''}</textarea></div>
                 <div class="row">
                     <div class="col-12 mb-3"><label class="form-label text-info fw-bold" style="font-size:0.85rem;">💡 メモ・構成案</label><textarea class="form-control es-q-memo" rows="4" placeholder="書きたいポイントや箇条書き">${qData.memoAnswer || ''}</textarea></div>
-                    <div class="col-12 mb-3"><div class="d-flex justify-content-between align-items-end mb-1"><label class="form-label text-success fw-bold mb-0" style="font-size:0.85rem;">✨ 清書</label><span class="text-secondary fw-bold" style="font-size:0.85rem;"><span class="char-count">0</span> 文字</span></div><textarea class="form-control es-q-final" rows="6" placeholder="清書欄" oninput="updateCharCount(this)">${qData.finalAnswer || ''}</textarea></div>
+                    <div class="col-12 mb-3">
+                        <div class="d-flex justify-content-between align-items-end mb-1">
+                            <label class="form-label text-success fw-bold mb-0" style="font-size:0.85rem;">✨ 清書</label>
+                            <div class="d-flex align-items-center gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 fw-bold" style="font-size:0.8rem;" onclick="copyEsText(this)">📑 コピー</button>
+                                <span class="text-secondary fw-bold" style="font-size:0.85rem;"><span class="char-count">0</span> 文字</span>
+                            </div>
+                        </div>
+                        <textarea class="form-control es-q-final" rows="6" placeholder="清書欄" style="overflow-y: hidden; resize: none;" oninput="updateCharCountAndResize(this)">${qData.finalAnswer || ''}</textarea>
+                    </div>
                 </div>
             </div>`; 
-        container.appendChild(card); window.updateCharCount(card.querySelector('.es-q-final')); 
+        container.appendChild(card); 
+        
+        // 折りたたみが開かれた時に高さを再計算するイベントを追加
+        card.addEventListener('toggle', function() {
+            if (this.open) {
+                const finalTa = this.querySelector('.es-q-final');
+                if (finalTa) window.updateCharCountAndResize(finalTa);
+            }
+        });
+
+        // 初期表示時の高さ調整
+        setTimeout(() => { window.updateCharCountAndResize(card.querySelector('.es-q-final')); }, 10);
     };
     
     window.updateEsSummary = function(textarea) {
@@ -1106,15 +1091,41 @@
         summaryText.innerText = '📝 設問: ' + (textarea.value ? textarea.value.substring(0, 15) + '...' : '新規設問');
     }
 
-    window.updateCharCount = function(textarea) { textarea.closest('.col-12').querySelector('.char-count').innerText = textarea.value.length; };
-    window.selectEsCompany = function(id) { currentEsCompanyId = id; const data = window.shukatsuData.find(item => item.id === id); if (data) { document.getElementById('esTargetCompany').innerText = data.company; document.getElementById('esTargetId').value = data.id; const container = document.getElementById('esQuestionsContainer'); container.innerHTML = ''; const questions = data.esQuestions || []; questions.forEach(q => addEsQuestionRow(q)); if(questions.length === 0) addEsQuestionRow(); const detailArea = document.getElementById('esDetailArea'); detailArea.style.display = 'block'; document.getElementById('esEmptyMessage').style.display = 'none'; if (window.innerWidth <= 768) { const activeBtn = Array.from(document.getElementById('esCompanyList').children).find(btn => btn.classList.contains('active')); if (activeBtn) activeBtn.after(detailArea); detailArea.classList.add('mb-4', 'p-3'); } else { document.querySelector('#es-view .col-md-9').insertBefore(detailArea, document.getElementById('esEmptyMessage')); detailArea.classList.remove('mb-4', 'p-3'); } setTimeout(() => { container.querySelectorAll('.es-q-final').forEach(ta => window.updateCharCount(ta)); }, 50); } };
+    // 自動リサイズと文字数カウントを同時に行う
+    window.updateCharCountAndResize = function(textarea) { 
+        if(!textarea) return;
+        textarea.closest('.col-12').querySelector('.char-count').innerText = textarea.value.length; 
+        
+        // 高さを自動拡張
+        textarea.style.height = 'auto'; 
+        textarea.style.height = (textarea.scrollHeight) + 'px'; 
+    };
+
+    // テキストエリアからコピー
+    window.copyEsText = function(btn) {
+        const textarea = btn.closest('.col-12').querySelector('.es-q-final');
+        if (!textarea.value) {
+            alert('コピーするテキストがありません。');
+            return;
+        }
+        window.copyToClipboard(btn, textarea.value);
+    };
+
+    window.selectEsCompany = function(id) { currentEsCompanyId = id; const data = window.shukatsuData.find(item => item.id === id); if (data) { document.getElementById('esTargetCompany').innerText = data.company; document.getElementById('esTargetId').value = data.id; const container = document.getElementById('esQuestionsContainer'); container.innerHTML = ''; const questions = data.esQuestions || []; questions.forEach(q => addEsQuestionRow(q)); if(questions.length === 0) addEsQuestionRow(); const detailArea = document.getElementById('esDetailArea'); detailArea.style.display = 'block'; document.getElementById('esEmptyMessage').style.display = 'none'; if (window.innerWidth <= 768) { const activeBtn = Array.from(document.getElementById('esCompanyList').children).find(btn => btn.classList.contains('active')); if (activeBtn) activeBtn.after(detailArea); detailArea.classList.add('mb-4', 'p-3'); } else { document.querySelector('#es-view .col-md-9').insertBefore(detailArea, document.getElementById('esEmptyMessage')); detailArea.classList.remove('mb-4', 'p-3'); } setTimeout(() => { container.querySelectorAll('.es-q-final').forEach(ta => window.updateCharCountAndResize(ta)); }, 50); } };
     window.saveEsDetails = async function() { const id = document.getElementById('esTargetId').value; const data = window.shukatsuData.find(item => item.id === id); if (!data) return; const qs = []; document.querySelectorAll('.es-question-card').forEach(card => { qs.push({ id: card.dataset.qId, category: card.querySelector('.es-q-category').value, question: card.querySelector('.es-q-text').value, memoAnswer: card.querySelector('.es-q-memo').value, finalAnswer: card.querySelector('.es-q-final').value }); }); data.esQuestions = qs; await window.saveToServer(); alert('ES内容を保存しました！'); };
 
-    // コピー機能
+    // コピー機能本体
     window.copyToClipboard = function(btn, text) {
         navigator.clipboard.writeText(text).then(() => {
-            const originalText = btn.innerText; btn.innerText = 'コピー済！'; btn.classList.replace('btn-outline-primary', 'btn-success');
-            setTimeout(() => { btn.innerText = originalText; btn.classList.replace('btn-success', 'btn-outline-primary'); }, 2000);
+            const originalText = btn.innerText; 
+            btn.innerText = 'コピー済！'; 
+            const isPrimary = btn.classList.contains('btn-outline-primary');
+            if (isPrimary) btn.classList.replace('btn-outline-primary', 'btn-success');
+            
+            setTimeout(() => { 
+                btn.innerText = originalText; 
+                if (isPrimary) btn.classList.replace('btn-success', 'btn-outline-primary');
+            }, 2000);
         });
     };
 
@@ -1134,7 +1145,7 @@
                         <div class="border rounded p-3 mb-3 bg-light shadow-sm">
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <div class="fw-bold text-primary fs-5">🏢 ${comp.company}</div>
-                                <button type="button" class="btn btn-sm btn-outline-primary fw-bold" onclick="copyToClipboard(this, decodeURIComponent('${encodedText}'))">コピー</button>
+                                <button type="button" class="btn btn-sm btn-outline-primary fw-bold" onclick="copyToClipboard(this, decodeURIComponent('${encodedText}'))">📑 コピー</button>
                             </div>
                             <div class="text-secondary fw-bold fs-7 mb-2 border-bottom pb-2">Q: ${q.question || '設問なし'}</div>
                             <div class="bg-white p-3 border rounded" style="white-space: pre-wrap; font-size: 0.95rem; line-height: 1.6;">${q.finalAnswer}</div>
@@ -1186,7 +1197,7 @@
                         <div class="mb-3 p-3 bg-light border rounded shadow-sm">
                             <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-2">
                                 <div class="fw-bold text-secondary">Q${i+1}. ${q.question || '設問なし'} <span class="badge bg-secondary ms-2">${q.category || '未設定'}</span></div>
-                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="copyToClipboard(this, decodeURIComponent('${encodedText}'))">コピー</button>
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="copyToClipboard(this, decodeURIComponent('${encodedText}'))">📑 コピー</button>
                             </div>
                             <div style="white-space: pre-wrap; font-size: 0.95rem; line-height: 1.6;" class="bg-white p-3 border rounded">${q.finalAnswer || '<span class="text-muted">（清書がありません）</span>'}</div>
                         </div>
