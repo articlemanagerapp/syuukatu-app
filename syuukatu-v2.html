@@ -15,6 +15,36 @@
         .nav-pills .nav-link.active { background-color: #0d6efd; color: #fff; font-weight: bold; }
         .nav-item { cursor: grab; } .nav-item:active { cursor: grabbing; }
 
+        /* ▼ 追加：サイドバーの見出しラベル（アンダーライン） ▼ */
+        .sidebar-section-label {
+            font-size: 0.85rem;
+            color: #adb5bd;
+            font-weight: bold;
+            border-bottom: 2px solid #6c757d;
+            padding-bottom: 4px;
+            display: inline-block;
+            width: 100%;
+            letter-spacing: 1px;
+            cursor: default;
+        }
+
+        /* ▼ 追加：詳細画面のインライン編集用スタイル ▼ */
+        .inline-edit-input {
+            background-color: transparent;
+            border: 1px solid transparent;
+            border-bottom: 1px solid #ced4da;
+            border-radius: 0;
+            padding-left: 0;
+            transition: all 0.3s ease;
+        }
+        .inline-edit-input:focus {
+            background-color: #fff;
+            border: 1px solid #86b7fe;
+            border-radius: 4px;
+            padding-left: 8px;
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+        }
+
         /* テーブル・カレンダー等のUI部品 */
         .top-scrollbar-wrapper { overflow-x: auto; overflow-y: hidden; height: 20px; margin-bottom: -5px; }
         .top-scrollbar-fake-content { height: 1px; }
@@ -134,15 +164,15 @@
             <ul class="nav nav-pills flex-column mb-auto w-100" id="myTab" role="tablist">
                 <li class="nav-item" role="presentation"><button class="nav-link active w-100 text-start" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard-view" type="button" role="tab">🏠 掲示板</button></li>
                 
-                <div class="text-secondary small fw-bold mt-4 mb-2 px-3">📥 インプット</div>
+                <div class="px-3 mt-4 mb-2"><span class="sidebar-section-label">📥 インプット</span></div>
                 <li class="nav-item" role="presentation"><button class="nav-link w-100 text-start" id="company-info-tab" data-bs-toggle="tab" data-bs-target="#company-info-view" type="button" role="tab">🏢 企業情報</button></li>
                 <li class="nav-item" role="presentation"><button class="nav-link w-100 text-start" id="es-tab" data-bs-toggle="tab" data-bs-target="#es-view" type="button" role="tab">📝 ES・メモ管理</button></li>
                 
-                <div class="text-secondary small fw-bold mt-4 mb-2 px-3">📤 アウトプット</div>
+                <div class="px-3 mt-4 mb-2"><span class="sidebar-section-label">📤 アウトプット</span></div>
                 <li class="nav-item" role="presentation"><button class="nav-link w-100 text-start" id="calendar-tab" data-bs-toggle="tab" data-bs-target="#calendar-view" type="button" role="tab">🗓️ スケジュール</button></li>
                 <li class="nav-item" role="presentation"><button class="nav-link w-100 text-start" id="interview-tab" data-bs-toggle="tab" data-bs-target="#interview-view" type="button" role="tab">🗣️ 面接対策</button></li>
                 
-                <div class="text-secondary small fw-bold mt-4 mb-2 px-3">⚙️ その他</div>
+                <div class="px-3 mt-4 mb-2"><span class="sidebar-section-label">⚙️ その他</span></div>
                 <li class="nav-item" role="presentation"><button class="nav-link w-100 text-start" id="mypage-tab" data-bs-toggle="tab" data-bs-target="#mypage-view" type="button" role="tab">🔐 パスワード管理</button></li>
             </ul>
             <div class="mt-4 border-top border-secondary pt-4">
@@ -236,14 +266,30 @@
                                 </div>
                                 <div class="col-md-9">
                                     <div id="researchDetailArea" class="table-wrapper bg-white shadow-sm" style="display:none; border-radius: 8px;">
+                                        
                                         <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
-                                            <h4 id="researchTargetCompany" class="text-primary mb-0 fw-bold">企業名</h4>
+                                            <input type="text" id="detCompanyInput" class="form-control form-control-lg fw-bold text-primary inline-edit-input w-75" style="font-size: 1.3rem;" placeholder="企業名を入力">
                                             <input type="hidden" id="researchTargetId">
                                             <button class="btn btn-success fw-bold" onclick="saveResearchDetails()">💾 全体保存</button>
                                         </div>
+
                                         <div class="row">
                                             <div class="col-12 mb-4">
-                                                <h5 class="fw-bold text-dark border-start border-primary border-4 ps-2 mb-3">🏢 企業基本情報</h5>
+                                                <h5 class="fw-bold text-dark border-start border-info border-4 ps-2 mb-3">📋 基本登録情報</h5>
+                                                <div class="row g-3 bg-light p-3 rounded border">
+                                                    <div class="col-md-4"><label class="form-label fw-bold text-secondary fs-7 mb-1">ES締切</label><input type="datetime-local" class="form-control form-control-sm inline-edit-input" id="detEsDeadlineInput"></div>
+                                                    <div class="col-md-4"><label class="form-label fw-bold text-secondary fs-7 mb-1">適性検査</label><input type="datetime-local" class="form-control form-control-sm inline-edit-input" id="detTestDateInput"></div>
+                                                    <div class="col-md-4"><label class="form-label fw-bold text-secondary fs-7 mb-1">面接日時</label><input type="datetime-local" class="form-control form-control-sm inline-edit-input" id="detInterviewDateInput"></div>
+                                                    <div class="col-md-6"><label class="form-label fw-bold text-secondary fs-7 mb-1">説明会日時</label><input type="datetime-local" class="form-control form-control-sm inline-edit-input" id="detSessionDateInput"></div>
+                                                    <div class="col-md-6"><label class="form-label fw-bold text-secondary fs-7 mb-1">場所・形式</label><input type="text" class="form-control form-control-sm inline-edit-input" id="detLocationInput" placeholder="オンライン、東京など"></div>
+                                                    <div class="col-md-4"><label class="form-label fw-bold text-secondary fs-7 mb-1">マイページURL</label><input type="url" class="form-control form-control-sm inline-edit-input" id="detMypageUrlInput"></div>
+                                                    <div class="col-md-4"><label class="form-label fw-bold text-secondary fs-7 mb-1">ログインID</label><input type="text" class="form-control form-control-sm inline-edit-input" id="detMypageIdInput"></div>
+                                                    <div class="col-md-4"><label class="form-label fw-bold text-secondary fs-7 mb-1">パスワード</label><input type="text" class="form-control form-control-sm inline-edit-input" id="detMypagePassInput"></div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-12 mb-4">
+                                                <h5 class="fw-bold text-dark border-start border-primary border-4 ps-2 mb-3">🏢 企業研究情報</h5>
                                                 <div class="row g-3">
                                                     <div class="col-md-6"><label class="form-label fw-bold text-secondary">創業年・創設者</label><input type="text" class="form-control" id="resFounderInput" placeholder="例: 1947年 創設者: ○○"></div>
                                                     <div class="col-md-6"><label class="form-label fw-bold text-secondary">業界</label><input type="text" class="form-control" id="resIndustryInput" placeholder="例: IT・通信, 製造業など"></div>
@@ -866,7 +912,6 @@
         document.getElementById('internDatesContainer').innerHTML = ''; addInternDateRow(); tempSelectionFlow = []; goToStep(1);
     };
     
-    // ★変更箇所：インターン日程に「状態」プルダウンを追加
     window.addInternDateRow = function(data = {title: '', start: '', end: '', status: ''}) { 
         const c = document.getElementById('internDatesContainer'); const r = document.createElement('div'); r.className = 'row mb-2 intern-date-row g-2 align-items-center'; 
         r.innerHTML = `
@@ -1082,22 +1127,54 @@
         renderSelectionFlow(); if(window.renderDashboardCompanyFlows) window.renderDashboardCompanyFlows(); await window.saveToServer(); alert(`「${select.value}」を展開しました。`);
     };
 
+    // ★ 追加・変更箇所：インライン編集用のデータセット ★
     window.selectResearchCompany = function(id) {
         currentResearchCompanyId = id; const data = window.shukatsuData.find(item => item.id === id);
         if (data) {
-            document.getElementById('researchTargetCompany').innerText = data.company; document.getElementById('researchTargetId').value = data.id;
+            document.getElementById('detCompanyInput').value = data.company || ''; 
+            document.getElementById('researchTargetId').value = data.id;
+            
+            // 基本登録情報をインライン編集エリアにセット
+            document.getElementById('detEsDeadlineInput').value = data.esDeadline || '';
+            document.getElementById('detTestDateInput').value = data.testDate || '';
+            document.getElementById('detInterviewDateInput').value = data.interviewDate || '';
+            document.getElementById('detSessionDateInput').value = data.sessionDate || '';
+            document.getElementById('detLocationInput').value = data.location || '';
+            document.getElementById('detMypageUrlInput').value = data.mypageUrl || '';
+            document.getElementById('detMypageIdInput').value = data.mypageId || '';
+            document.getElementById('detMypagePassInput').value = data.mypagePass || '';
+
             const res = data.companyResearch || {};
             document.getElementById('resFounderInput').value = res.founder || ''; document.getElementById('resIndustryInput').value = res.industry || ''; document.getElementById('resRivalsInput').value = res.rivals || ''; document.getElementById('resStrengthsInput').value = res.strengths || ''; document.getElementById('resSalaryInput').value = res.salary || ''; document.getElementById('resVacationInput').value = res.vacation || ''; document.getElementById('resBonusInput').value = res.bonus || '';
+            
             renderSelectionFlow(); 
             const detailArea = document.getElementById('researchDetailArea'); detailArea.style.display = 'block'; document.getElementById('researchEmptyMessage').style.display = 'none';
             if (window.innerWidth <= 768) { const activeBtn = Array.from(document.getElementById('researchCompanyList').children).find(btn => btn.classList.contains('active')); if (activeBtn) activeBtn.after(detailArea); detailArea.classList.add('mb-4', 'p-3'); } else { document.querySelector('#companyDetailArea .col-md-9').insertBefore(detailArea, document.getElementById('researchEmptyMessage')); detailArea.classList.remove('mb-4', 'p-3'); }
             if (window.updateFlowTemplateSelect) window.updateFlowTemplateSelect();
         }
     };
+    
+    // ★ 追加・変更箇所：インライン編集された内容の保存 ★
     window.saveResearchDetails = async function() {
         const id = document.getElementById('researchTargetId').value; const data = window.shukatsuData.find(item => item.id === id); if (!data) return;
+        
+        // 基本登録情報を更新
+        data.company = document.getElementById('detCompanyInput').value || '名称未設定';
+        data.esDeadline = document.getElementById('detEsDeadlineInput').value;
+        data.testDate = document.getElementById('detTestDateInput').value;
+        data.interviewDate = document.getElementById('detInterviewDateInput').value;
+        data.sessionDate = document.getElementById('detSessionDateInput').value;
+        data.location = document.getElementById('detLocationInput').value;
+        data.mypageUrl = document.getElementById('detMypageUrlInput').value;
+        data.mypageId = document.getElementById('detMypageIdInput').value;
+        data.mypagePass = document.getElementById('detMypagePassInput').value;
+
+        // 企業研究情報を更新
         data.companyResearch = { ...(data.companyResearch || {}), founder: document.getElementById('resFounderInput').value, industry: document.getElementById('resIndustryInput').value, rivals: document.getElementById('resRivalsInput').value, strengths: document.getElementById('resStrengthsInput').value, salary: document.getElementById('resSalaryInput').value, vacation: document.getElementById('resVacationInput').value, bonus: document.getElementById('resBonusInput').value };
-        await window.saveToServer(); alert('企業研究内容を保存しました！');
+        
+        await window.saveToServer(); 
+        alert('企業情報と研究内容を保存しました！');
+        if(window.renderAll) window.renderAll(); // 左のメニューの企業名などの変更を即反映
     };
 
     // ★ ES管理ロジック（アコーディオン・自動リサイズ・コピー機能対応） ★
