@@ -104,7 +104,7 @@
             #mainTable tr.is-open td:first-child, #mypageTable tr.is-open td:first-child { border-bottom: 1px solid #dee2e6; }
 
             #esCompanyList .list-group-item.active, #interviewCompanyList .list-group-item.active, #researchCompanyList .list-group-item.active { border-radius: 8px 8px 0 0 !important; border-bottom: none !important; }
-            #esDetailArea, #interviewDetailArea, #researchDetailArea { margin-top: 0 !important; border: 1px solid #0d6efd !important; border-top: none !important; border-radius: 0 0 8px 8px !important; box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important; }
+            #esDetailArea, #interviewDetailArea, #companyDetailArea { margin-top: 0 !important; border: 1px solid #0d6efd !important; border-top: none !important; border-radius: 0 0 8px 8px !important; box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important; }
         }
     </style>
 </head>
@@ -133,12 +133,17 @@
             <h3 class="fw-bold mb-4 d-none d-md-block text-white text-center">就活クラウド</h3>
             <ul class="nav nav-pills flex-column mb-auto w-100" id="myTab" role="tablist">
                 <li class="nav-item" role="presentation"><button class="nav-link active w-100 text-start" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard-view" type="button" role="tab">🏠 掲示板</button></li>
-                <li class="nav-item" role="presentation"><button class="nav-link w-100 text-start" id="table-tab" data-bs-toggle="tab" data-bs-target="#table-view" type="button" role="tab">📊 一覧表</button></li>
-                <li class="nav-item" role="presentation"><button class="nav-link w-100 text-start" id="calendar-tab" data-bs-toggle="tab" data-bs-target="#calendar-view" type="button" role="tab">🗓️ スケジュール</button></li>
-                <li class="nav-item" role="presentation"><button class="nav-link w-100 text-start" id="research-tab" data-bs-toggle="tab" data-bs-target="#research-view" type="button" role="tab">🔍 企業研究</button></li>
+                
+                <div class="text-secondary small fw-bold mt-4 mb-2 px-3">📥 インプット</div>
+                <li class="nav-item" role="presentation"><button class="nav-link w-100 text-start" id="company-info-tab" data-bs-toggle="tab" data-bs-target="#company-info-view" type="button" role="tab">🏢 企業情報</button></li>
                 <li class="nav-item" role="presentation"><button class="nav-link w-100 text-start" id="es-tab" data-bs-toggle="tab" data-bs-target="#es-view" type="button" role="tab">📝 ES・メモ管理</button></li>
-                <li class="nav-item" role="presentation"><button class="nav-link w-100 text-start" id="mypage-tab" data-bs-toggle="tab" data-bs-target="#mypage-view" type="button" role="tab">🔐 パスワード管理</button></li>
+                
+                <div class="text-secondary small fw-bold mt-4 mb-2 px-3">📤 アウトプット</div>
+                <li class="nav-item" role="presentation"><button class="nav-link w-100 text-start" id="calendar-tab" data-bs-toggle="tab" data-bs-target="#calendar-view" type="button" role="tab">🗓️ スケジュール</button></li>
                 <li class="nav-item" role="presentation"><button class="nav-link w-100 text-start" id="interview-tab" data-bs-toggle="tab" data-bs-target="#interview-view" type="button" role="tab">🗣️ 面接対策</button></li>
+                
+                <div class="text-secondary small fw-bold mt-4 mb-2 px-3">⚙️ その他</div>
+                <li class="nav-item" role="presentation"><button class="nav-link w-100 text-start" id="mypage-tab" data-bs-toggle="tab" data-bs-target="#mypage-view" type="button" role="tab">🔐 パスワード管理</button></li>
             </ul>
             <div class="mt-4 border-top border-secondary pt-4">
                 <div id="cloudStatus" class="text-truncate text-white-50 mb-3 fw-bold" style="font-size: 0.85rem;">🔄 確認中...</div>
@@ -195,26 +200,110 @@
                         </div>
                     </div>
 
-                    <div class="tab-pane fade" id="table-view" role="tabpanel">
-                        <div class="top-scrollbar-wrapper" id="topScrollWrapper"><div class="top-scrollbar-fake-content" id="topScrollFakeContent"></div></div>
-                        <div class="table-wrapper" id="tableWrapper">
-                            <table class="table table-hover table-bordered" id="mainTable">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th class="sticky-col" onclick="sortTable('company')">社名 <span id="sort_company" style="font-size: 0.8rem;"></span></th>
-                                        <th onclick="sortTable('internStart')">インターン時期 <span id="sort_internStart" style="font-size: 0.8rem;"></span></th>
-                                        <th onclick="sortTable('location')">場所 <span id="sort_location" style="font-size: 0.8rem;"></span></th>
-                                        <th onclick="sortTable('hasSession')">説明会 <span id="sort_hasSession" style="font-size: 0.8rem;"></span></th>
-                                        <th onclick="sortTable('sessionStatus')">説明会申込 <span id="sort_sessionStatus" style="font-size: 0.8rem;"></span></th>
-                                        <th onclick="sortTable('sessionMemo')">説明会メモ <span id="sort_sessionMemo" style="font-size: 0.8rem;"></span></th>
-                                        <th onclick="sortTable('mypageUrl')">マイページ <span id="sort_mypageUrl" style="font-size: 0.8rem;"></span></th>
-                                        <th onclick="sortTable('esDeadline')">ES締切 <span id="sort_esDeadline" style="font-size: 0.8rem;"></span></th>
-                                        <th>選考進捗（フロー）</th>
-                                        <th>操作</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="companyTableBody"></tbody>
-                            </table>
+                    <div class="tab-pane fade" id="company-info-view" role="tabpanel">
+                        <div class="mb-3 d-flex gap-2">
+                            <button class="btn btn-primary fw-bold" id="btnCompanyTable" onclick="switchCompanyView('table')">📊 一覧表表示</button>
+                            <button class="btn btn-outline-primary fw-bold" id="btnCompanyDetail" onclick="switchCompanyView('detail')">🔍 詳細・企業研究表示</button>
+                        </div>
+                        
+                        <div id="companyTableArea">
+                            <div class="top-scrollbar-wrapper" id="topScrollWrapper"><div class="top-scrollbar-fake-content" id="topScrollFakeContent"></div></div>
+                            <div class="table-wrapper" id="tableWrapper">
+                                <table class="table table-hover table-bordered" id="mainTable">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th class="sticky-col" onclick="sortTable('company')">社名 <span id="sort_company" style="font-size: 0.8rem;"></span></th>
+                                            <th onclick="sortTable('internStart')">インターン <span id="sort_internStart" style="font-size: 0.8rem;"></span></th>
+                                            <th onclick="sortTable('location')">場所 <span id="sort_location" style="font-size: 0.8rem;"></span></th>
+                                            <th onclick="sortTable('hasSession')">説明会 <span id="sort_hasSession" style="font-size: 0.8rem;"></span></th>
+                                            <th onclick="sortTable('sessionStatus')">説明会申込 <span id="sort_sessionStatus" style="font-size: 0.8rem;"></span></th>
+                                            <th onclick="sortTable('sessionMemo')">説明会メモ <span id="sort_sessionMemo" style="font-size: 0.8rem;"></span></th>
+                                            <th onclick="sortTable('mypageUrl')">マイページ <span id="sort_mypageUrl" style="font-size: 0.8rem;"></span></th>
+                                            <th onclick="sortTable('esDeadline')">ES締切 <span id="sort_esDeadline" style="font-size: 0.8rem;"></span></th>
+                                            <th>選考進捗（フロー）</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="companyTableBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div id="companyDetailArea" class="d-none">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="card p-2 mb-3"><h6 class="fw-bold mb-2">企業一覧</h6><div class="list-group" id="researchCompanyList"></div></div>
+                                </div>
+                                <div class="col-md-9">
+                                    <div id="researchDetailArea" class="table-wrapper bg-white shadow-sm" style="display:none; border-radius: 8px;">
+                                        <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                                            <h4 id="researchTargetCompany" class="text-primary mb-0 fw-bold">企業名</h4>
+                                            <input type="hidden" id="researchTargetId">
+                                            <button class="btn btn-success fw-bold" onclick="saveResearchDetails()">💾 全体保存</button>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-12 mb-4">
+                                                <h5 class="fw-bold text-dark border-start border-primary border-4 ps-2 mb-3">🏢 企業基本情報</h5>
+                                                <div class="row g-3">
+                                                    <div class="col-md-6"><label class="form-label fw-bold text-secondary">創業年・創設者</label><input type="text" class="form-control" id="resFounderInput" placeholder="例: 1947年 創設者: ○○"></div>
+                                                    <div class="col-md-6"><label class="form-label fw-bold text-secondary">業界</label><input type="text" class="form-control" id="resIndustryInput" placeholder="例: IT・通信, 製造業など"></div>
+                                                    <div class="col-12"><label class="form-label fw-bold text-secondary">業界内ライバル</label><textarea class="form-control" id="resRivalsInput" rows="2" placeholder="競合他社や、その企業との違い・立ち位置など"></textarea></div>
+                                                    <div class="col-12"><label class="form-label fw-bold text-secondary">企業の強み・特徴</label><textarea class="form-control" id="resStrengthsInput" rows="3" placeholder="他社に負けない独自技術、シェア、社風など"></textarea></div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-12 mb-4">
+                                                <h5 class="fw-bold text-dark border-start border-warning border-4 ps-2 mb-3">🚀 選考フロー</h5>
+                                                <div id="selectionFlowProgressBar" class="d-flex align-items-center mb-3 overflow-auto pb-3 pt-2" style="white-space: nowrap;"></div>
+                                                <div class="bg-light p-3 rounded border">
+                                                    <div id="selectionFlowEditor" class="mb-2"></div>
+                                                    <div class="input-group">
+                                                        <input type="text" id="newFlowStepName" class="form-control" placeholder="新しいステップ（例：ES提出, 1次面接）" list="flowStepSuggestions" onkeypress="if(event.key==='Enter') addSelectionFlowStep()">
+                                                        <datalist id="flowStepSuggestions"><option value="ES提出"><option value="適性検査"><option value="インターンシップ通過"><option value="座談会"><option value="1次面接"><option value="2次面接"><option value="最終面接"><option value="内定"><option value="本選考"></datalist>
+                                                        <button class="btn btn-outline-primary fw-bold" onclick="addSelectionFlowStep()">＋ 追加</button>
+                                                    </div>
+
+                                                    <div class="d-flex flex-wrap gap-2 align-items-center border-top pt-3 mt-3">
+                                                        <div class="d-flex align-items-center gap-1">
+                                                            <label class="form-label fw-bold text-secondary mb-0 text-nowrap" style="font-size:0.85rem;">📁 フロー型:</label>
+                                                            <select id="flowTemplateSelect" class="form-select form-select-sm" style="max-width: 180px;"><option value="">-- 選択 --</option></select>
+                                                        </div>
+                                                        <button class="btn btn-sm btn-outline-primary fw-bold" onclick="applyFlowTemplate()">適用</button>
+                                                        <button class="btn btn-sm btn-outline-success fw-bold ms-auto" onclick="saveAsFlowTemplate()">💾 現在のフローを型として保存</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-12">
+                                                <h5 class="fw-bold text-dark border-start border-success border-4 ps-2 mb-3">💰 福利厚生・条件</h5>
+                                                <div class="row g-3">
+                                                    <div class="col-md-4"><label class="form-label fw-bold text-secondary">初任給</label><input type="text" class="form-control" id="resSalaryInput" placeholder="例: 大卒25万円, 院卒27万円"></div>
+                                                    <div class="col-md-4"><label class="form-label fw-bold text-secondary">休暇</label><input type="text" class="form-control" id="resVacationInput" placeholder="例: 土日祝、有給消化率80%, 夏季休暇"></div>
+                                                    <div class="col-md-4"><label class="form-label fw-bold text-secondary">賞与</label><input type="text" class="form-control" id="resBonusInput" placeholder="例: 年2回（6月・12月）実績5ヶ月分"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="researchEmptyMessage" class="table-wrapper text-center text-muted p-5">左側の企業一覧から企業を選択してください。</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="es-view" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-3"><div class="card p-2 mb-3"><h6 class="fw-bold mb-2">企業一覧</h6><div class="list-group" id="esCompanyList"></div></div></div>
+                            <div class="col-md-9">
+                                <div id="esDetailArea" class="table-wrapper bg-white shadow-sm" style="display:none; border-radius: 8px;">
+                                    <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                                        <h4 id="esTargetCompany" class="text-primary mb-0 fw-bold">企業名</h4>
+                                        <input type="hidden" id="esTargetId">
+                                        <div class="d-flex gap-2"><button class="btn btn-outline-primary" onclick="addEsQuestionRow()">＋ 新しい設問</button><button class="btn btn-success fw-bold" onclick="saveEsDetails()">💾 保存</button></div>
+                                    </div>
+                                    <div id="esQuestionsContainer"></div>
+                                </div>
+                                <div id="esEmptyMessage" class="table-wrapper text-center text-muted p-5">左側の企業一覧から企業を選択してください。</div>
+                            </div>
                         </div>
                     </div>
 
@@ -238,85 +327,6 @@
                         <div id="timelineContainer" class="d-none table-wrapper" style="overflow-x: auto; max-height: 75vh; padding: 0;">
                         </div>
                     </div>
-                    
-                    <div class="tab-pane fade" id="research-view" role="tabpanel">
-                        <div class="row">
-                            <div class="col-md-3">
-                                <div class="card p-2 mb-3"><h6 class="fw-bold mb-2">企業一覧</h6><div class="list-group" id="researchCompanyList"></div></div>
-                            </div>
-                            <div class="col-md-9">
-                                <div id="researchDetailArea" class="table-wrapper bg-white shadow-sm" style="display:none; border-radius: 8px;">
-                                    <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
-                                        <h4 id="researchTargetCompany" class="text-primary mb-0 fw-bold">企業名</h4>
-                                        <input type="hidden" id="researchTargetId">
-                                        <button class="btn btn-success fw-bold" onclick="saveResearchDetails()">💾 全体保存</button>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-12 mb-4">
-                                            <h5 class="fw-bold text-dark border-start border-primary border-4 ps-2 mb-3">🏢 企業基本情報</h5>
-                                            <div class="row g-3">
-                                                <div class="col-md-6"><label class="form-label fw-bold text-secondary">創業年・創設者</label><input type="text" class="form-control" id="resFounderInput" placeholder="例: 1947年 創設者: ○○"></div>
-                                                <div class="col-md-6"><label class="form-label fw-bold text-secondary">業界</label><input type="text" class="form-control" id="resIndustryInput" placeholder="例: IT・通信, 製造業など"></div>
-                                                <div class="col-12"><label class="form-label fw-bold text-secondary">業界内ライバル</label><textarea class="form-control" id="resRivalsInput" rows="2" placeholder="競合他社や、その企業との違い・立ち位置など"></textarea></div>
-                                                <div class="col-12"><label class="form-label fw-bold text-secondary">企業の強み・特徴</label><textarea class="form-control" id="resStrengthsInput" rows="3" placeholder="他社に負けない独自技術、シェア、社風など"></textarea></div>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="col-12 mb-4">
-                                            <h5 class="fw-bold text-dark border-start border-warning border-4 ps-2 mb-3">🚀 選考フロー</h5>
-                                            <div id="selectionFlowProgressBar" class="d-flex align-items-center mb-3 overflow-auto pb-3 pt-2" style="white-space: nowrap;"></div>
-                                            <div class="bg-light p-3 rounded border">
-                                                <div id="selectionFlowEditor" class="mb-2"></div>
-                                                <div class="input-group">
-                                                    <input type="text" id="newFlowStepName" class="form-control" placeholder="新しいステップ（例：ES提出, 1次面接）" list="flowStepSuggestions" onkeypress="if(event.key==='Enter') addSelectionFlowStep()">
-                                                    <datalist id="flowStepSuggestions"><option value="ES提出"><option value="適性検査"><option value="インターンシップ通過"><option value="座談会"><option value="1次面接"><option value="2次面接"><option value="最終面接"><option value="内定"><option value="本選考"></datalist>
-                                                    <button class="btn btn-outline-primary fw-bold" onclick="addSelectionFlowStep()">＋ 追加</button>
-                                                </div>
-
-                                                <div class="d-flex flex-wrap gap-2 align-items-center border-top pt-3 mt-3">
-                                                    <div class="d-flex align-items-center gap-1">
-                                                        <label class="form-label fw-bold text-secondary mb-0 text-nowrap" style="font-size:0.85rem;">📁 フロー型:</label>
-                                                        <select id="flowTemplateSelect" class="form-select form-select-sm" style="max-width: 180px;"><option value="">-- 選択 --</option></select>
-                                                    </div>
-                                                    <button class="btn btn-sm btn-outline-primary fw-bold" onclick="applyFlowTemplate()">適用</button>
-                                                    <button class="btn btn-sm btn-outline-success fw-bold ms-auto" onclick="saveAsFlowTemplate()">💾 現在のフローを型として保存</button>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="col-12">
-                                            <h5 class="fw-bold text-dark border-start border-success border-4 ps-2 mb-3">💰 福利厚生・条件</h5>
-                                            <div class="row g-3">
-                                                <div class="col-md-4"><label class="form-label fw-bold text-secondary">初任給</label><input type="text" class="form-control" id="resSalaryInput" placeholder="例: 大卒25万円, 院卒27万円"></div>
-                                                <div class="col-md-4"><label class="form-label fw-bold text-secondary">休暇</label><input type="text" class="form-control" id="resVacationInput" placeholder="例: 土日祝、有給消化率80%, 夏季休暇"></div>
-                                                <div class="col-md-4"><label class="form-label fw-bold text-secondary">賞与</label><input type="text" class="form-control" id="resBonusInput" placeholder="例: 年2回（6月・12月）実績5ヶ月分"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div id="researchEmptyMessage" class="table-wrapper text-center text-muted p-5">左側の企業一覧から企業を選択してください。</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="tab-pane fade" id="es-view" role="tabpanel">
-                        <div class="row">
-                            <div class="col-md-3"><div class="card p-2 mb-3"><h6 class="fw-bold mb-2">企業一覧</h6><div class="list-group" id="esCompanyList"></div></div></div>
-                            <div class="col-md-9">
-                                <div id="esDetailArea" class="table-wrapper bg-white shadow-sm" style="display:none; border-radius: 8px;">
-                                    <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
-                                        <h4 id="esTargetCompany" class="text-primary mb-0 fw-bold">企業名</h4>
-                                        <input type="hidden" id="esTargetId">
-                                        <div class="d-flex gap-2"><button class="btn btn-outline-primary" onclick="addEsQuestionRow()">＋ 新しい設問</button><button class="btn btn-success fw-bold" onclick="saveEsDetails()">💾 保存</button></div>
-                                    </div>
-                                    <div id="esQuestionsContainer"></div>
-                                </div>
-                                <div id="esEmptyMessage" class="table-wrapper text-center text-muted p-5">左側の企業一覧から企業を選択してください。</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="tab-pane fade" id="mypage-view" role="tabpanel"><div class="table-wrapper" style="padding:0;"><table class="table table-hover" id="mypageTable"><thead class="table-light"><tr><th>社名</th><th>マイページ</th><th>ログインID</th><th>パスワード</th><th>操作</th></tr></thead><tbody id="mypageTableBody"></tbody></table></div></div>
 
                     <div class="tab-pane fade" id="interview-view" role="tabpanel">
                         <div class="row">
@@ -373,6 +383,9 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="tab-pane fade" id="mypage-view" role="tabpanel"><div class="table-wrapper" style="padding:0;"><table class="table table-hover" id="mypageTable"><thead class="table-light"><tr><th>社名</th><th>マイページ</th><th>ログインID</th><th>パスワード</th><th>操作</th></tr></thead><tbody id="mypageTableBody"></tbody></table></div></div>
+
                 </div>
             </div>
         </main>
@@ -440,7 +453,7 @@
                 
                 <div class="col-12 mb-3 p-3 bg-light rounded border">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <label class="form-label fw-bold text-secondary mb-0">インターン日程（複数登録OK）</label>
+                        <label class="form-label fw-bold text-secondary mb-0">インターン日程・状況</label>
                         <button type="button" class="btn btn-sm btn-outline-primary fw-bold" onclick="addInternDateRow()">＋ 追加</button>
                     </div>
                     <div id="internDatesContainer" class="col-12"></div>
@@ -586,7 +599,7 @@
                     setTimeout(() => { document.querySelectorAll('.offcanvas-backdrop').forEach(el => el.remove()); document.body.classList.remove('modal-open'); document.body.style.overflow = ''; document.body.style.paddingRight = ''; }, 300);
                 }
                 if(e.target.id === 'calendar-tab' && calendar) { setTimeout(() => calendar.render(), 100); }
-                if(e.target.id === 'table-tab') { setTimeout(syncScrollWidth, 100); }
+                if(e.target.id === 'company-info-tab') { setTimeout(syncScrollWidth, 100); }
             });
         });
         const topScrollWrapper = document.getElementById('topScrollWrapper'); const tableWrapper = document.getElementById('tableWrapper');
@@ -631,13 +644,36 @@
 
     function syncScrollWidth() { const mainTable = document.getElementById('mainTable'); const fakeContent = document.getElementById('topScrollFakeContent'); if (mainTable && fakeContent) fakeContent.style.width = mainTable.offsetWidth + 'px'; }
 
+    window.switchCompanyView = function(viewType) {
+        const tableArea = document.getElementById('companyTableArea'); 
+        const detailArea = document.getElementById('companyDetailArea');
+        const btnTable = document.getElementById('btnCompanyTable'); 
+        const btnDetail = document.getElementById('btnCompanyDetail');
+        
+        if (viewType === 'table') {
+            tableArea.classList.remove('d-none'); detailArea.classList.add('d-none');
+            btnTable.classList.replace('btn-outline-primary', 'btn-primary'); btnDetail.classList.replace('btn-primary', 'btn-outline-primary');
+            setTimeout(syncScrollWidth, 50);
+        } else {
+            tableArea.classList.add('d-none'); detailArea.classList.remove('d-none');
+            btnTable.classList.replace('btn-primary', 'btn-outline-primary'); btnDetail.classList.replace('btn-outline-primary', 'btn-primary');
+        }
+    };
+
     // ダッシュボード・掲示板
     window.loadDashboard = function() {
         const tbody = document.getElementById('dashboardScheduleBody'); tbody.innerHTML = ''; let events = []; const now = new Date(); now.setHours(0,0,0,0);
         window.shukatsuData.forEach(data => {
             if (data.esDeadline) { const d = new Date(data.esDeadline); if (d >= now) events.push({ type: '📄 ES締切', company: data.company, dateObj: d, dateStr: data.esDeadline.replace('T', ' ') }); }
             if (data.interviewDate) { const d = new Date(data.interviewDate); if (d >= now) events.push({ type: '🗣️ 面接', company: data.company, dateObj: d, dateStr: data.interviewDate.replace('T', ' ') }); }
-            (data.internDates || []).forEach(intern => { if (intern.start) { const d = new Date(intern.start); if (d >= now) events.push({ type: `💼 ｲﾝﾀｰﾝ ${intern.title?'('+intern.title+')':''}`, company: data.company, dateObj: d, dateStr: intern.start }); } });
+            
+            // ★変更箇所：「参加決定」のインターンのみをダッシュボードに表示
+            (data.internDates || []).forEach(intern => { 
+                if (intern.start && intern.status === '参加決定') { 
+                    const d = new Date(intern.start); 
+                    if (d >= now) events.push({ type: `💼 ｲﾝﾀｰﾝ ${intern.title?'('+intern.title+')':''}`, company: data.company, dateObj: d, dateStr: intern.start }); 
+                } 
+            });
         });
         events.sort((a, b) => a.dateObj - b.dateObj); const topEvents = events.slice(0, 5);
         if (topEvents.length === 0) { tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-3">直近の予定はありません</td></tr>'; } else {
@@ -777,7 +813,8 @@
             if (data.internDates && data.internDates.length > 0) {
                 data.internDates.forEach(idate => {
                     const title = idate.title ? `ｲﾝﾀｰﾝ:${idate.title}` : 'ｲﾝﾀｰﾝ';
-                    addEventBar(title, idate.start, idate.end || idate.start, 'tl-bar-intern');
+                    const statusMark = idate.status === '参加決定' ? ' ✅' : (idate.status === '見送り' ? ' ❌' : '');
+                    addEventBar(title + statusMark, idate.start, idate.end || idate.start, 'tl-bar-intern');
                 });
             }
             
@@ -802,7 +839,13 @@
             if (item.esDeadline) calendar.addEvent({ id: `es_${item.id}`, title: `[ES締切] ${item.company}`, start: item.esDeadline, backgroundColor: '#fd7e14', borderColor: '#fd7e14' });
             if (item.interviewDate) calendar.addEvent({ id: `interview_${item.id}`, title: `[面接] ${item.company}`, start: item.interviewDate, backgroundColor: '#dc3545', borderColor: '#dc3545' });
             if (item.testDate) calendar.addEvent({ id: `test_${item.id}`, title: `[適性検査] ${item.company}`, start: item.testDate, backgroundColor: '#6f42c1', borderColor: '#6f42c1' });
-            (item.internDates || []).forEach((d, idx) => { if (d.start) { let endObj = new Date(d.end || d.start); endObj.setDate(endObj.getDate() + 1); calendar.addEvent({ id: `intern_${item.id}_${idx}`, title: `ｲﾝﾀｰﾝ: ${item.company}`, start: d.start, end: endObj.toISOString().split('T')[0], backgroundColor: '#0d6efd', borderColor: '#0d6efd', allDay: true }); } });
+            (item.internDates || []).forEach((d, idx) => { 
+                if (d.start) { 
+                    let endObj = new Date(d.end || d.start); endObj.setDate(endObj.getDate() + 1); 
+                    const title = `ｲﾝﾀｰﾝ: ${item.company}` + (d.status === '参加決定' ? ' ✅' : (d.status === '見送り' ? ' ❌' : ''));
+                    calendar.addEvent({ id: `intern_${item.id}_${idx}`, title: title, start: d.start, end: endObj.toISOString().split('T')[0], backgroundColor: '#0d6efd', borderColor: '#0d6efd', allDay: true }); 
+                } 
+            });
         });
     }
 
@@ -822,7 +865,26 @@
         ['companyInput','internStartInput','locationInput','mypageUrlInput','mypageIdInput','mypagePassInput','hasSessionInput','sessionStatusInput','sessionDateInput','sessionMemoInput','esDeadlineInput','testDateInput'].forEach(id=>{ if(document.getElementById(id)) document.getElementById(id).value=''; }); 
         document.getElementById('internDatesContainer').innerHTML = ''; addInternDateRow(); tempSelectionFlow = []; goToStep(1);
     };
-    window.addInternDateRow = function(data = {title: '', start: '', end: ''}) { const c = document.getElementById('internDatesContainer'); const r = document.createElement('div'); r.className = 'row mb-2 intern-date-row g-2'; r.innerHTML = `<div class="col-12 col-md-4"><input type="text" class="form-control intern-title" placeholder="日程名" value="${data.title}"></div><div class="col-5 col-md-3"><input type="date" class="form-control intern-start" value="${data.start}"></div><div class="col-2 col-md-1 text-center align-self-center">〜</div><div class="col-5 col-md-3"><input type="date" class="form-control intern-end" value="${data.end}"></div><div class="col-12 col-md-1 text-end"><button type="button" class="btn btn-sm btn-outline-danger w-100 h-100" onclick="this.closest('.intern-date-row').remove()">×</button></div>`; c.appendChild(r); };
+    
+    // ★変更箇所：インターン日程に「状態」プルダウンを追加
+    window.addInternDateRow = function(data = {title: '', start: '', end: '', status: ''}) { 
+        const c = document.getElementById('internDatesContainer'); const r = document.createElement('div'); r.className = 'row mb-2 intern-date-row g-2 align-items-center'; 
+        r.innerHTML = `
+            <div class="col-12 col-md-3"><input type="text" class="form-control intern-title form-control-sm" placeholder="日程名(例:1day)" value="${data.title}"></div>
+            <div class="col-5 col-md-2"><input type="date" class="form-control intern-start form-control-sm" value="${data.start}"></div>
+            <div class="col-2 col-md-1 text-center" style="font-size:0.8rem;">〜</div>
+            <div class="col-5 col-md-2"><input type="date" class="form-control intern-end form-control-sm" value="${data.end}"></div>
+            <div class="col-9 col-md-3">
+                <select class="form-select form-select-sm intern-status">
+                    <option value="" ${!data.status ? 'selected' : ''}>未定/選考中</option>
+                    <option value="参加決定" ${data.status === '参加決定' ? 'selected' : ''}>参加決定</option>
+                    <option value="見送り" ${data.status === '見送り' ? 'selected' : ''}>見送り</option>
+                </select>
+            </div>
+            <div class="col-3 col-md-1 text-end"><button type="button" class="btn btn-sm btn-outline-danger w-100 h-100" onclick="this.closest('.intern-date-row').remove()">✖</button></div>
+        `; 
+        c.appendChild(r); 
+    };
 
     window.editData = function(id) {
         const data = window.shukatsuData.find(item => item.id === id); if (!data) return;
@@ -892,7 +954,11 @@
     window.saveData = async function(isSkip = false) {
         if (!document.getElementById('companyInput').value.trim()) { alert('企業名を入力してください。'); return; }
         const id = document.getElementById('editId').value;
-        const internDates = []; document.querySelectorAll('.intern-date-row').forEach(row => { const title = row.querySelector('.intern-title').value, start = row.querySelector('.intern-start').value, end = row.querySelector('.intern-end').value; if (title || start || end) internDates.push({ title, start, end }); });
+        const internDates = []; 
+        document.querySelectorAll('.intern-date-row').forEach(row => { 
+            const title = row.querySelector('.intern-title').value, start = row.querySelector('.intern-start').value, end = row.querySelector('.intern-end').value, status = row.querySelector('.intern-status').value; 
+            if (title || start || end || status) internDates.push({ title, start, end, status }); 
+        });
         
         const data = { id: id || Date.now().toString(), company: document.getElementById('companyInput').value, internStart: document.getElementById('internStartInput').value, location: document.getElementById('locationInput').value, mypageUrl: document.getElementById('mypageUrlInput').value, mypageId: document.getElementById('mypageIdInput').value, mypagePass: document.getElementById('mypagePassInput').value, hasSession: document.getElementById('hasSessionInput').value, sessionStatus: document.getElementById('sessionStatusInput').value, sessionDate: document.getElementById('sessionDateInput').value, sessionMemo: document.getElementById('sessionMemoInput').value, esDeadline: document.getElementById('esDeadlineInput').value, testDate: document.getElementById('testDateInput').value, internDates: internDates };
         let existingData = {};
@@ -945,9 +1011,9 @@
     window.copyText = function(elementId) { const input = document.getElementById(elementId); input.type = 'text'; input.select(); document.execCommand('copy'); if(elementId==='sidebarPassword') input.type='password'; alert('コピーしました'); }
     window.togglePasswordVisibility = function() { const p = document.getElementById('sidebarPassword'); const b = document.getElementById('togglePasswordBtn'); if (p.type === 'password') { p.type = 'text'; b.innerText = '隠す'; } else { p.type = 'password'; b.innerText = '表示'; } }
 
-    /* 企業研究タブ 選考フローロジック */
+    /* 企業研究タブ（詳細・企業研究） 選考フローロジック */
     function loadResearchView() {
-        const detailArea = document.getElementById('researchDetailArea'); const emptyMsg = document.getElementById('researchEmptyMessage'); const rightCol = document.querySelector('#research-view .col-md-9');
+        const detailArea = document.getElementById('researchDetailArea'); const emptyMsg = document.getElementById('researchEmptyMessage'); const rightCol = document.querySelector('#companyDetailArea .col-md-9');
         if (detailArea && rightCol && emptyMsg && !rightCol.contains(detailArea)) { rightCol.insertBefore(detailArea, emptyMsg); }
         const list = document.getElementById('researchCompanyList'); list.innerHTML = '';
         window.shukatsuData.forEach(item => {
@@ -1024,7 +1090,7 @@
             document.getElementById('resFounderInput').value = res.founder || ''; document.getElementById('resIndustryInput').value = res.industry || ''; document.getElementById('resRivalsInput').value = res.rivals || ''; document.getElementById('resStrengthsInput').value = res.strengths || ''; document.getElementById('resSalaryInput').value = res.salary || ''; document.getElementById('resVacationInput').value = res.vacation || ''; document.getElementById('resBonusInput').value = res.bonus || '';
             renderSelectionFlow(); 
             const detailArea = document.getElementById('researchDetailArea'); detailArea.style.display = 'block'; document.getElementById('researchEmptyMessage').style.display = 'none';
-            if (window.innerWidth <= 768) { const activeBtn = Array.from(document.getElementById('researchCompanyList').children).find(btn => btn.classList.contains('active')); if (activeBtn) activeBtn.after(detailArea); detailArea.classList.add('mb-4', 'p-3'); } else { document.querySelector('#research-view .col-md-9').insertBefore(detailArea, document.getElementById('researchEmptyMessage')); detailArea.classList.remove('mb-4', 'p-3'); }
+            if (window.innerWidth <= 768) { const activeBtn = Array.from(document.getElementById('researchCompanyList').children).find(btn => btn.classList.contains('active')); if (activeBtn) activeBtn.after(detailArea); detailArea.classList.add('mb-4', 'p-3'); } else { document.querySelector('#companyDetailArea .col-md-9').insertBefore(detailArea, document.getElementById('researchEmptyMessage')); detailArea.classList.remove('mb-4', 'p-3'); }
             if (window.updateFlowTemplateSelect) window.updateFlowTemplateSelect();
         }
     };
@@ -1074,15 +1140,12 @@
             </div>`; 
         container.appendChild(card); 
         
-        // 折りたたみが開かれた時に高さを再計算するイベントを追加
         card.addEventListener('toggle', function() {
             if (this.open) {
                 const finalTa = this.querySelector('.es-q-final');
                 if (finalTa) window.updateCharCountAndResize(finalTa);
             }
         });
-
-        // 初期表示時の高さ調整
         setTimeout(() => { window.updateCharCountAndResize(card.querySelector('.es-q-final')); }, 10);
     };
     
@@ -1091,45 +1154,32 @@
         summaryText.innerText = '📝 設問: ' + (textarea.value ? textarea.value.substring(0, 15) + '...' : '新規設問');
     }
 
-    // 自動リサイズと文字数カウントを同時に行う
     window.updateCharCountAndResize = function(textarea) { 
         if(!textarea) return;
         textarea.closest('.col-12').querySelector('.char-count').innerText = textarea.value.length; 
-        
-        // 高さを自動拡張
         textarea.style.height = 'auto'; 
         textarea.style.height = (textarea.scrollHeight) + 'px'; 
     };
 
-    // テキストエリアからコピー
     window.copyEsText = function(btn) {
         const textarea = btn.closest('.col-12').querySelector('.es-q-final');
-        if (!textarea.value) {
-            alert('コピーするテキストがありません。');
-            return;
-        }
+        if (!textarea.value) { alert('コピーするテキストがありません。'); return; }
         window.copyToClipboard(btn, textarea.value);
     };
 
     window.selectEsCompany = function(id) { currentEsCompanyId = id; const data = window.shukatsuData.find(item => item.id === id); if (data) { document.getElementById('esTargetCompany').innerText = data.company; document.getElementById('esTargetId').value = data.id; const container = document.getElementById('esQuestionsContainer'); container.innerHTML = ''; const questions = data.esQuestions || []; questions.forEach(q => addEsQuestionRow(q)); if(questions.length === 0) addEsQuestionRow(); const detailArea = document.getElementById('esDetailArea'); detailArea.style.display = 'block'; document.getElementById('esEmptyMessage').style.display = 'none'; if (window.innerWidth <= 768) { const activeBtn = Array.from(document.getElementById('esCompanyList').children).find(btn => btn.classList.contains('active')); if (activeBtn) activeBtn.after(detailArea); detailArea.classList.add('mb-4', 'p-3'); } else { document.querySelector('#es-view .col-md-9').insertBefore(detailArea, document.getElementById('esEmptyMessage')); detailArea.classList.remove('mb-4', 'p-3'); } setTimeout(() => { container.querySelectorAll('.es-q-final').forEach(ta => window.updateCharCountAndResize(ta)); }, 50); } };
     window.saveEsDetails = async function() { const id = document.getElementById('esTargetId').value; const data = window.shukatsuData.find(item => item.id === id); if (!data) return; const qs = []; document.querySelectorAll('.es-question-card').forEach(card => { qs.push({ id: card.dataset.qId, category: card.querySelector('.es-q-category').value, question: card.querySelector('.es-q-text').value, memoAnswer: card.querySelector('.es-q-memo').value, finalAnswer: card.querySelector('.es-q-final').value }); }); data.esQuestions = qs; await window.saveToServer(); alert('ES内容を保存しました！'); };
 
-    // コピー機能本体
     window.copyToClipboard = function(btn, text) {
         navigator.clipboard.writeText(text).then(() => {
             const originalText = btn.innerText; 
             btn.innerText = 'コピー済！'; 
             const isPrimary = btn.classList.contains('btn-outline-primary');
             if (isPrimary) btn.classList.replace('btn-outline-primary', 'btn-success');
-            
-            setTimeout(() => { 
-                btn.innerText = originalText; 
-                if (isPrimary) btn.classList.replace('btn-success', 'btn-outline-primary');
-            }, 2000);
+            setTimeout(() => { btn.innerText = originalText; if (isPrimary) btn.classList.replace('btn-success', 'btn-outline-primary'); }, 2000);
         });
     };
 
-    // ES参照モーダルの表示
     window.showEsReference = function(btn) {
         const card = btn.closest('.es-question-card'); const category = card.querySelector('.es-q-category').value;
         const modalBody = document.getElementById('esReferenceModalBody');
