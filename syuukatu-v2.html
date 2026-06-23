@@ -15,7 +15,7 @@
         .nav-pills .nav-link.active { background-color: #0d6efd; color: #fff; font-weight: bold; }
         .nav-item { cursor: grab; } .nav-item:active { cursor: grabbing; }
 
-        /* ▼ 追加：サイドバーの見出しラベル（アンダーライン） ▼ */
+        /* サイドバーの見出しラベル（アンダーライン） */
         .sidebar-section-label {
             font-size: 0.85rem;
             color: #adb5bd;
@@ -28,7 +28,7 @@
             cursor: default;
         }
 
-        /* ▼ 追加：詳細画面のインライン編集用スタイル ▼ */
+        /* 詳細画面のインライン編集用スタイル */
         .inline-edit-input {
             background-color: transparent;
             border: 1px solid transparent;
@@ -480,14 +480,14 @@
                         <li class="mb-1"><a href="https://aistudio.google.com/app/apikey" target="_blank" class="fw-bold">Google AI Studio</a> にアクセスし、Googleアカウントでログインします。</li>
                         <li class="mb-1">画面左側のメニューから「<strong>Get API key</strong>」を選択します。</li>
                         <li class="mb-1">「<strong>Create API key</strong>」ボタンをクリックし、新しいプロジェクトを作成してキーを生成します。</li>
-                        <li>生成された <code>AIza...</code> から始まる文字列をコピーし、下の入力欄に貼り付けてください。</li>
+                        <li>生成された <code>AQ.</code> から始まる文字列をコピーし、下の入力欄に貼り付けてください。</li>
                     </ol>
                 </div>
             </details>
         </div>
         <div class="mb-2">
             <label class="form-label fw-bold text-secondary" style="font-size:0.85rem;">Gemini API キー</label>
-            <input type="text" class="form-control bg-light" id="settingGeminiApiKey" placeholder="AIzaSy...">
+            <input type="text" class="form-control bg-light" id="settingGeminiApiKey" placeholder="AQ.xxx...">
         </div>
       </div>
       <div class="modal-footer bg-light"><button type="button" class="btn btn-success fw-bold w-100 py-2 fs-5" onclick="saveSettings()">💾 設定を保存する</button></div>
@@ -1146,7 +1146,7 @@
         window.updateFlowTemplateSelect(); if(window.updateModalFlowTemplateSelect) window.updateModalFlowTemplateSelect(); await window.saveToServer(); alert(`テンプレート「${templateName}」を保存しました！`);
     };
     
-    // ▼ 途切れていた関数の完全な補完（選考フロー型適用）
+    // 選考フロー型の適用
     window.applyFlowTemplate = async function() {
         const select = document.getElementById('flowTemplateSelect'); if (!select || !select.value) { alert('適用する型を選択してください。'); return; }
         const data = window.shukatsuData.find(item => item.id === currentResearchCompanyId); if (!data) { alert('企業を選択してください。'); return; }
@@ -1204,7 +1204,7 @@
     // ★ ES管理ロジック（アコーディオン・自動リサイズ・コピー・AI添削対応） ★
     function loadEsView() { const detailArea = document.getElementById('esDetailArea'); const emptyMsg = document.getElementById('esEmptyMessage'); const rightCol = document.querySelector('#es-view .col-md-9'); if (detailArea && rightCol && emptyMsg && !rightCol.contains(detailArea)) { rightCol.insertBefore(detailArea, emptyMsg); } const list = document.getElementById('esCompanyList'); list.innerHTML = ''; window.shukatsuData.forEach(item => { const btn = document.createElement('button'); btn.className = `list-group-item list-group-item-action fw-bold d-flex justify-content-between align-items-center ${item.id === currentEsCompanyId ? 'active' : ''}`; const isTarget = item.id === currentEsCompanyId; const arrowText = window.innerWidth <= 768 ? (isTarget ? '▲' : '▼') : ''; btn.innerHTML = `<span>${item.company}</span><span class="es-arrow">${arrowText}</span>`; btn.onclick = () => { if (currentEsCompanyId === item.id && window.innerWidth <= 768) { currentEsCompanyId = null; document.getElementById('esDetailArea').style.display = 'none'; document.getElementById('esEmptyMessage').style.display = 'block'; btn.classList.remove('active'); if(btn.querySelector('.es-arrow')) btn.querySelector('.es-arrow').innerText = '▼'; } else { currentEsCompanyId = item.id; Array.from(list.children).forEach(c => { c.classList.remove('active'); const a = c.querySelector('.es-arrow'); if(a) a.innerText = '▼'; }); btn.classList.add('active'); const a = btn.querySelector('.es-arrow'); if(a) a.innerText = '▲'; selectEsCompany(item.id); } }; list.appendChild(btn); }); if (currentEsCompanyId && window.shukatsuData.some(i=>i.id===currentEsCompanyId)) { selectEsCompany(currentEsCompanyId); } else { if(detailArea) detailArea.style.display = 'none'; if(emptyMsg) emptyMsg.style.display = 'block'; } }
     
-    // ▼ 追加・変更箇所：ES行の作成時にAI添削ボタンと結果エリアを追加
+    // ES行の作成時にAI添削ボタンと結果エリアを追加
     window.addEsQuestionRow = function(qData = { id: '', category: '', question: '', finalAnswer: '', memoAnswer: '' }) { 
         const container = document.getElementById('esQuestionsContainer'); 
         const card = document.createElement('details'); 
@@ -1255,7 +1255,7 @@
         setTimeout(() => { window.updateCharCountAndResize(card.querySelector('.es-q-final')); }, 10);
     };
 
-    // ▼ 追加：Gemini API を使った ES添削処理
+    // ▼ 修正版：本当のエラー詳細を表示する Gemini API 通信処理
     window.reviewEsWithGemini = async function(btnElement) {
         const apiKey = window.appSettings.geminiApiKey;
         if (!apiKey) {
@@ -1294,6 +1294,7 @@ ${answerText}
 3. **✨ 修正案（例文）**（文字数は元の回答の長さを目安に調整）`;
 
         try {
+            // 現在推奨されている安定版モデル 1.5-flash を利用します
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1302,7 +1303,11 @@ ${answerText}
                 })
             });
 
-            if (!response.ok) throw new Error("APIリクエストに失敗しました。");
+            // ★ここで詳細なエラーメッセージを取得するように書き換えています
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error?.message || "不明なAPI通信エラーが発生しました。");
+            }
             
             const data = await response.json();
             const text = data.candidates[0].content.parts[0].text;
@@ -1321,7 +1326,8 @@ ${answerText}
                 </div>`;
         } catch (error) {
             console.error(error);
-            resultArea.innerHTML = `<div class="text-danger fw-bold mt-3 p-3 bg-light border border-danger rounded">❌ エラーが発生しました。APIキーが正しいか確認してください。</div>`;
+            // ★画面に実際のエラー内容（英語の理由）を表示します
+            resultArea.innerHTML = `<div class="text-danger fw-bold mt-3 p-3 bg-light border border-danger rounded">❌ エラー詳細: ${error.message}</div>`;
         } finally {
             btnElement.innerText = originalBtnText;
             btnElement.disabled = false;
