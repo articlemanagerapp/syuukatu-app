@@ -469,6 +469,26 @@
         <div class="mb-3"><button class="btn btn-outline-info text-dark w-100 fw-bold" onclick="downloadICSForGoogleCalendar()">🗓️ 既存予定を一括連携 (ICS形式出力)</button></div>
         <div class="mb-2"><label class="form-label fw-bold text-secondary" style="font-size:0.85rem;">Google API キー</label><input type="text" class="form-control bg-light" id="settingApiKey" placeholder="AIzaSy..."></div>
         <div class="mb-2"><label class="form-label fw-bold text-secondary" style="font-size:0.85rem;">OAuth クライアント ID</label><input type="text" class="form-control bg-light" id="settingClientId" placeholder=".....apps.googleusercontent.com"></div>
+        
+        <h6 class="fw-bold border-bottom pb-2 text-primary mt-4">🤖 AI添削 (Gemini) 連携</h6>
+        <div class="mb-3">
+            <details class="custom-accordion p-0 border">
+                <summary class="fw-bold text-secondary p-2 mb-0" style="font-size: 0.9rem;">💡 Gemini APIキーの取得方法（無料）</summary>
+                <div class="p-3 bg-white border-top" style="font-size: 0.85rem; line-height: 1.6;">
+                    <p class="mb-2">AI添削機能を利用するには、無料のAPIキーが必要です。以下の手順で取得してください。</p>
+                    <ol class="mb-0 ps-3">
+                        <li class="mb-1"><a href="https://aistudio.google.com/app/apikey" target="_blank" class="fw-bold">Google AI Studio</a> にアクセスし、Googleアカウントでログインします。</li>
+                        <li class="mb-1">画面左側のメニューから「<strong>Get API key</strong>」を選択します。</li>
+                        <li class="mb-1">「<strong>Create API key</strong>」ボタンをクリックし、新しいプロジェクトを作成してキーを生成します。</li>
+                        <li>生成された <code>AIza...</code> から始まる文字列をコピーし、下の入力欄に貼り付けてください。</li>
+                    </ol>
+                </div>
+            </details>
+        </div>
+        <div class="mb-2">
+            <label class="form-label fw-bold text-secondary" style="font-size:0.85rem;">Gemini API キー</label>
+            <input type="text" class="form-control bg-light" id="settingGeminiApiKey" placeholder="AIzaSy...">
+        </div>
       </div>
       <div class="modal-footer bg-light"><button type="button" class="btn btn-success fw-bold w-100 py-2 fs-5" onclick="saveSettings()">💾 設定を保存する</button></div>
     </div>
@@ -598,11 +618,15 @@
                 const snapshot = await get(child(ref(db), `users/${user.uid}`)); 
                 const val = snapshot.val();
                 let rawData = (val && val.data) ? val.data : []; window.shukatsuData = Array.isArray(rawData) ? rawData : Object.values(rawData).filter(item => item !== null);
-                window.appSettings = (val && val.settings) ? val.settings : { googleApiKey: '', googleClientId: '' };
+                window.appSettings = (val && val.settings) ? val.settings : { googleApiKey: '', googleClientId: '', geminiApiKey: '' };
                 let rawTodos = (val && val.todos) ? val.todos : { today: [], week: [] };
                 window.todos = { today: Array.isArray(rawTodos.today) ? rawTodos.today : Object.values(rawTodos.today || {}).filter(item => item !== null), week: Array.isArray(rawTodos.week) ? rawTodos.week : Object.values(rawTodos.week || {}).filter(item => item !== null) };
                 
-                document.getElementById('settingApiKey').value = window.appSettings.googleApiKey || ''; document.getElementById('settingClientId').value = window.appSettings.googleClientId || '';
+                document.getElementById('settingApiKey').value = window.appSettings.googleApiKey || ''; 
+                document.getElementById('settingClientId').value = window.appSettings.googleClientId || '';
+                // ▼ 追加：Gemini API キーの読み込み
+                document.getElementById('settingGeminiApiKey').value = window.appSettings.geminiApiKey || '';
+
                 window.tryInitGoogleAPI();
 
                 if(window.checkAndUpdateTodos) window.checkAndUpdateTodos();
@@ -612,14 +636,14 @@
             } catch(e) { document.getElementById('cloudStatus').innerText = '❌ 読込エラー'; document.getElementById('cloudStatus').className = 'text-truncate text-danger mb-3 fw-bold'; }
         } else {
             document.getElementById('loginOverlay').style.display = 'flex';
-            window.shukatsuData = []; window.appSettings = { googleApiKey: '', googleClientId: '' }; window.todos = { today: [], week: [] };
+            window.shukatsuData = []; window.appSettings = { googleApiKey: '', googleClientId: '', geminiApiKey: '' }; window.todos = { today: [], week: [] };
             document.getElementById('settingUserEmail').innerText = '未ログイン'; if(window.renderAll) window.renderAll();
         }
     });
 </script>
 
 <script>
-    window.shukatsuData = []; window.appSettings = { googleApiKey: '', googleClientId: '' }; window.todos = { today: [], week: [] };
+    window.shukatsuData = []; window.appSettings = { googleApiKey: '', googleClientId: '', geminiApiKey: '' }; window.todos = { today: [], week: [] };
     let calendar, currentInterviewCompanyId = null, currentEsCompanyId = null, currentResearchCompanyId = null, currentSortKey = '', currentSortAsc = true;
     let isSyncingTopScroll = false, isSyncingTableScroll = false;
     let tempSelectionFlow = []; 
@@ -669,7 +693,16 @@
     window.gapiLoaded = function() { gapi.load('client', () => { isGapiScriptLoaded = true; window.tryInitGoogleAPI(); }); };
     window.gisLoaded = function() { isGisScriptLoaded = true; window.tryInitGoogleAPI(); };
     window.tryInitGoogleAPI = async function() { if (isGapiScriptLoaded && isGisScriptLoaded && window.appSettings.googleApiKey && window.appSettings.googleClientId) { try { await gapi.client.init({ apiKey: window.appSettings.googleApiKey, discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'] }); tokenClient = google.accounts.oauth2.initTokenClient({ client_id: window.appSettings.googleClientId, scope: 'https://www.googleapis.com/auth/calendar.events', callback: '' }); } catch (e) { console.error(e); } } };
-    window.saveSettings = async function() { window.appSettings.googleApiKey = document.getElementById('settingApiKey').value.trim(); window.appSettings.googleClientId = document.getElementById('settingClientId').value.trim(); await window.saveToServer(); window.tryInitGoogleAPI(); alert('API設定を保存しました！'); bootstrap.Modal.getInstance(document.getElementById('settingsModal')).hide(); };
+    window.saveSettings = async function() { 
+        window.appSettings.googleApiKey = document.getElementById('settingApiKey').value.trim(); 
+        window.appSettings.googleClientId = document.getElementById('settingClientId').value.trim(); 
+        // ▼ 追加：Gemini API キーの保存
+        window.appSettings.geminiApiKey = document.getElementById('settingGeminiApiKey').value.trim();
+        await window.saveToServer(); 
+        window.tryInitGoogleAPI(); 
+        alert('API設定を保存しました！'); 
+        bootstrap.Modal.getInstance(document.getElementById('settingsModal')).hide(); 
+    };
     window.syncToGoogleCalendarAPI = function(events, location) {
         if (!window.appSettings.googleApiKey || !window.appSettings.googleClientId) { alert("⚠️ ⚙️各種設定からAPIキーを登録してください。"); return; }
         if (!tokenClient) { alert("API読み込み中"); return; }
@@ -713,7 +746,6 @@
             if (data.esDeadline) { const d = new Date(data.esDeadline); if (d >= now) events.push({ type: '📄 ES締切', company: data.company, dateObj: d, dateStr: data.esDeadline.replace('T', ' ') }); }
             if (data.interviewDate) { const d = new Date(data.interviewDate); if (d >= now) events.push({ type: '🗣️ 面接', company: data.company, dateObj: d, dateStr: data.interviewDate.replace('T', ' ') }); }
             
-            // ★変更箇所：「参加決定」のインターンのみをダッシュボードに表示
             (data.internDates || []).forEach(intern => { 
                 if (intern.start && intern.status === '参加決定') { 
                     const d = new Date(intern.start); 
@@ -984,12 +1016,7 @@
         const select = document.getElementById('modalFlowTemplateSelect'); if (!select) return; const currentVal = select.value; select.innerHTML = '<option value="">-- 選択 --</option>'; window.appSettings.flowTemplates = window.appSettings.flowTemplates || {};
         Object.keys(window.appSettings.flowTemplates).forEach(name => { const opt = document.createElement('option'); opt.value = name; opt.innerText = name; select.appendChild(opt); }); select.value = currentVal;
     };
-    window.applyModalFlowTemplate = function() {
-        const select = document.getElementById('modalFlowTemplateSelect'); if (!select || !select.value) { alert('適用する型を選択してください。'); return; }
-        if (tempSelectionFlow.length > 0) { if (!confirm('現在のフローが上書きされます。よろしいですか？')) return; }
-        const templateFlow = window.appSettings.flowTemplates[select.value]; if (!templateFlow) return;
-        tempSelectionFlow = JSON.parse(JSON.stringify(templateFlow)); if (tempSelectionFlow.length > 0) tempSelectionFlow[0].status = 'current'; renderModalSelectionFlow(); alert(`「${select.value}」を展開しました。`);
-    };
+
     window.saveModalAsFlowTemplate = async function() {
         if (tempSelectionFlow.length === 0) { alert('保存するフローが空です。'); return; } const templateName = prompt('このフローに名前をつけて保存します:'); if (!templateName || templateName.trim() === '') return;
         window.appSettings.flowTemplates = window.appSettings.flowTemplates || {}; window.appSettings.flowTemplates[templateName.trim()] = tempSelectionFlow.map(step => ({ ...step, status: 'not_started' }));
@@ -1118,6 +1145,8 @@
         window.appSettings.flowTemplates = window.appSettings.flowTemplates || {}; window.appSettings.flowTemplates[templateName.trim()] = flow.map(step => ({ ...step, status: 'not_started' }));
         window.updateFlowTemplateSelect(); if(window.updateModalFlowTemplateSelect) window.updateModalFlowTemplateSelect(); await window.saveToServer(); alert(`テンプレート「${templateName}」を保存しました！`);
     };
+    
+    // ▼ 途切れていた関数の完全な補完（選考フロー型適用）
     window.applyFlowTemplate = async function() {
         const select = document.getElementById('flowTemplateSelect'); if (!select || !select.value) { alert('適用する型を選択してください。'); return; }
         const data = window.shukatsuData.find(item => item.id === currentResearchCompanyId); if (!data) { alert('企業を選択してください。'); return; }
@@ -1127,14 +1156,12 @@
         renderSelectionFlow(); if(window.renderDashboardCompanyFlows) window.renderDashboardCompanyFlows(); await window.saveToServer(); alert(`「${select.value}」を展開しました。`);
     };
 
-    // ★ 追加・変更箇所：インライン編集用のデータセット ★
     window.selectResearchCompany = function(id) {
         currentResearchCompanyId = id; const data = window.shukatsuData.find(item => item.id === id);
         if (data) {
             document.getElementById('detCompanyInput').value = data.company || ''; 
             document.getElementById('researchTargetId').value = data.id;
             
-            // 基本登録情報をインライン編集エリアにセット
             document.getElementById('detEsDeadlineInput').value = data.esDeadline || '';
             document.getElementById('detTestDateInput').value = data.testDate || '';
             document.getElementById('detInterviewDateInput').value = data.interviewDate || '';
@@ -1154,11 +1181,9 @@
         }
     };
     
-    // ★ 追加・変更箇所：インライン編集された内容の保存 ★
     window.saveResearchDetails = async function() {
         const id = document.getElementById('researchTargetId').value; const data = window.shukatsuData.find(item => item.id === id); if (!data) return;
         
-        // 基本登録情報を更新
         data.company = document.getElementById('detCompanyInput').value || '名称未設定';
         data.esDeadline = document.getElementById('detEsDeadlineInput').value;
         data.testDate = document.getElementById('detTestDateInput').value;
@@ -1169,21 +1194,21 @@
         data.mypageId = document.getElementById('detMypageIdInput').value;
         data.mypagePass = document.getElementById('detMypagePassInput').value;
 
-        // 企業研究情報を更新
         data.companyResearch = { ...(data.companyResearch || {}), founder: document.getElementById('resFounderInput').value, industry: document.getElementById('resIndustryInput').value, rivals: document.getElementById('resRivalsInput').value, strengths: document.getElementById('resStrengthsInput').value, salary: document.getElementById('resSalaryInput').value, vacation: document.getElementById('resVacationInput').value, bonus: document.getElementById('resBonusInput').value };
         
         await window.saveToServer(); 
         alert('企業情報と研究内容を保存しました！');
-        if(window.renderAll) window.renderAll(); // 左のメニューの企業名などの変更を即反映
+        if(window.renderAll) window.renderAll(); 
     };
 
-    // ★ ES管理ロジック（アコーディオン・自動リサイズ・コピー機能対応） ★
+    // ★ ES管理ロジック（アコーディオン・自動リサイズ・コピー・AI添削対応） ★
     function loadEsView() { const detailArea = document.getElementById('esDetailArea'); const emptyMsg = document.getElementById('esEmptyMessage'); const rightCol = document.querySelector('#es-view .col-md-9'); if (detailArea && rightCol && emptyMsg && !rightCol.contains(detailArea)) { rightCol.insertBefore(detailArea, emptyMsg); } const list = document.getElementById('esCompanyList'); list.innerHTML = ''; window.shukatsuData.forEach(item => { const btn = document.createElement('button'); btn.className = `list-group-item list-group-item-action fw-bold d-flex justify-content-between align-items-center ${item.id === currentEsCompanyId ? 'active' : ''}`; const isTarget = item.id === currentEsCompanyId; const arrowText = window.innerWidth <= 768 ? (isTarget ? '▲' : '▼') : ''; btn.innerHTML = `<span>${item.company}</span><span class="es-arrow">${arrowText}</span>`; btn.onclick = () => { if (currentEsCompanyId === item.id && window.innerWidth <= 768) { currentEsCompanyId = null; document.getElementById('esDetailArea').style.display = 'none'; document.getElementById('esEmptyMessage').style.display = 'block'; btn.classList.remove('active'); if(btn.querySelector('.es-arrow')) btn.querySelector('.es-arrow').innerText = '▼'; } else { currentEsCompanyId = item.id; Array.from(list.children).forEach(c => { c.classList.remove('active'); const a = c.querySelector('.es-arrow'); if(a) a.innerText = '▼'; }); btn.classList.add('active'); const a = btn.querySelector('.es-arrow'); if(a) a.innerText = '▲'; selectEsCompany(item.id); } }; list.appendChild(btn); }); if (currentEsCompanyId && window.shukatsuData.some(i=>i.id===currentEsCompanyId)) { selectEsCompany(currentEsCompanyId); } else { if(detailArea) detailArea.style.display = 'none'; if(emptyMsg) emptyMsg.style.display = 'block'; } }
     
+    // ▼ 追加・変更箇所：ES行の作成時にAI添削ボタンと結果エリアを追加
     window.addEsQuestionRow = function(qData = { id: '', category: '', question: '', finalAnswer: '', memoAnswer: '' }) { 
         const container = document.getElementById('esQuestionsContainer'); 
         const card = document.createElement('details'); 
-        card.className = 'card mb-3 border-secondary es-question-card shadow-sm custom-accordion'; 
+        card.className = 'card mb-3 border-secondary es-question-card shadow-sm custom-accordion es-item-container'; 
         card.dataset.qId = qData.id || 'q_' + Date.now() + Math.random().toString(36).substring(2, 5); 
         if(!qData.question) card.open = true;
         
@@ -1195,12 +1220,12 @@
 
         card.innerHTML = `
             <summary class="fw-bold text-secondary mb-0 p-3"><span class="es-summary-text">📝 設問: ${summaryText}</span></summary>
-            <div class="p-3 pt-0 border-top mt-2">
+            <div class="p-3 pt-0 border-top mt-2 position-relative">
                 <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2 pt-2">
                     <h6 class="fw-bold text-secondary mb-0 d-flex align-items-center gap-2">カテゴリ: <select class="form-select form-select-sm es-q-category" style="width:140px;">${catHtml}</select></h6>
                     <div class="d-flex gap-2"><button type="button" class="btn btn-sm btn-outline-info fw-bold" onclick="showEsReference(this)">🔍 過去のES参照</button><button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.es-question-card').remove()">削除</button></div>
                 </div>
-                <div class="mb-3"><textarea class="form-control es-q-text" rows="2" placeholder="設問内容" oninput="updateEsSummary(this)">${qData.question || ''}</textarea></div>
+                <div class="mb-3"><textarea class="form-control es-q-text es-question-input" rows="2" placeholder="設問内容" oninput="updateEsSummary(this)">${qData.question || ''}</textarea></div>
                 <div class="row">
                     <div class="col-12 mb-3"><label class="form-label text-info fw-bold" style="font-size:0.85rem;">💡 メモ・構成案</label><textarea class="form-control es-q-memo" rows="4" placeholder="書きたいポイントや箇条書き">${qData.memoAnswer || ''}</textarea></div>
                     <div class="col-12 mb-3">
@@ -1211,9 +1236,13 @@
                                 <span class="text-secondary fw-bold" style="font-size:0.85rem;"><span class="char-count">0</span> 文字</span>
                             </div>
                         </div>
-                        <textarea class="form-control es-q-final" rows="6" placeholder="清書欄" style="overflow-y: hidden; resize: none;" oninput="updateCharCountAndResize(this)">${qData.finalAnswer || ''}</textarea>
+                        <textarea class="form-control es-q-final es-answer-textarea" rows="6" placeholder="清書欄" style="overflow-y: hidden; resize: none;" oninput="updateCharCountAndResize(this)">${qData.finalAnswer || ''}</textarea>
                     </div>
                 </div>
+                <div class="text-end mt-2">
+                    <button type="button" class="btn btn-info text-white fw-bold shadow-sm w-100 py-2" onclick="reviewEsWithGemini(this)">🤖 AIに添削・深掘りしてもらう</button>
+                </div>
+                <div class="es-review-result" style="display: none;"></div>
             </div>`; 
         container.appendChild(card); 
         
@@ -1224,6 +1253,79 @@
             }
         });
         setTimeout(() => { window.updateCharCountAndResize(card.querySelector('.es-q-final')); }, 10);
+    };
+
+    // ▼ 追加：Gemini API を使った ES添削処理
+    window.reviewEsWithGemini = async function(btnElement) {
+        const apiKey = window.appSettings.geminiApiKey;
+        if (!apiKey) {
+            alert("⚠️ ⚙️各種設定から「Gemini API キー」を登録してください。\n設定画面に無料での取得手順を記載しています。");
+            return;
+        }
+
+        const container = btnElement.closest('.es-item-container');
+        const questionText = container.querySelector('.es-question-input').value.trim();
+        const answerText = container.querySelector('.es-answer-textarea').value.trim();
+        const resultArea = container.querySelector('.es-review-result');
+
+        if (!questionText || !answerText) {
+            alert("📝 設問と回答（清書欄）の両方を入力してから添削を実行してください。");
+            return;
+        }
+
+        const originalBtnText = btnElement.innerText;
+        btnElement.innerText = "⏳ 添削中...";
+        btnElement.disabled = true;
+        resultArea.style.display = 'block';
+        resultArea.innerHTML = `<div class="text-secondary fw-bold mt-3 p-3 bg-light border rounded">🤖 AIが添削しています。数秒お待ちください...</div>`;
+
+        const prompt = `あなたはプロの就活キャリアアドバイザーです。以下のエントリーシート（ES）の設問と回答を読み、面接官に響く魅力的な内容になるように添削・アドバイスを行ってください。
+
+【設問】
+${questionText}
+
+【現在の回答】
+${answerText}
+
+【出力形式の指示】
+以下の構成で分かりやすく提示してください。
+1. **👍 良かった点・評価できるポイント**
+2. **💡 改善点・深掘りすべきポイント**（具体的にどう直せばよいか）
+3. **✨ 修正案（例文）**（文字数は元の回答の長さを目安に調整）`;
+
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }]
+                })
+            });
+
+            if (!response.ok) throw new Error("APIリクエストに失敗しました。");
+            
+            const data = await response.json();
+            const text = data.candidates[0].content.parts[0].text;
+            
+            const formattedHtml = text
+                .replace(/\*\*(.*?)\*\*/g, '<strong class="text-dark">$1</strong>')
+                .replace(/\n/g, '<br>');
+
+            resultArea.innerHTML = `
+                <div class="mt-4 p-4 bg-white border border-info rounded shadow-sm" style="font-size: 0.95rem; line-height: 1.7;">
+                    <div class="d-flex justify-content-between align-items-center mb-3 border-bottom border-info pb-2">
+                        <h5 class="fw-bold text-info mb-0">🤖 AI 添削アドバイス</h5>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="this.parentElement.parentElement.parentElement.style.display='none'">閉じる</button>
+                    </div>
+                    ${formattedHtml}
+                </div>`;
+        } catch (error) {
+            console.error(error);
+            resultArea.innerHTML = `<div class="text-danger fw-bold mt-3 p-3 bg-light border border-danger rounded">❌ エラーが発生しました。APIキーが正しいか確認してください。</div>`;
+        } finally {
+            btnElement.innerText = originalBtnText;
+            btnElement.disabled = false;
+        }
     };
     
     window.updateEsSummary = function(textarea) {
