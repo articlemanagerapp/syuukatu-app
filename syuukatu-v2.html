@@ -648,6 +648,177 @@
     let isSyncingTopScroll = false, isSyncingTableScroll = false;
     let tempSelectionFlow = []; 
 
+    /* ============================================================================
+     * ▼ 共通ヘルパー群（旧バージョンで「企業研究タブ」「ESタブ」「面接対策タブ」の3箇所や、
+     *   「選考フロー編集（詳細画面版・追加/編集モーダル版）」の2箇所に、ほぼ同一のコードが
+     *   コピー＆ペーストされて存在していたのを1箇所に集約した部分です。
+     *   挙動は元のコードと同じになるよう1行ずつ確認していますが、
+     *   今後の修正はこのブロックの中だけで済むようになります。
+     * ========================================================================== */
+
+    // --- ① 企業一覧サイドバー（企業研究／ES／面接対策タブで共通） ---------------------
+    // 3つのタブで「一覧を描画→クリックしたら選択状態にして詳細を表示」というロジックが
+    // 完全に同一だったため、パラメータ化して1つの関数に統合。
+    function renderCompanySidebarList(opts) {
+        const { listElId, detailAreaId, emptyMsgId, containerSelector, arrowClass, getCurrentId, setCurrentId, onSelect } = opts;
+        const detailArea = document.getElementById(detailAreaId); const emptyMsg = document.getElementById(emptyMsgId); const rightCol = document.querySelector(containerSelector);
+        if (detailArea && rightCol && emptyMsg && !rightCol.contains(detailArea)) { rightCol.insertBefore(detailArea, emptyMsg); }
+        const list = document.getElementById(listElId); list.innerHTML = '';
+        window.shukatsuData.forEach(item => {
+            const isTarget = item.id === getCurrentId();
+            const btn = document.createElement('button'); btn.className = `list-group-item list-group-item-action fw-bold d-flex justify-content-between align-items-center ${isTarget ? 'active' : ''}`;
+            const arrowText = window.innerWidth <= 768 ? (isTarget ? '▲' : '▼') : ''; btn.innerHTML = `<span>${item.company}</span><span class="${arrowClass}">${arrowText}</span>`;
+            btn.onclick = () => {
+                if (getCurrentId() === item.id && window.innerWidth <= 768) {
+                    setCurrentId(null); detailArea.style.display = 'none'; emptyMsg.style.display = 'block';
+                    btn.classList.remove('active'); const a = btn.querySelector(`.${arrowClass}`); if (a) a.innerText = '▼';
+                } else {
+                    setCurrentId(item.id);
+                    Array.from(list.children).forEach(c => { c.classList.remove('active'); const a = c.querySelector(`.${arrowClass}`); if (a) a.innerText = '▼'; });
+                    btn.classList.add('active'); const a = btn.querySelector(`.${arrowClass}`); if (a) a.innerText = '▲';
+                    onSelect(item.id);
+                }
+            };
+            list.appendChild(btn);
+        });
+        if (getCurrentId() && window.shukatsuData.some(i => i.id === getCurrentId())) { onSelect(getCurrentId()); } else { if (detailArea) detailArea.style.display = 'none'; if (emptyMsg) emptyMsg.style.display = 'block'; }
+    }
+
+    // 選択中の企業の詳細エリアを、PCでは一覧の右側／スマホでは選択ボタン直下に移動する処理（3タブ共通）
+    function repositionDetailArea(listElId, detailArea, containerSelector, emptyMsg) {
+        if (window.innerWidth <= 768) {
+            const activeBtn = Array.from(document.getElementById(listElId).children).find(btn => btn.classList.contains('active'));
+            if (activeBtn) activeBtn.after(detailArea);
+            detailArea.classList.add('mb-4', 'p-3');
+        } else {
+            document.querySelector(containerSelector).insertBefore(detailArea, emptyMsg);
+            detailArea.classList.remove('mb-4', 'p-3');
+        }
+    }
+
+    // --- ② 選考フロー編集UI（企業研究タブ／追加・編集モーダルで共通） -------------------
+    // 「〇のプログレス表示＋編集リストの描画」「ステップ追加／枝分かれ／状態変更／削除」
+    // 「フロー型の選択欄更新／型として保存／型を適用」が、実データ版(selectionFlow)と
+    // 一時データ版(tempSelectionFlow)の2セットで丸ごと重複していたため統合。
+    // ※このうち「モーダル版の型を適用する」ボタンは、旧コードでは呼び出し先の関数
+    //   (applyModalFlowTemplate) が定義されておらず、押しても何も起きない不具合が
+    //   ありました。今回の統合で実装し直しています。
+
+    // 選考フローの丸数字プログレス表示（進捗サークル＋線）をHTML文字列として生成する。
+    // compact=true は掲示板（ダッシュボード）用の小型・簡易表示、false は詳細画面／
+    // 追加モーダルの標準表示（枠線つき・サイズ大）で、元コードの見た目をそのまま再現している。
+    function buildFlowProgressHtml(flow, compact) {
+        let html = '';
+        flow.forEach((step, index) => {
+            const isLast = index === flow.length - 1;
+            const circleContent = step.status === 'completed' ? '✓' : (step.status === 'rejected' ? '×' : index + 1);
+            if (compact) {
+                let circleClass = 'bg-light text-secondary';
+                if (step.status === 'completed') circleClass = 'bg-success text-white'; else if (step.status === 'current') circleClass = 'bg-primary text-white'; else if (step.status === 'rejected') circleClass = 'status-rejected';
+                let lineClass = 'bg-light';
+                if (step.status === 'completed' && !isLast) { const nextStep = flow[index + 1]; lineClass = (nextStep.status === 'completed' || nextStep.status === 'current') ? 'bg-success' : 'bg-light'; }
+                html += `<div class="flow-step-container" style="margin: 0 4px;"><div class="flow-step-circle ${circleClass}" style="width: 26px; height: 26px; font-size: 0.7rem; box-shadow: none;">${circleContent}</div><div class="flow-step-label text-truncate" style="width: 65px; font-size: 0.68rem; margin-top: 4px;" title="${step.name}">${step.name}</div></div>`;
+                if (!isLast) html += `<div class="flow-step-line ${lineClass}" style="width: 20px; height: 3px; margin: 0 -6px; transform: translateY(-10px);"></div>`;
+            } else {
+                const cClass = step.status === 'completed' ? 'bg-success text-white border-success' : (step.status === 'current' ? 'bg-primary text-white border-info border-3' : (step.status === 'rejected' ? 'status-rejected' : 'bg-secondary text-white border-secondary'));
+                let lClass = 'bg-secondary';
+                if (step.status === 'completed') { lClass = (!isLast && (flow[index + 1].status === 'completed' || flow[index + 1].status === 'current')) ? 'bg-success' : 'bg-primary opacity-50'; }
+                html += `<div class="flow-step-wrapper"><div class="flow-step-container"><div class="flow-step-circle ${cClass}">${circleContent}</div><div class="flow-step-label">${step.name}</div></div>${!isLast ? `<div class="flow-step-line ${lClass}"></div>` : ''}</div>`;
+            }
+        });
+        return html;
+    }
+
+    // 選考フローの「編集リスト」＋「プログレス表示」を描画する（研究タブ／モーダルで共通）
+    function renderFlowUI(flow, editorElId, progressBarElId, actionNames) {
+        const editor = document.getElementById(editorElId); const progressBar = document.getElementById(progressBarElId);
+        editor.innerHTML = '';
+        flow.forEach((s, i) => { if (!s.id) s.id = 'step_o_' + i + '_' + Date.now(); if (s.parentId === undefined) s.parentId = null; });
+
+        function drawEditor(parentId, depth) {
+            flow.filter(s => s.parentId === parentId).forEach((step) => {
+                const row = document.createElement('div'); row.className = `d-flex align-items-center mb-2 gap-2 bg-white p-2 rounded shadow-sm border border-light ${depth > 0 ? 'flow-step-branch' : ''}`;
+                let statusClass = 'bg-light text-secondary'; if (step.status === 'completed') statusClass = 'bg-success text-white'; if (step.status === 'current') statusClass = 'bg-primary text-white'; if (step.status === 'rejected') statusClass = 'status-rejected';
+                const siblingIndex = flow.filter(s => s.parentId === parentId).indexOf(step);
+                row.innerHTML = `<div class="fw-bold text-primary" style="min-width: 20px;">${depth === 0 ? siblingIndex + 1 + '.' : ''}</div><div class="fw-bold flex-grow-1 text-truncate">${step.name}</div><select class="form-select form-select-sm w-auto fw-bold ${statusClass}" onchange="${actionNames.updateStatus}('${step.id}', this.value)"><option value="not_started" ${step.status === 'not_started' ? 'selected' : ''} class="text-dark bg-white">未着手</option><option value="current" ${step.status === 'current' ? 'selected' : ''} class="text-dark bg-white">進行中</option><option value="completed" ${step.status === 'completed' ? 'selected' : ''} class="text-dark bg-white">完了</option><option value="rejected" ${step.status === 'rejected' ? 'selected' : ''} class="status-rejected">落選</option></select>${step.status === 'rejected' ? `<button class="btn btn-outline-danger btn-branch fw-bold" onclick="${actionNames.addBranch}('${step.id}')">↳ 枝分かれ</button>` : ''}<button class="btn btn-sm btn-outline-danger border-0" onclick="${actionNames.remove}('${step.id}')">✖</button>`;
+                editor.appendChild(row);
+                drawEditor(step.id, depth + 1);
+            });
+        }
+        drawEditor(null, 0);
+
+        progressBar.innerHTML = flow.length === 0
+            ? '<span class="text-muted fw-bold ms-2" style="font-size:0.85rem;">追加ボタンからステップを登録して下さい</span>'
+            : buildFlowProgressHtml(flow, false);
+    }
+
+    // 選考フロー配列そのものを操作する小さな純粋関数群（実データ版・モーダル版のどちらからも呼ばれる）
+    function pushFlowStep(flow, name, parentId) { flow.push({ id: 'step_' + Date.now(), name: name, status: 'not_started', parentId: parentId }); }
+    function setFlowStepStatus(flow, stepId, status) { const step = flow.find(s => s.id === stepId); if (step) step.status = status; }
+    function removeFlowStepById(flow, stepId) {
+        let idsToDelete = [stepId];
+        (function findChildren(pid) { flow.forEach(s => { if (s.parentId === pid) { idsToDelete.push(s.id); findChildren(s.id); } }); })(stepId);
+        return flow.filter(s => !idsToDelete.includes(s.id));
+    }
+
+    // フロー型（テンプレート）selectの選択肢を再構築する（研究タブ用／モーダル用のselect要素IDを渡すだけ）
+    function refreshFlowTemplateSelect(selectElId) {
+        const select = document.getElementById(selectElId); if (!select) return; const currentVal = select.value; select.innerHTML = '<option value="">-- 選択 --</option>'; window.appSettings.flowTemplates = window.appSettings.flowTemplates || {};
+        Object.keys(window.appSettings.flowTemplates).forEach(name => { const opt = document.createElement('option'); opt.value = name; opt.innerText = name; select.appendChild(opt); }); select.value = currentVal;
+    }
+
+    // 現在のフローを型として保存する共通処理（promptの文言は元コードの各箇所の表現をそのまま維持）
+    function saveFlowAsTemplateShared(flow, promptText) {
+        if (flow.length === 0) { alert('保存するフローが空です。'); return null; }
+        const templateName = prompt(promptText); if (!templateName || templateName.trim() === '') return null;
+        window.appSettings.flowTemplates = window.appSettings.flowTemplates || {};
+        window.appSettings.flowTemplates[templateName.trim()] = flow.map(step => ({ ...step, status: 'not_started' }));
+        return templateName.trim();
+    }
+
+    // 選択中のフロー型を適用する共通処理。上書き確認・先頭ステップをcurrentにする処理を含む。
+    function applyFlowTemplateShared(currentFlow, templateSelectElId) {
+        const select = document.getElementById(templateSelectElId); if (!select || !select.value) { alert('適用する型を選択してください。'); return null; }
+        if (currentFlow && currentFlow.length > 0) { if (!confirm('現在のフローが上書きされます。よろしいですか？')) return null; }
+        const templateFlow = window.appSettings.flowTemplates[select.value]; if (!templateFlow) return null;
+        const newFlow = JSON.parse(JSON.stringify(templateFlow)); if (newFlow.length > 0) newFlow[0].status = 'current';
+        return { newFlow: newFlow, templateName: select.value };
+    }
+
+    // --- ③ 予定イベントの抽出（掲示板／カレンダー／タイムラインで共通） -----------------
+    // 「説明会・ES締切・面接・適性検査・インターン日程」を企業データから取り出す処理が
+    // 掲示板・カレンダー・タイムラインの3箇所にそれぞれ個別実装されていたため、
+    // データ抽出部分だけを共通化（表示用の文言・見た目は各箇所の元の仕様をそのまま維持）。
+    const EVENT_KIND_META = {
+        session:   { label: '説明会',   color: '#198754', tlClass: 'tl-bar-info' },
+        es:        { label: 'ES締切',   color: '#fd7e14', tlClass: 'tl-bar-es' },
+        interview: { label: '面接',     color: '#dc3545', tlClass: 'tl-bar-interview' },
+        test:      { label: '適性検査', color: '#6f42c1', tlClass: 'tl-bar-test' },
+        intern:    { label: 'ｲﾝﾀｰﾝ',    color: '#0d6efd', tlClass: 'tl-bar-intern' }
+    };
+    function internStatusMark(status) { return status === '参加決定' ? ' ✅' : (status === '見送り' ? ' ❌' : ''); }
+    function getCompanyEvents(item) {
+        const events = [];
+        if (item.sessionDate) events.push({ kind: 'session', companyId: item.id, company: item.company, start: item.sessionDate, end: item.sessionDate });
+        if (item.esDeadline) events.push({ kind: 'es', companyId: item.id, company: item.company, start: item.esDeadline, end: item.esDeadline });
+        if (item.interviewDate) events.push({ kind: 'interview', companyId: item.id, company: item.company, start: item.interviewDate, end: item.interviewDate });
+        if (item.testDate) events.push({ kind: 'test', companyId: item.id, company: item.company, start: item.testDate, end: item.testDate });
+        (item.internDates || []).forEach((d, idx) => {
+            if (d.start) events.push({ kind: 'intern', companyId: item.id, company: item.company, start: d.start, end: d.end || d.start, internIndex: idx, internTitle: d.title || '', internStatus: d.status || '' });
+        });
+        return events;
+    }
+    function getAllScheduleEvents() { return window.shukatsuData.flatMap(getCompanyEvents); }
+
+    // --- ④ フォーム項目の一括読み書き（企業研究タブの「基本登録情報」「企業研究情報」） -----
+    // id→データキーの対応表を用意し、読み込み・保存を汎用関数で行うことで、
+    // 項目を1つずつ手書きしていた元コードより対応漏れのリスクを減らしている。
+    function fillFields(mapping, source) { Object.entries(mapping).forEach(([elId, key]) => { const el = document.getElementById(elId); if (el) el.value = (source && source[key]) || ''; }); }
+    function readFields(mapping) { const out = {}; Object.entries(mapping).forEach(([elId, key]) => { const el = document.getElementById(elId); if (el) out[key] = el.value; }); return out; }
+    const RESEARCH_BASIC_FIELDS = { detEsDeadlineInput: 'esDeadline', detTestDateInput: 'testDate', detInterviewDateInput: 'interviewDate', detSessionDateInput: 'sessionDate', detLocationInput: 'location', detMypageUrlInput: 'mypageUrl', detMypageIdInput: 'mypageId', detMypagePassInput: 'mypagePass' };
+    const RESEARCH_INFO_FIELDS  = { resFounderInput: 'founder', resIndustryInput: 'industry', resRivalsInput: 'rivals', resStrengthsInput: 'strengths', resSalaryInput: 'salary', resVacationInput: 'vacation', resBonusInput: 'bonus' };
+    /* ============================================================================ */
+
     window.checkAndUpdateTodos = function() {
         const now = new Date(); const todayStr = now.toLocaleDateString();
         const getWeek = d => { const date = new Date(d.getTime()); date.setHours(0, 0, 0, 0); date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7); const week1 = new Date(date.getFullYear(), 0, 4); return date.getFullYear() + '-W' + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7); };
@@ -741,18 +912,15 @@
 
     // ダッシュボード・掲示板
     window.loadDashboard = function() {
-        const tbody = document.getElementById('dashboardScheduleBody'); tbody.innerHTML = ''; let events = []; const now = new Date(); now.setHours(0,0,0,0);
-        window.shukatsuData.forEach(data => {
-            if (data.esDeadline) { const d = new Date(data.esDeadline); if (d >= now) events.push({ type: '📄 ES締切', company: data.company, dateObj: d, dateStr: data.esDeadline.replace('T', ' ') }); }
-            if (data.interviewDate) { const d = new Date(data.interviewDate); if (d >= now) events.push({ type: '🗣️ 面接', company: data.company, dateObj: d, dateStr: data.interviewDate.replace('T', ' ') }); }
-            
-            (data.internDates || []).forEach(intern => { 
-                if (intern.start && intern.status === '参加決定') { 
-                    const d = new Date(intern.start); 
-                    if (d >= now) events.push({ type: `💼 ｲﾝﾀｰﾝ ${intern.title?'('+intern.title+')':''}`, company: data.company, dateObj: d, dateStr: intern.start }); 
-                } 
-            });
-        });
+        const tbody = document.getElementById('dashboardScheduleBody'); tbody.innerHTML = ''; const now = new Date(); now.setHours(0,0,0,0);
+        const events = getAllScheduleEvents()
+            .filter(ev => ev.kind === 'es' || ev.kind === 'interview' || (ev.kind === 'intern' && ev.internStatus === '参加決定'))
+            .map(ev => {
+                if (ev.kind === 'es') return { type: '📄 ES締切', company: ev.company, dateObj: new Date(ev.start), dateStr: ev.start.replace('T', ' ') };
+                if (ev.kind === 'interview') return { type: '🗣️ 面接', company: ev.company, dateObj: new Date(ev.start), dateStr: ev.start.replace('T', ' ') };
+                return { type: `💼 ｲﾝﾀｰﾝ ${ev.internTitle ? '(' + ev.internTitle + ')' : ''}`, company: ev.company, dateObj: new Date(ev.start), dateStr: ev.start };
+            })
+            .filter(ev => ev.dateObj >= now);
         events.sort((a, b) => a.dateObj - b.dateObj); const topEvents = events.slice(0, 5);
         if (topEvents.length === 0) { tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-3">直近の予定はありません</td></tr>'; } else {
             topEvents.forEach(ev => {
@@ -783,20 +951,7 @@
             const col = document.createElement('div'); col.className = 'col-12 border-bottom pb-3 mb-2';
             let flowHtml = '';
             if (flow.length === 0) { flowHtml = '<span class="text-muted" style="font-size:0.75rem;">⚠️ 選考フローが未設定です（企業研究タブから設定可能）</span>'; } else {
-                flowHtml = '<div class="d-flex align-items-center overflow-auto pb-2 pt-1" style="white-space: nowrap;">';
-                flow.forEach((step, index) => {
-                    let circleClass = 'bg-light text-secondary'; 
-                    if (step.status === 'completed') circleClass = 'bg-success text-white'; 
-                    else if (step.status === 'current') circleClass = 'bg-primary text-white';
-                    else if (step.status === 'rejected') circleClass = 'status-rejected';
-
-                    flowHtml += `<div class="flow-step-container" style="margin: 0 4px;"><div class="flow-step-circle ${circleClass}" style="width: 26px; height: 26px; font-size: 0.7rem; box-shadow: none;">${step.status === 'completed' ? '✓' : (step.status==='rejected'?'×':index + 1)}</div><div class="flow-step-label text-truncate" style="width: 65px; font-size: 0.68rem; margin-top: 4px;" title="${step.name}">${step.name}</div></div>`;
-                    if (index < flow.length - 1) { 
-                        let nextStep = flow[index + 1]; 
-                        let lineClass = (step.status === 'completed' && (nextStep.status === 'completed' || nextStep.status === 'current')) ? 'bg-success' : 'bg-light'; 
-                        flowHtml += `<div class="flow-step-line ${lineClass}" style="width: 20px; height: 3px; margin: 0 -6px; transform: translateY(-10px);"></div>`; 
-                    }
-                }); flowHtml += '</div>';
+                flowHtml = `<div class="d-flex align-items-center overflow-auto pb-2 pt-1" style="white-space: nowrap;">${buildFlowProgressHtml(flow, true)}</div>`;
             }
             col.innerHTML = `<div class="d-flex justify-content-between align-items-center mb-1"><div class="fw-bold text-dark fs-6">🏢 ${item.company}</div><div class="text-secondary fw-bold" style="font-size:0.75rem;">達成数: <span class="text-success fs-6 fw-bold">${compCount}</span> / ${flow.length}</div></div><div class="ps-2">${flowHtml}</div>`;
             container.appendChild(col);
@@ -884,17 +1039,12 @@
                 eventsHtml += `<div class="tl-event-bar ${colorClass}" style="left: ${leftPct}%; width: ${Math.max(widthPct, 0.5)}%; top: ${topPx}px;" title="${name} (${startStr.split('T')[0]})">${name}</div>`;
             };
             
-            if (data.interviewDate) addEventBar('面接', data.interviewDate, data.interviewDate, 'tl-bar-interview');
-            if (data.sessionDate) addEventBar('説明会', data.sessionDate, data.sessionDate, 'tl-bar-info');
-            if (data.esDeadline) addEventBar('ES締切', data.esDeadline, data.esDeadline, 'tl-bar-es');
-            if (data.testDate) addEventBar('適性検査', data.testDate, data.testDate, 'tl-bar-test');
-            if (data.internDates && data.internDates.length > 0) {
-                data.internDates.forEach(idate => {
-                    const title = idate.title ? `ｲﾝﾀｰﾝ:${idate.title}` : 'ｲﾝﾀｰﾝ';
-                    const statusMark = idate.status === '参加決定' ? ' ✅' : (idate.status === '見送り' ? ' ❌' : '');
-                    addEventBar(title + statusMark, idate.start, idate.end || idate.start, 'tl-bar-intern');
-                });
-            }
+            const kindOrder = { interview: 0, session: 1, es: 2, test: 3, intern: 4 };
+            getCompanyEvents(data).sort((a, b) => kindOrder[a.kind] - kindOrder[b.kind]).forEach(ev => {
+                let label = EVENT_KIND_META[ev.kind].label;
+                if (ev.kind === 'intern') label = (ev.internTitle ? `ｲﾝﾀｰﾝ:${ev.internTitle}` : 'ｲﾝﾀｰﾝ') + internStatusMark(ev.internStatus);
+                addEventBar(label, ev.start, ev.end, EVENT_KIND_META[ev.kind].tlClass);
+            });
             
             const rowHeight = Math.max(45, 8 + (maxLevel + 1) * 28 + 8);
             rowHtml += `<td colspan="${weeksToShow}" class="timeline-grid" style="height: ${rowHeight}px;">${eventsHtml}</td></tr>`;
@@ -906,24 +1056,21 @@
 
     function initializeCalendar() {
         const el = document.getElementById('calendar'); if(!el) return;
-        calendar = new FullCalendar.Calendar(el, { initialView: 'dayGridMonth', locale: 'ja', height: window.innerWidth <= 768 ? 480 : 650, dayMaxEvents: true, headerToolbar: { left: 'prev,next today', center: 'title', right: window.innerWidth <= 768 ? 'dayGridMonth,timeGridWeek' : 'dayGridMonth,timeGridWeek,multiMonthFourMonth' }, views: { multiMonthFourMonth: { type: 'multiMonth', duration: { months: 4 }, buttonText: '4ヶ月' } }, eventClick: function(info) { editData(info.event.id.replace(/^(es_|interview_|intern_|test_)/, '').split('_')[0]); } });
+        calendar = new FullCalendar.Calendar(el, { initialView: 'dayGridMonth', locale: 'ja', height: window.innerWidth <= 768 ? 480 : 650, dayMaxEvents: true, headerToolbar: { left: 'prev,next today', center: 'title', right: window.innerWidth <= 768 ? 'dayGridMonth,timeGridWeek' : 'dayGridMonth,timeGridWeek,multiMonthFourMonth' }, views: { multiMonthFourMonth: { type: 'multiMonth', duration: { months: 4 }, buttonText: '4ヶ月' } }, eventClick: function(info) { editData(info.event.extendedProps.companyId); } });
         calendar.render(); renderCalendarEvents();
     }
     
     function renderCalendarEvents() {
         if (!calendar) return; calendar.removeAllEvents();
-        window.shukatsuData.forEach(item => {
-            if (item.sessionDate) calendar.addEvent({ id: `session_${item.id}`, title: `[説明会] ${item.company}`, start: item.sessionDate, backgroundColor: '#198754', borderColor: '#198754' });
-            if (item.esDeadline) calendar.addEvent({ id: `es_${item.id}`, title: `[ES締切] ${item.company}`, start: item.esDeadline, backgroundColor: '#fd7e14', borderColor: '#fd7e14' });
-            if (item.interviewDate) calendar.addEvent({ id: `interview_${item.id}`, title: `[面接] ${item.company}`, start: item.interviewDate, backgroundColor: '#dc3545', borderColor: '#dc3545' });
-            if (item.testDate) calendar.addEvent({ id: `test_${item.id}`, title: `[適性検査] ${item.company}`, start: item.testDate, backgroundColor: '#6f42c1', borderColor: '#6f42c1' });
-            (item.internDates || []).forEach((d, idx) => { 
-                if (d.start) { 
-                    let endObj = new Date(d.end || d.start); endObj.setDate(endObj.getDate() + 1); 
-                    const title = `ｲﾝﾀｰﾝ: ${item.company}` + (d.status === '参加決定' ? ' ✅' : (d.status === '見送り' ? ' ❌' : ''));
-                    calendar.addEvent({ id: `intern_${item.id}_${idx}`, title: title, start: d.start, end: endObj.toISOString().split('T')[0], backgroundColor: '#0d6efd', borderColor: '#0d6efd', allDay: true }); 
-                } 
-            });
+        getAllScheduleEvents().forEach(ev => {
+            const meta = EVENT_KIND_META[ev.kind];
+            if (ev.kind === 'intern') {
+                let endObj = new Date(ev.end); endObj.setDate(endObj.getDate() + 1);
+                const title = `ｲﾝﾀｰﾝ: ${ev.company}` + internStatusMark(ev.internStatus);
+                calendar.addEvent({ id: `intern_${ev.companyId}_${ev.internIndex}`, title: title, start: ev.start, end: endObj.toISOString().split('T')[0], backgroundColor: meta.color, borderColor: meta.color, allDay: true, extendedProps: { companyId: ev.companyId } });
+            } else {
+                calendar.addEvent({ id: `${ev.kind}_${ev.companyId}`, title: `[${meta.label}] ${ev.company}`, start: ev.start, backgroundColor: meta.color, borderColor: meta.color, extendedProps: { companyId: ev.companyId } });
+            }
         });
     }
 
@@ -974,53 +1121,32 @@
     };
 
     window.renderModalSelectionFlow = function() {
-        const editor = document.getElementById('modalSelectionFlowEditor'); const progressBar = document.getElementById('modalSelectionFlowProgressBar'); editor.innerHTML = ''; progressBar.innerHTML = '';
-        if (tempSelectionFlow.length === 0) { progressBar.innerHTML = '<span class="text-muted fw-bold ms-2" style="font-size:0.85rem;">追加ボタンからステップを登録して下さい</span>'; }
-
-        tempSelectionFlow.forEach((s, i) => { if(!s.id) s.id = 'step_o_' + i + '_' + Date.now(); if(s.parentId === undefined) s.parentId = null; });
-
-        function drawEditor(parentId, depth) {
-            const children = tempSelectionFlow.filter(s => s.parentId === parentId);
-            children.forEach((step, index) => {
-                const row = document.createElement('div'); row.className = `d-flex align-items-center mb-2 gap-2 bg-white p-2 rounded shadow-sm border border-light ${depth > 0 ? 'flow-step-branch' : ''}`;
-                let statusClass = 'bg-light text-secondary'; if(step.status === 'completed') statusClass = 'bg-success text-white'; if(step.status === 'current') statusClass = 'bg-primary text-white'; if(step.status === 'rejected') statusClass = 'status-rejected';
-                
-                row.innerHTML = `<div class="fw-bold text-primary" style="min-width: 20px;">${depth===0 ? index+1+'.' : ''}</div><div class="fw-bold flex-grow-1 text-truncate">${step.name}</div><select class="form-select form-select-sm w-auto fw-bold ${statusClass}" onchange="updateModalFlowStatus('${step.id}', this.value)"><option value="not_started" ${step.status === 'not_started' ? 'selected' : ''} class="text-dark bg-white">未着手</option><option value="current" ${step.status === 'current' ? 'selected' : ''} class="text-dark bg-white">進行中</option><option value="completed" ${step.status === 'completed' ? 'selected' : ''} class="text-dark bg-white">完了</option><option value="rejected" ${step.status === 'rejected' ? 'selected' : ''} class="status-rejected">落選</option></select>${step.status === 'rejected' ? `<button type="button" class="btn btn-outline-danger btn-branch fw-bold" onclick="addModalBranchStep('${step.id}')">↳ 枝分かれ</button>` : ''}<button type="button" class="btn btn-sm btn-outline-danger border-0" onclick="removeModalFlowStep('${step.id}')">✖</button>`;
-                editor.appendChild(row);
-                drawEditor(step.id, depth + 1);
-            });
-        }
-        drawEditor(null, 0);
-
-        tempSelectionFlow.forEach((step, index) => {
-            const isLast = index === tempSelectionFlow.length - 1;
-            const cClass = step.status === 'completed' ? 'bg-success text-white border-success' : (step.status === 'current' ? 'bg-primary text-white border-info border-3' : (step.status === 'rejected' ? 'status-rejected' : 'bg-secondary text-white border-secondary'));
-            let lClass = 'bg-secondary'; if (step.status === 'completed') { if (!isLast && (tempSelectionFlow[index+1].status === 'completed' || tempSelectionFlow[index+1].status === 'current')) { lClass = 'bg-success'; } else { lClass = 'bg-primary opacity-50'; } }
-            const stepContainer = document.createElement('div'); stepContainer.className = 'flow-step-wrapper'; stepContainer.innerHTML = `<div class="flow-step-container"><div class="flow-step-circle ${cClass}">${step.status === 'completed' ? '✓' : (step.status==='rejected'?'×':index + 1)}</div><div class="flow-step-label">${step.name}</div></div>${!isLast ? `<div class="flow-step-line ${lClass}"></div>` : ''}`; progressBar.appendChild(stepContainer);
-        });
+        renderFlowUI(tempSelectionFlow, 'modalSelectionFlowEditor', 'modalSelectionFlowProgressBar', { updateStatus: 'updateModalFlowStatus', addBranch: 'addModalBranchStep', remove: 'removeModalFlowStep' });
     };
     
-    window.addModalSelectionFlowStep = function() { const input = document.getElementById('modalNewFlowStepName'); const name = input.value.trim(); if (!name) return; tempSelectionFlow.push({ id: 'step_' + Date.now(), name: name, status: 'not_started', parentId: null }); input.value = ''; renderModalSelectionFlow(); };
-    window.addModalBranchStep = function(parentId) { tempSelectionFlow.push({ id: 'step_' + Date.now(), name: '【別ルート】', status: 'not_started', parentId: parentId }); renderModalSelectionFlow(); };
-    window.updateModalFlowStatus = function(stepId, status) { const step = tempSelectionFlow.find(s => s.id === stepId); if(step) step.status = status; renderModalSelectionFlow(); };
-    window.removeModalFlowStep = function(stepId) { 
-        if(!confirm('このステップを削除しますか？')) return; 
-        let idsToDelete = [stepId];
-        function findChildren(pid) { tempSelectionFlow.forEach(s => { if(s.parentId === pid) { idsToDelete.push(s.id); findChildren(s.id); } }); }
-        findChildren(stepId);
-        tempSelectionFlow = tempSelectionFlow.filter(s => !idsToDelete.includes(s.id));
-        renderModalSelectionFlow(); 
+    window.addModalSelectionFlowStep = function() { const input = document.getElementById('modalNewFlowStepName'); const name = input.value.trim(); if (!name) return; pushFlowStep(tempSelectionFlow, name, null); input.value = ''; renderModalSelectionFlow(); };
+    window.addModalBranchStep = function(parentId) { pushFlowStep(tempSelectionFlow, '【別ルート】', parentId); renderModalSelectionFlow(); };
+    window.updateModalFlowStatus = function(stepId, status) { setFlowStepStatus(tempSelectionFlow, stepId, status); renderModalSelectionFlow(); };
+    window.removeModalFlowStep = function(stepId) {
+        if (!confirm('このステップを削除しますか？')) return;
+        tempSelectionFlow = removeFlowStepById(tempSelectionFlow, stepId);
+        renderModalSelectionFlow();
     };
 
-    window.updateModalFlowTemplateSelect = function() {
-        const select = document.getElementById('modalFlowTemplateSelect'); if (!select) return; const currentVal = select.value; select.innerHTML = '<option value="">-- 選択 --</option>'; window.appSettings.flowTemplates = window.appSettings.flowTemplates || {};
-        Object.keys(window.appSettings.flowTemplates).forEach(name => { const opt = document.createElement('option'); opt.value = name; opt.innerText = name; select.appendChild(opt); }); select.value = currentVal;
-    };
+    window.updateModalFlowTemplateSelect = function() { refreshFlowTemplateSelect('modalFlowTemplateSelect'); };
 
     window.saveModalAsFlowTemplate = async function() {
-        if (tempSelectionFlow.length === 0) { alert('保存するフローが空です。'); return; } const templateName = prompt('このフローに名前をつけて保存します:'); if (!templateName || templateName.trim() === '') return;
-        window.appSettings.flowTemplates = window.appSettings.flowTemplates || {}; window.appSettings.flowTemplates[templateName.trim()] = tempSelectionFlow.map(step => ({ ...step, status: 'not_started' }));
-        window.updateModalFlowTemplateSelect(); if(window.updateFlowTemplateSelect) window.updateFlowTemplateSelect(); await window.saveToServer(); alert(`テンプレート「${templateName}」を保存しました！`);
+        const name = saveFlowAsTemplateShared(tempSelectionFlow, 'このフローに名前をつけて保存します:'); if (!name) return;
+        window.updateModalFlowTemplateSelect(); if (window.updateFlowTemplateSelect) window.updateFlowTemplateSelect(); await window.saveToServer(); alert(`テンプレート「${name}」を保存しました！`);
+    };
+
+    // ▼ 不具合修正：旧コードではモーダル内「型を適用」ボタンが呼び出す関数
+    //   (applyModalFlowTemplate) が定義されておらず、押しても何も起きませんでした。
+    //   研究タブ版と同じロジックを共通関数化した上で実装しています。
+    window.applyModalFlowTemplate = function() {
+        const result = applyFlowTemplateShared(tempSelectionFlow, 'modalFlowTemplateSelect'); if (!result) return;
+        tempSelectionFlow = result.newFlow;
+        renderModalSelectionFlow(); alert(`「${result.templateName}」を展開しました。`);
     };
 
     window.saveData = async function(isSkip = false) {
@@ -1085,75 +1211,42 @@
 
     /* 企業研究タブ（詳細・企業研究） 選考フローロジック */
     function loadResearchView() {
-        const detailArea = document.getElementById('researchDetailArea'); const emptyMsg = document.getElementById('researchEmptyMessage'); const rightCol = document.querySelector('#companyDetailArea .col-md-9');
-        if (detailArea && rightCol && emptyMsg && !rightCol.contains(detailArea)) { rightCol.insertBefore(detailArea, emptyMsg); }
-        const list = document.getElementById('researchCompanyList'); list.innerHTML = '';
-        window.shukatsuData.forEach(item => {
-            const btn = document.createElement('button'); btn.className = `list-group-item list-group-item-action fw-bold d-flex justify-content-between align-items-center ${item.id === currentResearchCompanyId ? 'active' : ''}`;
-            const isTarget = item.id === currentResearchCompanyId; const arrowText = window.innerWidth <= 768 ? (isTarget ? '▲' : '▼') : ''; btn.innerHTML = `<span>${item.company}</span><span class="research-arrow">${arrowText}</span>`;
-            btn.onclick = () => { 
-                if (currentResearchCompanyId === item.id && window.innerWidth <= 768) { currentResearchCompanyId = null; document.getElementById('researchDetailArea').style.display = 'none'; document.getElementById('researchEmptyMessage').style.display = 'block'; btn.classList.remove('active'); if(btn.querySelector('.research-arrow')) btn.querySelector('.research-arrow').innerText = '▼'; } else { currentResearchCompanyId = item.id; Array.from(list.children).forEach(c => { c.classList.remove('active'); const a = c.querySelector('.research-arrow'); if(a) a.innerText = '▼'; }); btn.classList.add('active'); const a = btn.querySelector('.research-arrow'); if(a) a.innerText = '▲'; selectResearchCompany(item.id); }
-            }; list.appendChild(btn);
-        });
-        if (currentResearchCompanyId && window.shukatsuData.some(i=>i.id===currentResearchCompanyId)) { selectResearchCompany(currentResearchCompanyId); } else { if(detailArea) detailArea.style.display = 'none'; if(emptyMsg) emptyMsg.style.display = 'block'; }
+        renderCompanySidebarList({ listElId: 'researchCompanyList', detailAreaId: 'researchDetailArea', emptyMsgId: 'researchEmptyMessage', containerSelector: '#companyDetailArea .col-md-9', arrowClass: 'research-arrow', getCurrentId: () => currentResearchCompanyId, setCurrentId: v => { currentResearchCompanyId = v; }, onSelect: selectResearchCompany });
     }
     
     function renderSelectionFlow() {
         const data = window.shukatsuData.find(item => item.id === currentResearchCompanyId); if (!data) return;
         const flow = (data.companyResearch && data.companyResearch.selectionFlow) ? data.companyResearch.selectionFlow : [];
-        const editor = document.getElementById('selectionFlowEditor'); const progressBar = document.getElementById('selectionFlowProgressBar');
-        editor.innerHTML = ''; progressBar.innerHTML = '';
-
-        if (flow.length === 0) { progressBar.innerHTML = '<span class="text-muted fw-bold ms-2" style="font-size:0.85rem;">追加ボタンからステップを登録して下さい</span>'; }
-
-        flow.forEach((s, i) => { if(!s.id) s.id = 'step_o_' + i + '_' + Date.now(); if(s.parentId === undefined) s.parentId = null; });
-
-        function drawEditor(parentId, depth) {
-            const children = flow.filter(s => s.parentId === parentId);
-            children.forEach((step, index) => {
-                const row = document.createElement('div'); row.className = `d-flex align-items-center mb-2 gap-2 bg-white p-2 rounded shadow-sm border border-light ${depth > 0 ? 'flow-step-branch' : ''}`;
-                let statusClass = 'bg-light text-secondary'; if(step.status === 'completed') statusClass = 'bg-success text-white'; if(step.status === 'current') statusClass = 'bg-primary text-white'; if(step.status === 'rejected') statusClass = 'status-rejected';
-                
-                row.innerHTML = `<div class="fw-bold text-primary" style="min-width: 20px;">${depth===0 ? index+1+'.' : ''}</div><div class="fw-bold flex-grow-1 text-truncate">${step.name}</div><select class="form-select form-select-sm w-auto fw-bold ${statusClass}" onchange="updateFlowStatus('${step.id}', this.value)"><option value="not_started" ${step.status === 'not_started' ? 'selected' : ''} class="text-dark bg-white">未着手</option><option value="current" ${step.status === 'current' ? 'selected' : ''} class="text-dark bg-white">進行中</option><option value="completed" ${step.status === 'completed' ? 'selected' : ''} class="text-dark bg-white">完了</option><option value="rejected" ${step.status === 'rejected' ? 'selected' : ''} class="status-rejected">落選</option></select>${step.status === 'rejected' ? `<button class="btn btn-outline-danger btn-branch fw-bold" onclick="addBranchStep('${step.id}')">↳ 枝分かれ</button>` : ''}<button class="btn btn-sm btn-outline-danger border-0" onclick="removeFlowStep('${step.id}')">✖</button>`;
-                editor.appendChild(row);
-                drawEditor(step.id, depth + 1);
-            });
-        }
-        drawEditor(null, 0);
-
-        flow.forEach((step, index) => {
-            const isLast = index === flow.length - 1;
-            const cClass = step.status === 'completed' ? 'bg-success text-white border-success' : (step.status === 'current' ? 'bg-primary text-white border-info border-3' : (step.status === 'rejected' ? 'status-rejected' : 'bg-secondary text-white border-secondary'));
-            let lClass = 'bg-secondary'; if (step.status === 'completed') { if (!isLast && (flow[index+1].status === 'completed' || flow[index+1].status === 'current')) { lClass = 'bg-success'; } else { lClass = 'bg-primary opacity-50'; } }
-            const stepContainer = document.createElement('div'); stepContainer.className = 'flow-step-wrapper'; stepContainer.innerHTML = `<div class="flow-step-container"><div class="flow-step-circle ${cClass}">${step.status === 'completed' ? '✓' : (step.status==='rejected'?'×':index + 1)}</div><div class="flow-step-label">${step.name}</div></div>${!isLast ? `<div class="flow-step-line ${lClass}"></div>` : ''}`; progressBar.appendChild(stepContainer);
-        });
+        renderFlowUI(flow, 'selectionFlowEditor', 'selectionFlowProgressBar', { updateStatus: 'updateFlowStatus', addBranch: 'addBranchStep', remove: 'removeFlowStep' });
     }
 
-    window.addSelectionFlowStep = async function() { const input = document.getElementById('newFlowStepName'); const name = input.value.trim(); if (!name) return; const data = window.shukatsuData.find(item => item.id === currentResearchCompanyId); if (!data) return; if (!data.companyResearch) data.companyResearch = {}; if (!data.companyResearch.selectionFlow) data.companyResearch.selectionFlow = []; data.companyResearch.selectionFlow.push({ id: 'step_' + Date.now(), name: name, status: 'not_started', parentId: null }); input.value = ''; renderSelectionFlow(); await window.saveToServer(); };
-    window.addBranchStep = async function(parentId) { const data = window.shukatsuData.find(item => item.id === currentResearchCompanyId); data.companyResearch.selectionFlow.push({ id: 'step_' + Date.now(), name: '【別ルート】', status: 'not_started', parentId: parentId }); renderSelectionFlow(); await window.saveToServer(); };
-    window.updateFlowStatus = async function(stepId, status) { const data = window.shukatsuData.find(item => item.id === currentResearchCompanyId); const step = data.companyResearch.selectionFlow.find(s => s.id === stepId); if(step) step.status = status; renderSelectionFlow(); await window.saveToServer(); };
-    window.removeFlowStep = async function(stepId) { if(!confirm('このステップを削除しますか？')) return; const data = window.shukatsuData.find(item => item.id === currentResearchCompanyId); let idsToDelete = [stepId]; function findChildren(pid) { data.companyResearch.selectionFlow.forEach(s => { if(s.parentId === pid) { idsToDelete.push(s.id); findChildren(s.id); } }); } findChildren(stepId); data.companyResearch.selectionFlow = data.companyResearch.selectionFlow.filter(s => !idsToDelete.includes(s.id)); renderSelectionFlow(); await window.saveToServer(); };
-
-    window.updateFlowTemplateSelect = function() {
-        const select = document.getElementById('flowTemplateSelect'); if (!select) return; const currentVal = select.value; select.innerHTML = '<option value="">-- 選択 --</option>'; window.appSettings.flowTemplates = window.appSettings.flowTemplates || {};
-        Object.keys(window.appSettings.flowTemplates).forEach(name => { const opt = document.createElement('option'); opt.value = name; opt.innerText = name; select.appendChild(opt); }); select.value = currentVal;
+    window.addSelectionFlowStep = async function() { const input = document.getElementById('newFlowStepName'); const name = input.value.trim(); if (!name) return; const data = window.shukatsuData.find(item => item.id === currentResearchCompanyId); if (!data) return; if (!data.companyResearch) data.companyResearch = {}; if (!data.companyResearch.selectionFlow) data.companyResearch.selectionFlow = []; pushFlowStep(data.companyResearch.selectionFlow, name, null); input.value = ''; renderSelectionFlow(); await window.saveToServer(); };
+    window.addBranchStep = async function(parentId) { const data = window.shukatsuData.find(item => item.id === currentResearchCompanyId); pushFlowStep(data.companyResearch.selectionFlow, '【別ルート】', parentId); renderSelectionFlow(); await window.saveToServer(); };
+    window.updateFlowStatus = async function(stepId, status) { const data = window.shukatsuData.find(item => item.id === currentResearchCompanyId); setFlowStepStatus(data.companyResearch.selectionFlow, stepId, status); renderSelectionFlow(); await window.saveToServer(); };
+    window.removeFlowStep = async function(stepId) {
+        if (!confirm('このステップを削除しますか？')) return;
+        const data = window.shukatsuData.find(item => item.id === currentResearchCompanyId);
+        data.companyResearch.selectionFlow = removeFlowStepById(data.companyResearch.selectionFlow, stepId);
+        renderSelectionFlow(); await window.saveToServer();
     };
+
+    window.updateFlowTemplateSelect = function() { refreshFlowTemplateSelect('flowTemplateSelect'); };
+
     window.saveAsFlowTemplate = async function() {
         const data = window.shukatsuData.find(item => item.id === currentResearchCompanyId); if (!data) { alert('企業を選択してください。'); return; }
-        const flow = (data.companyResearch && data.companyResearch.selectionFlow) ? data.companyResearch.selectionFlow : []; if (flow.length === 0) { alert('保存するフローが空です。'); return; }
-        const templateName = prompt('この選考フローに名前をつけて保存します:'); if (!templateName || templateName.trim() === '') return;
-        window.appSettings.flowTemplates = window.appSettings.flowTemplates || {}; window.appSettings.flowTemplates[templateName.trim()] = flow.map(step => ({ ...step, status: 'not_started' }));
-        window.updateFlowTemplateSelect(); if(window.updateModalFlowTemplateSelect) window.updateModalFlowTemplateSelect(); await window.saveToServer(); alert(`テンプレート「${templateName}」を保存しました！`);
+        const flow = (data.companyResearch && data.companyResearch.selectionFlow) ? data.companyResearch.selectionFlow : [];
+        const name = saveFlowAsTemplateShared(flow, 'この選考フローに名前をつけて保存します:'); if (!name) return;
+        window.updateFlowTemplateSelect(); if(window.updateModalFlowTemplateSelect) window.updateModalFlowTemplateSelect(); await window.saveToServer(); alert(`テンプレート「${name}」を保存しました！`);
     };
     
     // 選考フロー型の適用
     window.applyFlowTemplate = async function() {
         const select = document.getElementById('flowTemplateSelect'); if (!select || !select.value) { alert('適用する型を選択してください。'); return; }
         const data = window.shukatsuData.find(item => item.id === currentResearchCompanyId); if (!data) { alert('企業を選択してください。'); return; }
-        if (data.companyResearch && data.companyResearch.selectionFlow && data.companyResearch.selectionFlow.length > 0) { if (!confirm('現在のフローが上書きされます。よろしいですか？')) return; }
-        const templateFlow = window.appSettings.flowTemplates[select.value]; if (!templateFlow) return;
-        data.companyResearch = data.companyResearch || {}; data.companyResearch.selectionFlow = JSON.parse(JSON.stringify(templateFlow)); if (data.companyResearch.selectionFlow.length > 0) data.companyResearch.selectionFlow[0].status = 'current';
-        renderSelectionFlow(); if(window.renderDashboardCompanyFlows) window.renderDashboardCompanyFlows(); await window.saveToServer(); alert(`「${select.value}」を展開しました。`);
+        const currentFlow = (data.companyResearch && data.companyResearch.selectionFlow) ? data.companyResearch.selectionFlow : [];
+        const result = applyFlowTemplateShared(currentFlow, 'flowTemplateSelect'); if (!result) return;
+        data.companyResearch = data.companyResearch || {}; data.companyResearch.selectionFlow = result.newFlow;
+        renderSelectionFlow(); if(window.renderDashboardCompanyFlows) window.renderDashboardCompanyFlows(); await window.saveToServer(); alert(`「${result.templateName}」を展開しました。`);
     };
 
     window.selectResearchCompany = function(id) {
@@ -1161,22 +1254,12 @@
         if (data) {
             document.getElementById('detCompanyInput').value = data.company || ''; 
             document.getElementById('researchTargetId').value = data.id;
-            
-            document.getElementById('detEsDeadlineInput').value = data.esDeadline || '';
-            document.getElementById('detTestDateInput').value = data.testDate || '';
-            document.getElementById('detInterviewDateInput').value = data.interviewDate || '';
-            document.getElementById('detSessionDateInput').value = data.sessionDate || '';
-            document.getElementById('detLocationInput').value = data.location || '';
-            document.getElementById('detMypageUrlInput').value = data.mypageUrl || '';
-            document.getElementById('detMypageIdInput').value = data.mypageId || '';
-            document.getElementById('detMypagePassInput').value = data.mypagePass || '';
+            fillFields(RESEARCH_BASIC_FIELDS, data);
+            fillFields(RESEARCH_INFO_FIELDS, data.companyResearch || {});
 
-            const res = data.companyResearch || {};
-            document.getElementById('resFounderInput').value = res.founder || ''; document.getElementById('resIndustryInput').value = res.industry || ''; document.getElementById('resRivalsInput').value = res.rivals || ''; document.getElementById('resStrengthsInput').value = res.strengths || ''; document.getElementById('resSalaryInput').value = res.salary || ''; document.getElementById('resVacationInput').value = res.vacation || ''; document.getElementById('resBonusInput').value = res.bonus || '';
-            
             renderSelectionFlow(); 
             const detailArea = document.getElementById('researchDetailArea'); detailArea.style.display = 'block'; document.getElementById('researchEmptyMessage').style.display = 'none';
-            if (window.innerWidth <= 768) { const activeBtn = Array.from(document.getElementById('researchCompanyList').children).find(btn => btn.classList.contains('active')); if (activeBtn) activeBtn.after(detailArea); detailArea.classList.add('mb-4', 'p-3'); } else { document.querySelector('#companyDetailArea .col-md-9').insertBefore(detailArea, document.getElementById('researchEmptyMessage')); detailArea.classList.remove('mb-4', 'p-3'); }
+            repositionDetailArea('researchCompanyList', detailArea, '#companyDetailArea .col-md-9', document.getElementById('researchEmptyMessage'));
             if (window.updateFlowTemplateSelect) window.updateFlowTemplateSelect();
         }
     };
@@ -1185,16 +1268,8 @@
         const id = document.getElementById('researchTargetId').value; const data = window.shukatsuData.find(item => item.id === id); if (!data) return;
         
         data.company = document.getElementById('detCompanyInput').value || '名称未設定';
-        data.esDeadline = document.getElementById('detEsDeadlineInput').value;
-        data.testDate = document.getElementById('detTestDateInput').value;
-        data.interviewDate = document.getElementById('detInterviewDateInput').value;
-        data.sessionDate = document.getElementById('detSessionDateInput').value;
-        data.location = document.getElementById('detLocationInput').value;
-        data.mypageUrl = document.getElementById('detMypageUrlInput').value;
-        data.mypageId = document.getElementById('detMypageIdInput').value;
-        data.mypagePass = document.getElementById('detMypagePassInput').value;
-
-        data.companyResearch = { ...(data.companyResearch || {}), founder: document.getElementById('resFounderInput').value, industry: document.getElementById('resIndustryInput').value, rivals: document.getElementById('resRivalsInput').value, strengths: document.getElementById('resStrengthsInput').value, salary: document.getElementById('resSalaryInput').value, vacation: document.getElementById('resVacationInput').value, bonus: document.getElementById('resBonusInput').value };
+        Object.assign(data, readFields(RESEARCH_BASIC_FIELDS));
+        data.companyResearch = { ...(data.companyResearch || {}), ...readFields(RESEARCH_INFO_FIELDS) };
         
         await window.saveToServer(); 
         alert('企業情報と研究内容を保存しました！');
@@ -1202,7 +1277,9 @@
     };
 
     // ★ ES管理ロジック（アコーディオン・自動リサイズ・コピー・AI添削対応） ★
-    function loadEsView() { const detailArea = document.getElementById('esDetailArea'); const emptyMsg = document.getElementById('esEmptyMessage'); const rightCol = document.querySelector('#es-view .col-md-9'); if (detailArea && rightCol && emptyMsg && !rightCol.contains(detailArea)) { rightCol.insertBefore(detailArea, emptyMsg); } const list = document.getElementById('esCompanyList'); list.innerHTML = ''; window.shukatsuData.forEach(item => { const btn = document.createElement('button'); btn.className = `list-group-item list-group-item-action fw-bold d-flex justify-content-between align-items-center ${item.id === currentEsCompanyId ? 'active' : ''}`; const isTarget = item.id === currentEsCompanyId; const arrowText = window.innerWidth <= 768 ? (isTarget ? '▲' : '▼') : ''; btn.innerHTML = `<span>${item.company}</span><span class="es-arrow">${arrowText}</span>`; btn.onclick = () => { if (currentEsCompanyId === item.id && window.innerWidth <= 768) { currentEsCompanyId = null; document.getElementById('esDetailArea').style.display = 'none'; document.getElementById('esEmptyMessage').style.display = 'block'; btn.classList.remove('active'); if(btn.querySelector('.es-arrow')) btn.querySelector('.es-arrow').innerText = '▼'; } else { currentEsCompanyId = item.id; Array.from(list.children).forEach(c => { c.classList.remove('active'); const a = c.querySelector('.es-arrow'); if(a) a.innerText = '▼'; }); btn.classList.add('active'); const a = btn.querySelector('.es-arrow'); if(a) a.innerText = '▲'; selectEsCompany(item.id); } }; list.appendChild(btn); }); if (currentEsCompanyId && window.shukatsuData.some(i=>i.id===currentEsCompanyId)) { selectEsCompany(currentEsCompanyId); } else { if(detailArea) detailArea.style.display = 'none'; if(emptyMsg) emptyMsg.style.display = 'block'; } }
+    function loadEsView() {
+        renderCompanySidebarList({ listElId: 'esCompanyList', detailAreaId: 'esDetailArea', emptyMsgId: 'esEmptyMessage', containerSelector: '#es-view .col-md-9', arrowClass: 'es-arrow', getCurrentId: () => currentEsCompanyId, setCurrentId: v => { currentEsCompanyId = v; }, onSelect: selectEsCompany });
+    }
     
     // ES行の作成時にAI添削ボタンと結果エリアを追加
     window.addEsQuestionRow = function(qData = { id: '', category: '', question: '', finalAnswer: '', memoAnswer: '' }) { 
@@ -1294,8 +1371,10 @@ ${answerText}
 3. **✨ 修正案（例文）**（文字数は元の回答の長さを目安に調整）`;
 
         try {
-            // 現在推奨されている安定版モデル 1.5-flash を利用します
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
+            // ▼ 修正：gemini-pro は廃止され404エラーになるモデル名でした（コメントとも不一致）。
+            //   Googleが公開している「常に最新の高速モデルを指すエイリアス」gemini-flash-latest
+            //   を使うことで、今後モデルが更新されてもコードを書き換えずに済むようにしています。
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -1352,7 +1431,7 @@ ${answerText}
         window.copyToClipboard(btn, textarea.value);
     };
 
-    window.selectEsCompany = function(id) { currentEsCompanyId = id; const data = window.shukatsuData.find(item => item.id === id); if (data) { document.getElementById('esTargetCompany').innerText = data.company; document.getElementById('esTargetId').value = data.id; const container = document.getElementById('esQuestionsContainer'); container.innerHTML = ''; const questions = data.esQuestions || []; questions.forEach(q => addEsQuestionRow(q)); if(questions.length === 0) addEsQuestionRow(); const detailArea = document.getElementById('esDetailArea'); detailArea.style.display = 'block'; document.getElementById('esEmptyMessage').style.display = 'none'; if (window.innerWidth <= 768) { const activeBtn = Array.from(document.getElementById('esCompanyList').children).find(btn => btn.classList.contains('active')); if (activeBtn) activeBtn.after(detailArea); detailArea.classList.add('mb-4', 'p-3'); } else { document.querySelector('#es-view .col-md-9').insertBefore(detailArea, document.getElementById('esEmptyMessage')); detailArea.classList.remove('mb-4', 'p-3'); } setTimeout(() => { container.querySelectorAll('.es-q-final').forEach(ta => window.updateCharCountAndResize(ta)); }, 50); } };
+    window.selectEsCompany = function(id) { currentEsCompanyId = id; const data = window.shukatsuData.find(item => item.id === id); if (data) { document.getElementById('esTargetCompany').innerText = data.company; document.getElementById('esTargetId').value = data.id; const container = document.getElementById('esQuestionsContainer'); container.innerHTML = ''; const questions = data.esQuestions || []; questions.forEach(q => addEsQuestionRow(q)); if(questions.length === 0) addEsQuestionRow(); const detailArea = document.getElementById('esDetailArea'); detailArea.style.display = 'block'; document.getElementById('esEmptyMessage').style.display = 'none'; repositionDetailArea('esCompanyList', detailArea, '#es-view .col-md-9', document.getElementById('esEmptyMessage')); setTimeout(() => { container.querySelectorAll('.es-q-final').forEach(ta => window.updateCharCountAndResize(ta)); }, 50); } };
     window.saveEsDetails = async function() { const id = document.getElementById('esTargetId').value; const data = window.shukatsuData.find(item => item.id === id); if (!data) return; const qs = []; document.querySelectorAll('.es-question-card').forEach(card => { qs.push({ id: card.dataset.qId, category: card.querySelector('.es-q-category').value, question: card.querySelector('.es-q-text').value, memoAnswer: card.querySelector('.es-q-memo').value, finalAnswer: card.querySelector('.es-q-final').value }); }); data.esQuestions = qs; await window.saveToServer(); alert('ES内容を保存しました！'); };
 
     window.copyToClipboard = function(btn, text) {
@@ -1395,7 +1474,9 @@ ${answerText}
     };
 
     // 面接対策ロジック
-    function loadInterviewView() { const detailArea = document.getElementById('interviewDetailArea'); const emptyMsg = document.getElementById('interviewEmptyMessage'); const rightCol = document.querySelector('#interview-view .col-md-9'); if (detailArea && rightCol && emptyMsg && !rightCol.contains(detailArea)) { rightCol.insertBefore(detailArea, emptyMsg); } const list = document.getElementById('interviewCompanyList'); list.innerHTML = ''; window.shukatsuData.forEach(item => { const btn = document.createElement('button'); btn.className = `list-group-item list-group-item-action fw-bold d-flex justify-content-between align-items-center ${item.id === currentInterviewCompanyId ? 'active' : ''}`; const isTarget = item.id === currentInterviewCompanyId; const arrowText = window.innerWidth <= 768 ? (isTarget ? '▲' : '▼') : ''; btn.innerHTML = `<span>${item.company}</span><span class="interview-arrow">${arrowText}</span>`; btn.onclick = () => { if (currentInterviewCompanyId === item.id && window.innerWidth <= 768) { currentInterviewCompanyId = null; document.getElementById('interviewDetailArea').style.display = 'none'; document.getElementById('interviewEmptyMessage').style.display = 'block'; btn.classList.remove('active'); if(btn.querySelector('.interview-arrow')) btn.querySelector('.interview-arrow').innerText = '▼'; } else { currentInterviewCompanyId = item.id; Array.from(list.children).forEach(c => { c.classList.remove('active'); const a = c.querySelector('.interview-arrow'); if(a) a.innerText = '▼'; }); btn.classList.add('active'); const a = btn.querySelector('.interview-arrow'); if(a) a.innerText = '▲'; selectInterviewCompany(item.id); } }; list.appendChild(btn); }); if (currentInterviewCompanyId && window.shukatsuData.some(i=>i.id===currentInterviewCompanyId)) { selectInterviewCompany(currentInterviewCompanyId); } else { if(detailArea) detailArea.style.display = 'none'; if(emptyMsg) emptyMsg.style.display = 'block'; } }
+    function loadInterviewView() {
+        renderCompanySidebarList({ listElId: 'interviewCompanyList', detailAreaId: 'interviewDetailArea', emptyMsgId: 'interviewEmptyMessage', containerSelector: '#interview-view .col-md-9', arrowClass: 'interview-arrow', getCurrentId: () => currentInterviewCompanyId, setCurrentId: v => { currentInterviewCompanyId = v; }, onSelect: selectInterviewCompany });
+    }
     
     window.selectInterviewCompany = function(id) { 
         currentInterviewCompanyId = id; const data = window.shukatsuData.find(item => item.id === id); 
@@ -1441,7 +1522,7 @@ ${answerText}
                 refEsArea.innerHTML = esHtml;
             }
 
-            const detailArea = document.getElementById('interviewDetailArea'); detailArea.style.display = 'block'; document.getElementById('interviewEmptyMessage').style.display = 'none'; if (window.innerWidth <= 768) { const activeBtn = Array.from(document.getElementById('interviewCompanyList').children).find(btn => btn.classList.contains('active')); if (activeBtn) activeBtn.after(detailArea); detailArea.classList.add('mb-4', 'p-3'); } else { document.querySelector('#interview-view .col-md-9').insertBefore(detailArea, document.getElementById('interviewEmptyMessage')); detailArea.classList.remove('mb-4', 'p-3'); } 
+            const detailArea = document.getElementById('interviewDetailArea'); detailArea.style.display = 'block'; document.getElementById('interviewEmptyMessage').style.display = 'none'; repositionDetailArea('interviewCompanyList', detailArea, '#interview-view .col-md-9', document.getElementById('interviewEmptyMessage'));
         } 
     };
     
