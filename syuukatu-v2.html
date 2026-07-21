@@ -59,6 +59,7 @@
         .fc .fc-col-header-cell-cushion { font-size: 0.8rem !important; padding: 4px 0 !important; text-decoration: none !important; color: #495057; }
         .fc-event { padding: 1px 3px !important; font-size: 0.72rem !important; border-radius: 3px !important; margin-bottom: 2px !important; border: none !important; cursor: pointer; }
         .fc-event-title { font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .fc-event.fc-event-faded { opacity: 0.4 !important; }
         .fc-daygrid-more-link { font-size: 0.7rem !important; font-weight: bold; color: #0d6efd !important; text-decoration: none !important; padding-left: 2px; }
 
         .memo-clickable { cursor: pointer; color: #6c757d; max-width: 150px; display: inline-block; }
@@ -796,7 +797,15 @@
         test:      { label: '適性検査', color: '#6f42c1', tlClass: 'tl-bar-test' },
         intern:    { label: 'ｲﾝﾀｰﾝ',    color: '#0d6efd', tlClass: 'tl-bar-intern' }
     };
-    function internStatusMark(status) { return status === '参加決定' ? ' ✅' : (status === '見送り' ? ' ❌' : ''); }
+    // インターン選考ステータスの判定。旧データでは「見送り」という表記で保存されていたため、
+    // 「選考落選」への呼称変更後もそれらを同じ意味として扱えるよう、両方の文字列を許容している。
+    const INTERN_STATUS = { NONE: '', PASSED: '選考通過', CONFIRMED: '参加決定', REJECTED: '選考落選' };
+    function isInternConfirmed(status) { return status === INTERN_STATUS.CONFIRMED; }
+    function isInternPassed(status) { return status === INTERN_STATUS.PASSED; }
+    function isInternRejected(status) { return status === INTERN_STATUS.REJECTED || status === '見送り'; }
+    // 掲示板・カレンダーでの表示順（数字が小さいほど優先＝上位に表示）
+    function internStatusPriority(status) { if (isInternConfirmed(status)) return 0; if (isInternPassed(status)) return 1; if (isInternRejected(status)) return 2; return 3; }
+    function internStatusMark(status) { return isInternConfirmed(status) ? ' ✅' : (isInternPassed(status) ? ' 🔷' : (isInternRejected(status) ? ' ❌' : '')); }
     function getCompanyEvents(item) {
         const events = [];
         if (item.sessionDate) events.push({ kind: 'session', companyId: item.id, company: item.company, start: item.sessionDate, end: item.sessionDate });
@@ -809,6 +818,16 @@
         return events;
     }
     function getAllScheduleEvents() { return window.shukatsuData.flatMap(getCompanyEvents); }
+
+    // 企業ごとの「インターン選考の代表ステータス優先度」を求める。
+    // 1社が複数のインターン日程を持つ場合は、その中で最も進んでいるもの
+    // （参加決定 ＞ 選考通過 ＞ 選考落選 ＞ 未定/日程なし）を代表として扱う。
+    function companyInternPriority(item) {
+        const statuses = (item.internDates || []).filter(d => d.start).map(d => d.status || '');
+        if (statuses.length === 0) return 4;
+        return Math.min(...statuses.map(internStatusPriority));
+    }
+
 
     // --- ④ フォーム項目の一括読み書き（企業研究タブの「基本登録情報」「企業研究情報」） -----
     // id→データキーの対応表を用意し、読み込み・保存を汎用関数で行うことで、
@@ -914,7 +933,7 @@
     window.loadDashboard = function() {
         const tbody = document.getElementById('dashboardScheduleBody'); tbody.innerHTML = ''; const now = new Date(); now.setHours(0,0,0,0);
         const events = getAllScheduleEvents()
-            .filter(ev => ev.kind === 'es' || ev.kind === 'interview' || (ev.kind === 'intern' && ev.internStatus === '参加決定'))
+            .filter(ev => ev.kind === 'es' || ev.kind === 'interview' || (ev.kind === 'intern' && isInternConfirmed(ev.internStatus)))
             .map(ev => {
                 if (ev.kind === 'es') return { type: '📄 ES締切', company: ev.company, dateObj: new Date(ev.start), dateStr: ev.start.replace('T', ' ') };
                 if (ev.kind === 'interview') return { type: '🗣️ 面接', company: ev.company, dateObj: new Date(ev.start), dateStr: ev.start.replace('T', ' ') };
@@ -1006,7 +1025,13 @@
         theadHtml += `</tr>`;
         
         let tbodyHtml = '';
-        window.shukatsuData.forEach(data => {
+        // ガントチャートでは「参加確定 ⇒ 選考通過 ⇒ 選考落選 ⇒ （インターン日程なし/未定）」の順に
+        // 企業を並べ替える。1社が複数のインターン日程を持つ場合は、その中で最も進んでいる
+        // ステータスを代表値として使う（companyInternPriority参照）。同じ優先度内では元の並び順を維持する。
+        const sortedData = window.shukatsuData.map((data, idx) => ({ data, idx, priority: companyInternPriority(data) }))
+            .sort((a, b) => (a.priority - b.priority) || (a.idx - b.idx))
+            .map(x => x.data);
+        sortedData.forEach(data => {
             const compName = data.company || '名称未設定';
             let rowHtml = `<tr><td class="timeline-company text-truncate" title="${compName}">${compName}</td>`;
             let eventsHtml = ''; let yOffsets = []; let maxLevel = 0;
@@ -1067,7 +1092,8 @@
             if (ev.kind === 'intern') {
                 let endObj = new Date(ev.end); endObj.setDate(endObj.getDate() + 1);
                 const title = `ｲﾝﾀｰﾝ: ${ev.company}` + internStatusMark(ev.internStatus);
-                calendar.addEvent({ id: `intern_${ev.companyId}_${ev.internIndex}`, title: title, start: ev.start, end: endObj.toISOString().split('T')[0], backgroundColor: meta.color, borderColor: meta.color, allDay: true, extendedProps: { companyId: ev.companyId } });
+                const rejected = isInternRejected(ev.internStatus);
+                calendar.addEvent({ id: `intern_${ev.companyId}_${ev.internIndex}`, title: title, start: ev.start, end: endObj.toISOString().split('T')[0], backgroundColor: meta.color, borderColor: meta.color, allDay: true, extendedProps: { companyId: ev.companyId }, classNames: rejected ? ['fc-event-faded'] : [] });
             } else {
                 calendar.addEvent({ id: `${ev.kind}_${ev.companyId}`, title: `[${meta.label}] ${ev.company}`, start: ev.start, backgroundColor: meta.color, borderColor: meta.color, extendedProps: { companyId: ev.companyId } });
             }
@@ -1101,8 +1127,9 @@
             <div class="col-9 col-md-3">
                 <select class="form-select form-select-sm intern-status">
                     <option value="" ${!data.status ? 'selected' : ''}>未定/選考中</option>
+                    <option value="選考通過" ${data.status === '選考通過' ? 'selected' : ''}>選考通過</option>
                     <option value="参加決定" ${data.status === '参加決定' ? 'selected' : ''}>参加決定</option>
-                    <option value="見送り" ${data.status === '見送り' ? 'selected' : ''}>見送り</option>
+                    <option value="選考落選" ${(data.status === '選考落選' || data.status === '見送り') ? 'selected' : ''}>選考落選</option>
                 </select>
             </div>
             <div class="col-3 col-md-1 text-end"><button type="button" class="btn btn-sm btn-outline-danger w-100 h-100" onclick="this.closest('.intern-date-row').remove()">✖</button></div>
