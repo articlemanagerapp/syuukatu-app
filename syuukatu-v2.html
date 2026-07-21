@@ -523,6 +523,7 @@
                         <label class="form-label fw-bold text-secondary mb-0">インターン日程・状況</label>
                         <button type="button" class="btn btn-sm btn-outline-primary fw-bold" onclick="addInternDateRow()">＋ 追加</button>
                     </div>
+                    <div class="mb-2" id="modalInternStatusBadgeWrap"><span class="text-secondary fw-bold" style="font-size:0.8rem;">選考状況：</span><span id="modalInternStatusBadge" class="badge bg-secondary">未定/選考中</span> <span class="text-muted" style="font-size:0.72rem;">※「選考フロー設定」タブの内容から自動判定されます</span></div>
                     <div id="internDatesContainer" class="col-12"></div>
                 </div>
 
@@ -797,7 +798,10 @@
         test:      { label: '適性検査', color: '#6f42c1', tlClass: 'tl-bar-test' },
         intern:    { label: 'ｲﾝﾀｰﾝ',    color: '#0d6efd', tlClass: 'tl-bar-intern' }
     };
-    // インターン選考ステータスの判定。旧データでは「見送り」という表記で保存されていたため、
+    // インターン選考ステータス（選考通過／参加決定／選考落選）は、以前は各インターン日程ごとに
+    // 手入力していましたが、二重管理で表記ゆれの原因にもなっていたため、企業研究タブの
+    // 「選考フロー」の状態から自動的に判定する方式に変更しました。
+    // 旧データでは「見送り」という表記で保存されていたため、
     // 「選考落選」への呼称変更後もそれらを同じ意味として扱えるよう、両方の文字列を許容している。
     const INTERN_STATUS = { NONE: '', PASSED: '選考通過', CONFIRMED: '参加決定', REJECTED: '選考落選' };
     function isInternConfirmed(status) { return status === INTERN_STATUS.CONFIRMED; }
@@ -806,28 +810,76 @@
     // 掲示板・カレンダーでの表示順（数字が小さいほど優先＝上位に表示）
     function internStatusPriority(status) { if (isInternConfirmed(status)) return 0; if (isInternPassed(status)) return 1; if (isInternRejected(status)) return 2; return 3; }
     function internStatusMark(status) { return isInternConfirmed(status) ? ' ✅' : (isInternPassed(status) ? ' 🔷' : (isInternRejected(status) ? ' ❌' : '')); }
+
+    // 選考フロー（枝分かれ対応）を先頭から順にたどり、そのフローが表す選考状況を
+    // 「参加決定／選考通過／選考落選／未定」のいずれかに変換する。
+    // ルール（上から順にステップを見ていく）:
+    //   ・「完了」→ ここまでの成果は「参加決定」相当として記録し、次のステップを見る
+    //   ・「進行中」→ ここまでは選考が進んでいるが未確定 = 「選考通過」として記録し、次のステップを見る
+    //   ・「落選」→ その先に枝分かれ（別ルート）があればそちらを辿って続きを評価。
+    //               枝分かれが無ければそこで選考終了 = 「選考落選」で確定
+    //   ・「未着手」→ まだ手を付けていないので、そこで評価を打ち切り、それまでの結果を採用
+    function pidOf(step) { return (step.parentId === undefined || step.parentId === null) ? null : step.parentId; }
+    function evaluateInternFlowSequence(flow, parentId) {
+        const seq = flow.filter(s => pidOf(s) === parentId);
+        let outcome = INTERN_STATUS.NONE;
+        for (const step of seq) {
+            if (step.status === 'completed') {
+                outcome = INTERN_STATUS.CONFIRMED;
+            } else if (step.status === 'current') {
+                outcome = INTERN_STATUS.PASSED;
+            } else if (step.status === 'rejected') {
+                const hasChildren = flow.some(s => pidOf(s) === step.id);
+                if (hasChildren) { outcome = evaluateInternFlowSequence(flow, step.id); }
+                else { outcome = INTERN_STATUS.REJECTED; break; }
+            } else {
+                break; // not_started：ここから先はまだ手を付けていない
+            }
+        }
+        return outcome;
+    }
+    function deriveInternStatusFromFlow(flow) {
+        if (!flow || flow.length === 0) return INTERN_STATUS.NONE;
+        return evaluateInternFlowSequence(flow, null);
+    }
+    // 企業データ（保存済みのcompanyResearch.selectionFlow）から、その企業のインターン選考状況を求める。
+    function getCompanyInternStatus(item) {
+        const flow = (item.companyResearch && item.companyResearch.selectionFlow) ? item.companyResearch.selectionFlow : [];
+        return deriveInternStatusFromFlow(flow);
+    }
+
     function getCompanyEvents(item) {
         const events = [];
         if (item.sessionDate) events.push({ kind: 'session', companyId: item.id, company: item.company, start: item.sessionDate, end: item.sessionDate });
         if (item.esDeadline) events.push({ kind: 'es', companyId: item.id, company: item.company, start: item.esDeadline, end: item.esDeadline });
         if (item.interviewDate) events.push({ kind: 'interview', companyId: item.id, company: item.company, start: item.interviewDate, end: item.interviewDate });
         if (item.testDate) events.push({ kind: 'test', companyId: item.id, company: item.company, start: item.testDate, end: item.testDate });
+        // インターン日程の選考ステータスは日程ごとではなく、その企業の選考フローから一括で決まる。
+        const internStatus = getCompanyInternStatus(item);
         (item.internDates || []).forEach((d, idx) => {
-            if (d.start) events.push({ kind: 'intern', companyId: item.id, company: item.company, start: d.start, end: d.end || d.start, internIndex: idx, internTitle: d.title || '', internStatus: d.status || '' });
+            if (d.start) events.push({ kind: 'intern', companyId: item.id, company: item.company, start: d.start, end: d.end || d.start, internIndex: idx, internTitle: d.title || '', internStatus: internStatus });
         });
         return events;
     }
     function getAllScheduleEvents() { return window.shukatsuData.flatMap(getCompanyEvents); }
 
-    // 企業ごとの「インターン選考の代表ステータス優先度」を求める。
-    // 1社が複数のインターン日程を持つ場合は、その中で最も進んでいるもの
-    // （参加決定 ＞ 選考通過 ＞ 選考落選 ＞ 未定/日程なし）を代表として扱う。
+    // 企業ごとの「インターン選考の代表ステータス優先度」（ガントチャートの並び替えに使用）
     function companyInternPriority(item) {
-        const statuses = (item.internDates || []).filter(d => d.start).map(d => d.status || '');
-        if (statuses.length === 0) return 4;
-        return Math.min(...statuses.map(internStatusPriority));
+        if ((item.internDates || []).filter(d => d.start).length === 0) return 4;
+        return internStatusPriority(getCompanyInternStatus(item));
     }
 
+    // モーダル編集中（tempSelectionFlowが最新の編集内容）の選考状況バッジを更新する。
+    // ステップ1の「インターン日程・状況」欄とステップ2の「選考フロー設定」を編集するたびに呼び出し、
+    // 常に選考フローと連動した表示になるようにしている。
+    function updateModalInternStatusBadge() {
+        const badge = document.getElementById('modalInternStatusBadge'); if (!badge) return;
+        const status = deriveInternStatusFromFlow(tempSelectionFlow);
+        const badgeClassByStatus = { [INTERN_STATUS.CONFIRMED]: 'bg-success', [INTERN_STATUS.PASSED]: 'bg-primary', [INTERN_STATUS.REJECTED]: 'bg-danger', [INTERN_STATUS.NONE]: 'bg-secondary' };
+        badge.className = `badge ${badgeClassByStatus[status]}`;
+        badge.innerText = status || '未定/選考中';
+    }
+    window.updateModalInternStatusBadge = updateModalInternStatusBadge;
 
     // --- ④ フォーム項目の一括読み書き（企業研究タブの「基本登録情報」「企業研究情報」） -----
     // id→データキーの対応表を用意し、読み込み・保存を汎用関数で行うことで、
@@ -1109,30 +1161,24 @@
             document.getElementById('addStep1').style.display = 'none'; document.getElementById('addStep2').style.display = 'block'; document.getElementById('addModalFooter1').style.display = 'none'; document.getElementById('addModalFooter2').style.display = 'flex'; document.getElementById('step1Indicator').className = 'fw-bold text-secondary'; document.getElementById('step2Indicator').className = 'fw-bold text-primary';
             renderModalSelectionFlow(); if(window.updateModalFlowTemplateSelect) window.updateModalFlowTemplateSelect();
         }
+        updateModalInternStatusBadge();
     };
 
     window.prepareAdd = function() { 
         document.getElementById('editId').value = ''; document.getElementById('addModalLabel').innerText = '企業の追加'; 
         ['companyInput','internStartInput','locationInput','mypageUrlInput','mypageIdInput','mypagePassInput','hasSessionInput','sessionStatusInput','sessionDateInput','sessionMemoInput','esDeadlineInput','testDateInput'].forEach(id=>{ if(document.getElementById(id)) document.getElementById(id).value=''; }); 
         document.getElementById('internDatesContainer').innerHTML = ''; addInternDateRow(); tempSelectionFlow = []; goToStep(1);
+        updateModalInternStatusBadge();
     };
     
-    window.addInternDateRow = function(data = {title: '', start: '', end: '', status: ''}) { 
+    window.addInternDateRow = function(data = {title: '', start: '', end: ''}) { 
         const c = document.getElementById('internDatesContainer'); const r = document.createElement('div'); r.className = 'row mb-2 intern-date-row g-2 align-items-center'; 
         r.innerHTML = `
-            <div class="col-12 col-md-3"><input type="text" class="form-control intern-title form-control-sm" placeholder="日程名(例:1day)" value="${data.title}"></div>
-            <div class="col-5 col-md-2"><input type="date" class="form-control intern-start form-control-sm" value="${data.start}"></div>
+            <div class="col-12 col-md-5"><input type="text" class="form-control intern-title form-control-sm" placeholder="日程名(例:1day)" value="${data.title}"></div>
+            <div class="col-5 col-md-3"><input type="date" class="form-control intern-start form-control-sm" value="${data.start}"></div>
             <div class="col-2 col-md-1 text-center" style="font-size:0.8rem;">〜</div>
             <div class="col-5 col-md-2"><input type="date" class="form-control intern-end form-control-sm" value="${data.end}"></div>
-            <div class="col-9 col-md-3">
-                <select class="form-select form-select-sm intern-status">
-                    <option value="" ${!data.status ? 'selected' : ''}>未定/選考中</option>
-                    <option value="選考通過" ${data.status === '選考通過' ? 'selected' : ''}>選考通過</option>
-                    <option value="参加決定" ${data.status === '参加決定' ? 'selected' : ''}>参加決定</option>
-                    <option value="選考落選" ${(data.status === '選考落選' || data.status === '見送り') ? 'selected' : ''}>選考落選</option>
-                </select>
-            </div>
-            <div class="col-3 col-md-1 text-end"><button type="button" class="btn btn-sm btn-outline-danger w-100 h-100" onclick="this.closest('.intern-date-row').remove()">✖</button></div>
+            <div class="col-9 col-md-1 text-end"><button type="button" class="btn btn-sm btn-outline-danger w-100 h-100" onclick="this.closest('.intern-date-row').remove()">✖</button></div>
         `; 
         c.appendChild(r); 
     };
@@ -1145,10 +1191,12 @@
         let dates = data.internDates || []; if (dates.length === 0) addInternDateRow(); else dates.forEach(d => addInternDateRow(d));
         tempSelectionFlow = (data.companyResearch && data.companyResearch.selectionFlow) ? JSON.parse(JSON.stringify(data.companyResearch.selectionFlow)) : [];
         goToStep(1); bootstrap.Modal.getOrCreateInstance(document.getElementById('addModal')).show();
+        updateModalInternStatusBadge();
     };
 
     window.renderModalSelectionFlow = function() {
         renderFlowUI(tempSelectionFlow, 'modalSelectionFlowEditor', 'modalSelectionFlowProgressBar', { updateStatus: 'updateModalFlowStatus', addBranch: 'addModalBranchStep', remove: 'removeModalFlowStep' });
+        updateModalInternStatusBadge();
     };
     
     window.addModalSelectionFlowStep = function() { const input = document.getElementById('modalNewFlowStepName'); const name = input.value.trim(); if (!name) return; pushFlowStep(tempSelectionFlow, name, null); input.value = ''; renderModalSelectionFlow(); };
@@ -1181,8 +1229,8 @@
         const id = document.getElementById('editId').value;
         const internDates = []; 
         document.querySelectorAll('.intern-date-row').forEach(row => { 
-            const title = row.querySelector('.intern-title').value, start = row.querySelector('.intern-start').value, end = row.querySelector('.intern-end').value, status = row.querySelector('.intern-status').value; 
-            if (title || start || end || status) internDates.push({ title, start, end, status }); 
+            const title = row.querySelector('.intern-title').value, start = row.querySelector('.intern-start').value, end = row.querySelector('.intern-end').value; 
+            if (title || start || end) internDates.push({ title, start, end }); 
         });
         
         const data = { id: id || Date.now().toString(), company: document.getElementById('companyInput').value, internStart: document.getElementById('internStartInput').value, location: document.getElementById('locationInput').value, mypageUrl: document.getElementById('mypageUrlInput').value, mypageId: document.getElementById('mypageIdInput').value, mypagePass: document.getElementById('mypagePassInput').value, hasSession: document.getElementById('hasSessionInput').value, sessionStatus: document.getElementById('sessionStatusInput').value, sessionDate: document.getElementById('sessionDateInput').value, sessionMemo: document.getElementById('sessionMemoInput').value, esDeadline: document.getElementById('esDeadlineInput').value, testDate: document.getElementById('testDateInput').value, internDates: internDates };
@@ -1212,7 +1260,7 @@
         displayList.forEach(item => {
             const tr = document.createElement('tr');
             tr.onclick = (e) => { if (window.innerWidth <= 768 && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'A') { tr.classList.toggle('is-open'); } };
-            let dates = item.internDates || []; let periodHtml = dates.length > 0 ? dates.map(d => { let t = d.title ? `<span class="badge bg-secondary me-1">${d.title}</span>` : ''; let s = d.start || '', e = d.end || ''; let p = (s && e) ? `${s} 〜 ${e}` : (s ? s : e); return p ? `${t}${p}` : ''; }).filter(v => v).join('<br>') : '';
+            let dates = item.internDates || []; const companyInternMark = internStatusMark(getCompanyInternStatus(item)); let periodHtml = dates.length > 0 ? dates.map(d => { let t = d.title ? `<span class="badge bg-secondary me-1">${d.title}</span>` : ''; let s = d.start || '', e = d.end || ''; let p = (s && e) ? `${s} 〜 ${e}` : (s ? s : e); return p ? `${t}${p}${companyInternMark}` : ''; }).filter(v => v).join('<br>') : '';
             let mypageCell = item.mypageUrl ? `<a href="${item.mypageUrl}" target="_blank" class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation()">開く</a>` : 'ー';
             let accountBtn = `<button class="btn btn-sm btn-outline-secondary me-1" onclick="event.stopPropagation(); openAccountSidebar('${item.id}')" title="アカウント情報">🔐</button>`;
             let memoCell = `<span class="memo-clickable text-truncate" title="${item.sessionMemo || ''}">${item.sessionMemo || '（空欄）'}</span>`;
