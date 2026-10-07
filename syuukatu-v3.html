@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#14213d">
+  <title>就活管理</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="syuukatu-v3.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+</head>
+<body>
+
+<!-- ログイン画面 -->
+<div id="login" class="login-wrap" hidden>
+  <form id="login-form" class="login-card" novalidate>
+    <h1>🎯 就活管理</h1>
+    <p class="text-center muted mb-3">ログインしてください</p>
+    <div class="mb-3">
+      <label class="form-label" for="login-email">メールアドレス</label>
+      <input type="email" id="login-email" class="form-control" autocomplete="username" required>
+    </div>
+    <div class="mb-2">
+      <label class="form-label" for="login-pass">パスワード(6文字以上)</label>
+      <input type="password" id="login-pass" class="form-control" autocomplete="current-password" required>
+    </div>
+    <div id="login-error" class="login-error" role="alert"></div>
+    <button type="submit" class="btn btn-primary w-100 mb-2">ログイン</button>
+    <button type="button" class="btn btn-outline-secondary w-100" data-act="register">新しくアカウントを作成</button>
+  </form>
+</div>
+
+<!-- アプリ本体 -->
+<div id="app" class="app" hidden>
+  <aside class="side" aria-label="メインメニュー">
+    <div class="brand">🎯 就活管理</div>
+    <ul class="side-nav" id="side-nav"></ul>
+    <div class="side-foot">
+      <div class="email" id="side-email"></div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-row">
+        <h1 id="page-title">ホーム</h1>
+        <span id="save-state" class="save-state" role="status" aria-live="polite"></span>
+        <button type="button" class="btn btn-primary" data-act="add-company" aria-label="企業を追加">＋<span class="add-label">企業を追加</span></button>
+      </div>
+      <div class="track-bar" id="track-bar" role="group" aria-label="表示する選考区分"></div>
+    </header>
+    <main class="content" id="view" tabindex="-1"><div class="loading">読み込み中…</div></main>
+  </div>
+
+  <nav class="bottom-nav" id="bottom-nav" aria-label="メインメニュー"></nav>
+</div>
+
+<div class="toast-root" id="toast-root" aria-live="polite"></div>
+
+<script type="module" src="syuukatu-v3.js"></script>
+</body>
+</html>

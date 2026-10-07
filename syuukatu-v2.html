@@ -193,6 +193,7 @@
         </header>
 
         <main class="flex-grow-1 overflow-auto p-3 p-md-4">
+            <div class="alert alert-info d-flex flex-wrap align-items-center gap-2 py-2 mb-3" role="note"><span class="fw-bold">✨ 見やすくなった新しい版があります(秋冬インターン・早期選考などを区分ごとに管理できます)</span><a class="btn btn-sm btn-primary fw-bold ms-auto" href="syuukatu-v3.html">新しい版を開く</a><span class="w-100 small text-secondary">※この旧版で入力した内容は、新しい版には自動では反映されません。</span></div>
             <div class="container-fluid p-0">
                 <div class="tab-content" id="myTabContent">
                     
@@ -588,7 +589,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+    import { getDatabase, ref, set, update, get, child } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
     const firebaseConfig = { apiKey: "AIzaSyB8-VCe66GK77czczFqJKIDqfTaC1jTi8g", authDomain: "shukatsu-app-ae30e.firebaseapp.com", databaseURL: "https://shukatsu-app-ae30e-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "shukatsu-app-ae30e" };
     const app = initializeApp(firebaseConfig); const auth = getAuth(app); const db = getDatabase(app);
@@ -602,7 +603,8 @@
         const statusEl = document.getElementById('cloudStatus');
         if(statusEl) { statusEl.innerText = '⏳ 保存中...'; statusEl.className = 'text-truncate text-warning mb-3 fw-bold'; }
         try {
-            await set(ref(db, 'users/' + auth.currentUser.uid), { data: window.shukatsuData, settings: window.appSettings, todos: window.todos });
+            // 新しい版(syuukatu-v3.html)のデータ users/{uid}/v3 を消さないよう、set ではなく update で自分の項目だけを書き換える
+            await update(ref(db, 'users/' + auth.currentUser.uid), { data: window.shukatsuData, settings: window.appSettings, todos: window.todos });
             if(statusEl) { statusEl.innerText = `☁️ 同期済`; statusEl.className = 'text-truncate text-info mb-3 fw-bold'; }
             if(window.renderAll) window.renderAll();
         } catch (error) { 
