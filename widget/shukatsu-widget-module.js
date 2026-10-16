@@ -175,7 +175,35 @@ function companyRow(stack, it, now, size) {
   }
   return row;
 }
-// 小: 企業名と段階を2行ずつ / 中・大: 1行ずつ
+// 選考フローの全体:「✓ES › ✓適性検査 › ●1次面接 › ○最終面接」。
+// 入りきらないときは前の方の完了済みを「✓3 ›」にまとめ、今の段階が必ず見えるようにする
+const STEP_MARK = { completed: '✓', current: '●', rejected: '×', not_started: '○' };
+function shortName(s, len) { s = String(s || ''); return s.length > len ? s.slice(0, len - 1) + '…' : s; }
+function flowWindow(steps, max) {
+  if (steps.length <= max) return { skipped: 0, shown: steps };
+  let at = steps.findIndex(x => x.s === 'current');
+  if (at < 0) at = steps.findIndex(x => x.s === 'not_started' || x.s === 'rejected');
+  if (at < 0) at = steps.length - 1;
+  const start = Math.max(0, Math.min(at - 1, steps.length - max));
+  return { skipped: start, shown: steps.slice(start, start + max) };
+}
+function flowLine(stack, it, size, max, marksOnly) {
+  const steps = Array.isArray(it.steps) ? it.steps : [];
+  const row = stack.addStack();
+  row.layoutHorizontally();
+  row.centerAlignContent();
+  if (!steps.length) { txt(row, 'フロー未登録', size, C.muted); return row; }
+  const { skipped, shown } = flowWindow(steps, max);
+  if (skipped) { txt(row, `✓${skipped}`, size, C.passed, true); row.addSpacer(3); txt(row, '›', size, C.muted); row.addSpacer(3); }
+  shown.forEach((x, i) => {
+    if (i) { row.addSpacer(3); txt(row, '›', size, C.muted); row.addSpacer(3); }
+    const color = x.s === 'completed' ? C.passed : x.s === 'current' ? C.ongoing : x.s === 'rejected' ? C.red : C.muted;
+    const mark = (x.b ? '↳' : '') + (STEP_MARK[x.s] || '○');
+    txt(row, marksOnly ? mark : mark + shortName(x.n, 6), size, color, x.s === 'current');
+  });
+  return row;
+}
+// 小: 企業名とフローの印(✓✓●○)・今の段階 / 中・大: 企業名と日数の行+フロー全体の行
 function companiesBlock(stack, p, now, family, max) {
   // アプリが古い版のときに書いたデータには companies が無い
   if (!p || !Array.isArray(p.companies)) {
@@ -197,19 +225,23 @@ function companiesBlock(stack, p, now, family, max) {
     if (i) stack.addSpacer(family === 'small' ? 5 : 4);
     if (family === 'small') {
       txt(stack, it.company, 13, C.text, true, 1);
+      if (Array.isArray(it.steps) && it.steps.length) flowLine(stack, it, 11, 7, true);
       const st = stepText(it);
       if (st) txt(stack, st, 11, stepColor(it), false, 1);
-    } else companyRow(stack, it, now, 13);
+    } else {
+      companyRow(stack, it, now, 13);
+      if (Array.isArray(it.steps)) { stack.addSpacer(1); flowLine(stack, it, 11, family === 'large' ? 6 : 5, false); }
+    }
   });
   if (list.length > max) { stack.addSpacer(4); txt(stack, `ほか ${n - max}社`, 11, C.muted); }
 }
-// 大: 上に次の予定(最大4件)、下に選考中の企業(最大6件)
+// 大: 上に次の予定(最大3件)、下に選考状況(最大4社。フロー全体つき)
 function buildLarge(w, res, now) {
   const items = liveItems(res.p, now);
   label(w, '次の予定', 11);
   w.addSpacer(6);
   if (!items.length) txt(w, 'これからの予定はありません', 13, C.muted);
-  items.slice(0, 4).forEach((it, i) => {
+  items.slice(0, 3).forEach((it, i) => {
     if (i) w.addSpacer(5);
     const row = w.addStack();
     row.layoutVertically();
@@ -222,7 +254,7 @@ function buildLarge(w, res, now) {
   line.size = new Size(0, 1);
   line.backgroundColor = new Color(C.bg2);
   w.addSpacer(10);
-  companiesBlock(w, res.p, now, 'large', 6);
+  companiesBlock(w, res.p, now, 'large', 4);
   w.addSpacer();
   if (res.note) { w.addSpacer(4); txt(w, res.note, 10, C.muted); }
   return w;
@@ -243,7 +275,7 @@ function buildWidget(res, family, now) {
   }
   if (family === 'large') return buildLarge(w, res, now);
   if (viewMode() === 'companies') {
-    companiesBlock(w, res.p, now, family, family === 'small' ? 3 : 5);
+    companiesBlock(w, res.p, now, family, family === 'small' ? 2 : 3);
     w.addSpacer();
     if (res.note) { w.addSpacer(4); txt(w, res.note, 10, C.muted); }
     return w;

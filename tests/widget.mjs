@@ -183,18 +183,18 @@ check('Parameter「選考」の中は選考中の企業の一覧', E.texts.inclu
 check('今の段階と次の予定の残り日数', E.texts.includes('明日') && E.texts.includes('あと2日'));
 check('まだ進んでいない段階は「次: 」', E.texts.includes('次: 2次面接'));
 check('終わった予定の日数は出さない', !E.texts.includes('開催中'));
-check('中は5社まで+「ほか」', E.texts.includes('五番目') && !E.texts.includes('六番目') && E.texts.includes('ほか 2社'), E.texts.join(' / '));
+check('中は3社まで+「ほか」', E.texts.includes('冬電機') && !E.texts.includes('本選考銀行') && E.texts.includes('ほか 4社'), E.texts.join(' / '));
 const rowUrls = [];
 (function walk(st) { (st.children || []).forEach(ch => { if (ch.url) rowUrls.push(ch.url); walk(ch); }); })(E.widget);
 check('企業の行を押すとその企業の画面', rowUrls.includes('https://articlemanagerapp.github.io/syuukatu-app/syuukatu-v3.html#/company/c3/e3'), rowUrls.join(' '));
 E = await run({ family: 'small', param: '企業', keychain: { shukatsu_widget_refresh_token: 'R1' }, respond: server({ items: ITEMS, companies: COMPANIES }) });
-check('小は3社(企業名と段階)', E.texts.includes('秋商事') && E.texts.includes('ES提出') && !E.texts.includes('本選考銀行') && E.texts.includes('ほか 4社'), E.texts.join(' / '));
+check('小は2社(企業名と段階)', E.texts.includes('秋商事') && E.texts.includes('ES提出') && !E.texts.includes('冬電機') && E.texts.includes('ほか 5社'), E.texts.join(' / '));
 E = await run({ family: 'medium', param: '選考', keychain: { shukatsu_widget_refresh_token: 'R1' }, respond: server({ items: ITEMS, companies: [] }) });
 check('企業がないときは「進行中の区分に企業がありません」', E.texts.includes('進行中の区分に企業がありません'));
 E = await run({ family: 'medium', keychain: { shukatsu_widget_refresh_token: 'R1' }, respond: server({ items: ITEMS, companies: COMPANIES }) });
 check('Parameter なしの中は今までどおり予定', E.texts.includes('次の予定') && E.texts.includes('そのあとに') && !E.texts.includes('選考状況 7社'));
 E = await run({ family: 'large', keychain: { shukatsu_widget_refresh_token: 'R1' }, respond: server({ items: ITEMS, companies: COMPANIES }) });
-check('大は次の予定と選考中の企業の両方', E.texts.includes('次の予定') && E.texts.includes('秋商事 ES締切') && E.texts.includes('選考状況 7社') && E.texts.includes('六番目') && !E.texts.includes('七番目'), E.texts.join(' / '));
+check('大は次の予定と選考中の企業の両方', E.texts.includes('次の予定') && E.texts.includes('秋商事 ES締切') && E.texts.includes('選考状況 7社') && E.texts.includes('本選考銀行') && !E.texts.includes('五番目') && E.texts.includes('ほか 3社'), E.texts.join(' / '));
 check('大でも終わった予定は出さない', !E.texts.some(t => t.includes('終わった説明会')));
 E = await run({ widget: false, keychain: { shukatsu_widget_refresh_token: 'R1' }, respond: server({ items: ITEMS, companies: COMPANIES }), alerts: [{ index: 2 }] });
 check('「大の見え方を確かめる」で大を表示', E.shown === 'large');
@@ -206,6 +206,28 @@ E = await run({ family: 'medium', param: '選考', keychain: { shukatsu_widget_r
 check('古いアプリのデータ(選考状況なし)なら「開き直すと表示されます」', E.texts.some(t => t.includes('開き直すと表示されます')), E.texts.join(' / '));
 E = await run({ widget: false, keychain: { shukatsu_widget_refresh_token: 'R1' }, respond: server({ items: ITEMS, noCompanies: true }), alerts: [{ index: 6 }] });
 check('古いデータのときは、Scriptable の画面でもそう分かる', E.messages.some(m => m.includes('アプリを開き直してください')), E.messages.join(' | '));
+
+console.log('選考フローの全体');
+const st = (n, s, b = 0) => ({ n, s, b });
+const FLOW = [st('ES提出', 'completed'), st('適性検査', 'completed'), st('1次面接', 'current'), st('2次面接', 'not_started'), st('最終面接', 'not_started')];
+const LONG = [st('エントリー', 'completed'), st('説明会', 'completed'), st('ES提出', 'completed'), st('適性検査', 'completed'), st('GD', 'completed'), st('1次面接', 'completed'), st('2次面接', 'current'), st('最終面接', 'not_started')];
+const FLOWCOMP = [
+  comp('早期工業', '1次面接', { steps: FLOW, date: ymd(1) }),
+  comp('長い選考', '2次面接', { steps: LONG }),
+  comp('別ルート社', '別日程', { steps: [st('ES提出', 'completed'), st('面接', 'rejected'), st('別日程', 'current', 1)] }),
+  comp('未登録社', '', { status: 'todo', steps: [] }),
+];
+E = await run({ family: 'medium', param: '選考', keychain: { shukatsu_widget_refresh_token: 'R1' }, respond: server({ items: ITEMS, companies: FLOWCOMP }) });
+check('フローの全ステップを印つきで並べる', ['✓ES提出', '✓適性検査', '●1次面接', '○2次面接', '○最終面接'].every(t => E.texts.includes(t)), E.texts.join(' / '));
+check('ステップの間に「›」', E.texts.filter(t => t === '›').length >= 4);
+check('長いフローは前の完了済みを「✓3」にまとめ、5つまで見せる(今の段階を含む)', E.texts.includes('✓3') && E.texts.includes('✓適性検査') && E.texts.includes('✓1次面接') && E.texts.includes('●2次面接') && E.texts.includes('○最終面接') && !E.texts.includes('✓エントリー'), E.texts.join(' / '));
+check('落選と別ルート(×と↳)', E.texts.includes('×面接') && E.texts.includes('↳●別日程'), E.texts.join(' / '));
+E = await run({ family: 'large', keychain: { shukatsu_widget_refresh_token: 'R1' }, respond: server({ items: ITEMS, companies: FLOWCOMP }) });
+check('大にもフロー全体と「フロー未登録」', E.texts.includes('●1次面接') && E.texts.includes('フロー未登録'), E.texts.join(' / '));
+E = await run({ family: 'small', param: '選考', keychain: { shukatsu_widget_refresh_token: 'R1' }, respond: server({ items: ITEMS, companies: FLOWCOMP }) });
+check('小は印だけ(✓✓●○○)と今の段階', E.texts.filter(t => t === '✓').length >= 2 && E.texts.includes('●') && E.texts.includes('1次面接') && !E.texts.includes('✓ES提出'), E.texts.join(' / '));
+E = await run({ family: 'medium', param: '選考', keychain: { shukatsu_widget_refresh_token: 'R1' }, respond: server({ items: ITEMS, companies: [comp('長い名前', 'インターンシップ参加', { steps: [st('インターンシップ参加', 'current')] })] }) });
+check('長いステップ名は6文字に縮める', E.texts.includes('●インターン…'), E.texts.join(' / '));
 
 console.log('入れ方のページ');
 {

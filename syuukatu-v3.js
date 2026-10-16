@@ -265,6 +265,8 @@ function widgetPayload() {
         status: st.key, step: st.key === 'passed' ? '' : (st.step?.name || ''),
         stepState: st.key === 'progress' && st.step?.status === 'current' ? 'current' : 'next',
         done: path.filter(s => s.status === 'completed').length, total: path.length,
+        // フロー全体(名前・状態・別ルートか)。ウィジェットで「✓ES › ●1次面接 › ○最終面接」のように並べる
+        steps: path.slice(0, 12).map(s => ({ n: s.name, s: s.status, b: s.branch ? 1 : 0 })),
         title: nx ? (nx.ev.title || KINDS[nx.ev.kind]?.label || '') : '', kind: nx ? nx.ev.kind : '',
         date: '', time: '', end: '', ...(nx ? evItem(nx) : {}),
         link: `#/company/${c.id}/${en.id}`,
