@@ -17,7 +17,7 @@ const KEY_CACHE = 'shukatsu_widget_cache';
 // アプリの左のメニューと同じ紺
 const C = {
   bg: '#14213d', bg2: '#2a3a63', text: '#eef2fa', muted: '#aab6cf', label: '#ffffff', onLabel: '#14213d',
-  red: '#ffb4a8', redFill: '#c8281f', soon: '#f3d48a', ongoing: '#b9cdf5',
+  red: '#ffb4a8', redFill: '#c8281f', soon: '#f3d48a', ongoing: '#b9cdf5', passed: '#a8e6b8',
 };
 const KIND_LABEL = { es: 'ES締切', test: '適性検査', session: '説明会', interview: '面接', intern: 'インターン', other: 'その他' };
 
@@ -145,11 +145,13 @@ function viewMode() {
   const p = typeof args !== 'undefined' && args && args.widgetParameter ? String(args.widgetParameter) : '';
   return /選考|企業|company/i.test(p) ? 'companies' : 'events';
 }
-// 「1次面接(進行中)」「次: 2次面接」
+// 「1次面接」(進行中)・「次: 2次面接」・「未着手」・「通過」
 function stepText(it) {
-  if (!it.step) return '';
-  return it.stepState === 'next' ? `次: ${it.step}` : it.step;
+  if (it.status === 'passed') return '通過';
+  if (!it.step) return it.status === 'todo' ? '未着手' : '';
+  return it.stepState === 'next' || it.status === 'todo' ? `次: ${it.step}` : it.step;
 }
+function stepColor(it) { return it.status === 'passed' ? C.passed : it.status === 'todo' ? C.muted : C.ongoing; }
 // 選考中の企業の1行:「● 企業名 …… 1次面接 あと2日」
 function companyRow(stack, it, now, size) {
   const row = stack.addStack();
@@ -164,7 +166,7 @@ function companyRow(stack, it, now, size) {
   txt(row, it.company, size, C.text, true);
   row.addSpacer();
   const st = stepText(it);
-  if (st) txt(row, st, size - 1, C.ongoing, true);
+  if (st) txt(row, st, size - 1, stepColor(it), true);
   const d = it.date ? daysUntil(it.end || it.date, now) : null;
   if (d !== null && d >= 0) {
     const r = reasonOf(it, now);
@@ -175,17 +177,28 @@ function companyRow(stack, it, now, size) {
 }
 // 小: 企業名と段階を2行ずつ / 中・大: 1行ずつ
 function companiesBlock(stack, p, now, family, max) {
-  const list = (p && p.companies) || [];
-  const n = p && p.progressCompanies ? p.progressCompanies : list.length;
-  label(stack, `選考中 ${n}社`, 11);
+  // アプリが古い版のときに書いたデータには companies が無い
+  if (!p || !Array.isArray(p.companies)) {
+    label(stack, '選考状況', 11);
+    stack.addSpacer(6);
+    txt(stack, '就活管理アプリを開き直すと表示されます', 13, C.muted, false, 3);
+    return;
+  }
+  const list = p.companies;
+  const n = p.activeCompanies || p.progressCompanies || list.length;
+  const head = stack.addStack();
+  head.layoutHorizontally();
+  head.centerAlignContent();
+  label(head, `選考状況 ${n}社`, 11);
+  if (family !== 'small' && p.progressCompanies) { head.addSpacer(6); txt(head, `うち選考中 ${p.progressCompanies}社`, 11, C.muted); }
   stack.addSpacer(6);
-  if (!list.length) { txt(stack, '選考中の企業はありません', 13, C.muted, false, 2); return; }
+  if (!list.length) { txt(stack, '進行中の区分に企業がありません', 13, C.muted, false, 2); return; }
   list.slice(0, max).forEach((it, i) => {
     if (i) stack.addSpacer(family === 'small' ? 5 : 4);
     if (family === 'small') {
       txt(stack, it.company, 13, C.text, true, 1);
       const st = stepText(it);
-      if (st) txt(stack, st, 11, C.ongoing, false, 1);
+      if (st) txt(stack, st, 11, stepColor(it), false, 1);
     } else companyRow(stack, it, now, 13);
   });
   if (list.length > max) { stack.addSpacer(4); txt(stack, `ほか ${n - max}社`, 11, C.muted); }
@@ -295,6 +308,16 @@ async function getRes() {
     return { state: 'ok', p: { items: [] }, note: '読み込めませんでした' };
   }
 }
+// うまく出ないときの手がかり: アプリがウィジェット用のデータを最後に書いた日時と件数
+function dataInfo(res) {
+  if (res.state === 'empty-app') return 'ウィジェット用のデータ: まだありません(就活管理アプリを開いてください)';
+  if (res.state !== 'ok' || !res.p) return '';
+  const p = res.p;
+  const t = p.updatedAt ? new Date(p.updatedAt) : null;
+  const when = t && !isNaN(t) ? `${t.getMonth() + 1}/${t.getDate()} ${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}` : '不明';
+  const comp = Array.isArray(p.companies) ? `${p.activeCompanies || p.companies.length}社(うち選考中 ${p.progressCompanies || 0}社)` : 'なし(アプリを開き直してください)';
+  return `ウィジェット用のデータ: ${when} 更新\n予定 ${(p.items || []).length}件・選考状況 ${comp}${res.note ? '\n' + res.note : ''}`;
+}
 async function loginDialog() {
   const a = new Alert();
   a.title = '就活管理にログイン';
@@ -326,7 +349,7 @@ async function main() {
   if (!Keychain.contains(KEY_TOKEN) && !(await loginDialog())) return Script.complete();
   const m = new Alert();
   m.title = '就活管理 ウィジェット';
-  m.message = 'ログインしています。ホーム画面にウィジェットを置いて、このスクリプトを選んでください。';
+  m.message = 'ログインしています。ホーム画面にウィジェットを置いて、このスクリプトを選んでください。\n\n' + dataInfo(await getRes());
   m.addAction('小の見え方を確かめる');
   m.addAction('中の見え方を確かめる');
   m.addAction('大の見え方を確かめる');

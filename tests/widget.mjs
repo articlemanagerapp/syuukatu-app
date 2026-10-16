@@ -31,11 +31,12 @@ function makeEnv({ widget = true, family = 'small', param = null, keychain = {},
     async loadJSON() { requests.push(this); const r = await respond(this); this.response = { statusCode: r.status || 200 }; return r.json; }
   }
   const answers = [...alerts];
+  const messages = [];
   class Alert {
     constructor() { this.fields = []; }
     addTextField() { this.fields.push(''); } addSecureTextField() { this.fields.push(''); }
     addAction() {} addCancelAction() {} addDestructiveAction() {}
-    async present() { const a = answers.shift() || { index: -1 }; this.values = a.values || []; return a.index; }
+    async present() { messages.push(String(this.message || '')); const a = answers.shift() || { index: -1 }; this.values = a.values || []; return a.index; }
     textFieldValue(i) { return this.values[i] || ''; }
   }
   let set = null;
@@ -49,7 +50,7 @@ function makeEnv({ widget = true, family = 'small', param = null, keychain = {},
     Script: { setWidget: w => { set = w; }, complete: () => {} },
     args: { widgetParameter: param },
   };
-  return { env, kc, texts, requests, get widget() { return set; }, get shown() { return shown; } };
+  return { env, kc, texts, requests, messages, get widget() { return set; }, get shown() { return shown; } };
 }
 async function run(opts) {
   const E = makeEnv(opts);
@@ -59,7 +60,7 @@ async function run(opts) {
   return E;
 }
 // 通信の代わり: ログイン・鍵の更新・中身の読み込み(Realtime Database の REST)
-const server = ({ items = [], companies = [], empty = false, denied = false, tokenError = '', down = false } = {}) => async req => {
+const server = ({ items = [], companies = [], noCompanies = false, empty = false, denied = false, tokenError = '', down = false } = {}) => async req => {
   if (down) throw new Error('offline');
   if (req.url.includes('accounts:signInWithPassword')) {
     const b = JSON.parse(req.body);
@@ -68,7 +69,7 @@ const server = ({ items = [], companies = [], empty = false, denied = false, tok
   if (req.url.includes('securetoken.googleapis.com')) return tokenError ? { status: 400, json: { error: { message: tokenError } } } : { json: { id_token: 'I2', refresh_token: 'R2', user_id: 'u1' } };
   if (req.url.includes('firebasedatabase.app')) {
     if (denied) return { status: 401, json: { error: 'Permission denied' } };
-    return { json: empty ? null : { v: 1, progress: companies.length, progressCompanies: companies.length, items, companies, updatedAt: new Date().toISOString() } };
+    return { json: empty ? null : { v: 1, progress: companies.filter(c => c.status !== 'todo' && c.status !== 'passed').length, progressCompanies: companies.filter(c => c.status !== 'todo' && c.status !== 'passed').length, activeCompanies: companies.length, items, companies: noCompanies ? undefined : companies, updatedAt: new Date().toISOString() } };
   }
   return { status: 500, json: {} };
 };
@@ -119,7 +120,7 @@ check('鍵が無効になったら、ログインし直しの案内', E.texts.so
 
 console.log('Scriptable の中で開いたとき(ログイン)');
 E = await run({ widget: false, respond: server(), alerts: [{ index: 0, values: ['me@example.com', 'pw123'] }, { index: 5 }] });
-check('ログインすると鍵だけを保存する(パスワードは保存しない)', E.kc.get('shukatsu_widget_refresh_token') === 'R1' && ![...E.kc.values()].some(v => String(v).includes('pw123')));
+check('ログインすると鍵だけを保存する(パスワードは保存しない)', ['R1', 'R2'].includes(E.kc.get('shukatsu_widget_refresh_token')) && ![...E.kc.values()].some(v => String(v).includes('pw123')));
 E = await run({ widget: false, respond: server(), alerts: [{ index: 0, values: ['me@example.com', 'wrong'] }, { index: 0 }] });
 check('パスワードが違うときは保存しない', !E.kc.has('shukatsu_widget_refresh_token'));
 E = await run({ widget: false, keychain: { shukatsu_widget_refresh_token: 'R1' }, respond: server({ items: ITEMS }), alerts: [{ index: 1 }] });
@@ -178,7 +179,7 @@ const COMPANIES = [
   comp('七番目', '面談'),
 ];
 E = await run({ family: 'medium', param: '選考', keychain: { shukatsu_widget_refresh_token: 'R1' }, respond: server({ items: ITEMS, companies: COMPANIES }) });
-check('Parameter「選考」の中は選考中の企業の一覧', E.texts.includes('選考中 7社') && E.texts.includes('早期工業') && E.texts.includes('1次面接') && !E.texts.includes('次の予定'), E.texts.join(' / '));
+check('Parameter「選考」の中は選考中の企業の一覧', E.texts.includes('選考状況 7社') && E.texts.includes('早期工業') && E.texts.includes('1次面接') && !E.texts.includes('次の予定'), E.texts.join(' / '));
 check('今の段階と次の予定の残り日数', E.texts.includes('明日') && E.texts.includes('あと2日'));
 check('まだ進んでいない段階は「次: 」', E.texts.includes('次: 2次面接'));
 check('終わった予定の日数は出さない', !E.texts.includes('開催中'));
@@ -189,14 +190,22 @@ check('企業の行を押すとその企業の画面', rowUrls.includes('https:/
 E = await run({ family: 'small', param: '企業', keychain: { shukatsu_widget_refresh_token: 'R1' }, respond: server({ items: ITEMS, companies: COMPANIES }) });
 check('小は3社(企業名と段階)', E.texts.includes('秋商事') && E.texts.includes('ES提出') && !E.texts.includes('本選考銀行') && E.texts.includes('ほか 4社'), E.texts.join(' / '));
 E = await run({ family: 'medium', param: '選考', keychain: { shukatsu_widget_refresh_token: 'R1' }, respond: server({ items: ITEMS, companies: [] }) });
-check('選考中がないときは「選考中の企業はありません」', E.texts.includes('選考中の企業はありません'));
+check('企業がないときは「進行中の区分に企業がありません」', E.texts.includes('進行中の区分に企業がありません'));
 E = await run({ family: 'medium', keychain: { shukatsu_widget_refresh_token: 'R1' }, respond: server({ items: ITEMS, companies: COMPANIES }) });
-check('Parameter なしの中は今までどおり予定', E.texts.includes('次の予定') && E.texts.includes('そのあとに') && !E.texts.includes('選考中 7社'));
+check('Parameter なしの中は今までどおり予定', E.texts.includes('次の予定') && E.texts.includes('そのあとに') && !E.texts.includes('選考状況 7社'));
 E = await run({ family: 'large', keychain: { shukatsu_widget_refresh_token: 'R1' }, respond: server({ items: ITEMS, companies: COMPANIES }) });
-check('大は次の予定と選考中の企業の両方', E.texts.includes('次の予定') && E.texts.includes('秋商事 ES締切') && E.texts.includes('選考中 7社') && E.texts.includes('六番目') && !E.texts.includes('七番目'), E.texts.join(' / '));
+check('大は次の予定と選考中の企業の両方', E.texts.includes('次の予定') && E.texts.includes('秋商事 ES締切') && E.texts.includes('選考状況 7社') && E.texts.includes('六番目') && !E.texts.includes('七番目'), E.texts.join(' / '));
 check('大でも終わった予定は出さない', !E.texts.some(t => t.includes('終わった説明会')));
 E = await run({ widget: false, keychain: { shukatsu_widget_refresh_token: 'R1' }, respond: server({ items: ITEMS, companies: COMPANIES }), alerts: [{ index: 2 }] });
 check('「大の見え方を確かめる」で大を表示', E.shown === 'large');
+check('Scriptable で開くと、データの更新日時と件数が出る', E.messages.some(m => m.includes('ウィジェット用のデータ') && m.includes('更新') && m.includes('選考状況 7社')), E.messages.join(' | '));
+E = await run({ family: 'medium', param: '選考', keychain: { shukatsu_widget_refresh_token: 'R1' }, respond: server({ items: ITEMS, companies: [comp('未着手商事', 'ES提出', { status: 'todo' }), comp('フロー未登録', '', { status: 'todo' }), comp('通過物産', '', { status: 'passed' })] }) });
+check('フロー未登録・未着手の企業も出る(「次: ES提出」「未着手」)', E.texts.includes('未着手商事') && E.texts.includes('次: ES提出') && E.texts.includes('フロー未登録') && E.texts.includes('未着手'), E.texts.join(' / '));
+check('通過した企業は「通過」', E.texts.includes('通過物産') && E.texts.includes('通過'));
+E = await run({ family: 'medium', param: '選考', keychain: { shukatsu_widget_refresh_token: 'R1' }, respond: server({ items: ITEMS, noCompanies: true }) });
+check('古いアプリのデータ(選考状況なし)なら「開き直すと表示されます」', E.texts.some(t => t.includes('開き直すと表示されます')), E.texts.join(' / '));
+E = await run({ widget: false, keychain: { shukatsu_widget_refresh_token: 'R1' }, respond: server({ items: ITEMS, noCompanies: true }), alerts: [{ index: 6 }] });
+check('古いデータのときは、Scriptable の画面でもそう分かる', E.messages.some(m => m.includes('アプリを開き直してください')), E.messages.join(' | '));
 
 console.log('入れ方のページ');
 {
