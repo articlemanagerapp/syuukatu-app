@@ -6,6 +6,7 @@
 //   パスワードは保存しない(ログインし続けるための鍵だけを iPhone のキーチェーンに置く)。
 // ・中身は就活管理アプリが保存のたびに Realtime Database の users/{uid}/widget に書いている。読むのは1回に1件だけ。
 // ・残り日数(今日・明日・あと○日)は、表示のたびにその日の日付から計算し直す。終わった予定は出さない。
+// ・小・中は次の予定、大は次の予定+選考中の企業。ウィジェットの「Parameter」に「選考」と入れると、小・中も選考中の企業の一覧になる。
 
 const APP_URL = 'https://articlemanagerapp.github.io/syuukatu-app/syuukatu-v3.html';
 const API_KEY = 'AIzaSyB8-VCe66GK77czczFqJKIDqfTaC1jTi8g';
@@ -139,7 +140,81 @@ function trackLine(stack, it, size) {
   row.addSpacer(5);
   txt(row, [it.track, KIND_LABEL[it.kind] && KIND_LABEL[it.kind] !== it.title ? KIND_LABEL[it.kind] : ''].filter(Boolean).join(' ・ '), size, C.muted);
 }
-// 中身から、小(small)または中(medium)のウィジェットを作る
+// 表示の種類: ウィジェットの「Parameter」に「選考」(または「企業」)と入れると、選考中の企業の一覧にする
+function viewMode() {
+  const p = typeof args !== 'undefined' && args && args.widgetParameter ? String(args.widgetParameter) : '';
+  return /選考|企業|company/i.test(p) ? 'companies' : 'events';
+}
+// 「1次面接(進行中)」「次: 2次面接」
+function stepText(it) {
+  if (!it.step) return '';
+  return it.stepState === 'next' ? `次: ${it.step}` : it.step;
+}
+// 選考中の企業の1行:「● 企業名 …… 1次面接 あと2日」
+function companyRow(stack, it, now, size) {
+  const row = stack.addStack();
+  row.layoutHorizontally();
+  row.centerAlignContent();
+  if (it.link) row.url = APP_URL + it.link;
+  const dot = row.addStack();
+  dot.size = new Size(8, 8);
+  dot.cornerRadius = 4;
+  dot.backgroundColor = new Color(it.color || C.muted);
+  row.addSpacer(6);
+  txt(row, it.company, size, C.text, true);
+  row.addSpacer();
+  const st = stepText(it);
+  if (st) txt(row, st, size - 1, C.ongoing, true);
+  const d = it.date ? daysUntil(it.end || it.date, now) : null;
+  if (d !== null && d >= 0) {
+    const r = reasonOf(it, now);
+    row.addSpacer(6);
+    txt(row, r.text, size - 1, r.fill ? C.red : r.color, true);
+  }
+  return row;
+}
+// 小: 企業名と段階を2行ずつ / 中・大: 1行ずつ
+function companiesBlock(stack, p, now, family, max) {
+  const list = (p && p.companies) || [];
+  const n = p && p.progressCompanies ? p.progressCompanies : list.length;
+  label(stack, `選考中 ${n}社`, 11);
+  stack.addSpacer(6);
+  if (!list.length) { txt(stack, '選考中の企業はありません', 13, C.muted, false, 2); return; }
+  list.slice(0, max).forEach((it, i) => {
+    if (i) stack.addSpacer(family === 'small' ? 5 : 4);
+    if (family === 'small') {
+      txt(stack, it.company, 13, C.text, true, 1);
+      const st = stepText(it);
+      if (st) txt(stack, st, 11, C.ongoing, false, 1);
+    } else companyRow(stack, it, now, 13);
+  });
+  if (list.length > max) { stack.addSpacer(4); txt(stack, `ほか ${n - max}社`, 11, C.muted); }
+}
+// 大: 上に次の予定(最大4件)、下に選考中の企業(最大6件)
+function buildLarge(w, res, now) {
+  const items = liveItems(res.p, now);
+  label(w, '次の予定', 11);
+  w.addSpacer(6);
+  if (!items.length) txt(w, 'これからの予定はありません', 13, C.muted);
+  items.slice(0, 4).forEach((it, i) => {
+    if (i) w.addSpacer(5);
+    const row = w.addStack();
+    row.layoutVertically();
+    if (it.link) row.url = APP_URL + it.link;
+    txt(row, `${it.company} ${it.title}`, i ? 13 : 15, C.text, true, 1);
+    reasonLine(row, it, now, 12);
+  });
+  w.addSpacer(10);
+  const line = w.addStack();
+  line.size = new Size(0, 1);
+  line.backgroundColor = new Color(C.bg2);
+  w.addSpacer(10);
+  companiesBlock(w, res.p, now, 'large', 6);
+  w.addSpacer();
+  if (res.note) { w.addSpacer(4); txt(w, res.note, 10, C.muted); }
+  return w;
+}
+// 中身から、小(small)・中(medium)・大(large)のウィジェットを作る
 function buildWidget(res, family, now) {
   const w = new ListWidget();
   w.backgroundColor = new Color(C.bg);
@@ -151,6 +226,13 @@ function buildWidget(res, family, now) {
     w.addSpacer(8);
     txt(w, res.state === 'login' ? 'Scriptable でこのスクリプトを開いて、ログインしてください' : '就活管理アプリを一度開くと表示されます', 13, C.text, false, 4);
     w.addSpacer();
+    return w;
+  }
+  if (family === 'large') return buildLarge(w, res, now);
+  if (viewMode() === 'companies') {
+    companiesBlock(w, res.p, now, family, family === 'small' ? 3 : 5);
+    w.addSpacer();
+    if (res.note) { w.addSpacer(4); txt(w, res.note, 10, C.muted); }
     return w;
   }
   const items = liveItems(res.p, now);
@@ -189,8 +271,11 @@ function buildWidget(res, family, now) {
     if (!rest.length) txt(right, 'なし', 13, C.muted);
     rest.forEach((it, i) => {
       if (i) right.addSpacer(6);
-      txt(right, `${it.company} ${it.title}`, 13, C.text, true, 1);
-      reasonLine(right, it, now, 12);
+      const row = right.addStack();
+      row.layoutVertically();
+      if (it.link) row.url = APP_URL + it.link;
+      txt(row, `${it.company} ${it.title}`, 13, C.text, true, 1);
+      reasonLine(row, it, now, 12);
     });
     right.addSpacer();
   }
@@ -244,19 +329,24 @@ async function main() {
   m.message = 'ログインしています。ホーム画面にウィジェットを置いて、このスクリプトを選んでください。';
   m.addAction('小の見え方を確かめる');
   m.addAction('中の見え方を確かめる');
+  m.addAction('大の見え方を確かめる');
   m.addAction('ログインし直す');
   m.addDestructiveAction('ログアウト');
   m.addCancelAction('閉じる');
   const i = await m.present();
-  if (i === 0 || i === 1) {
-    const w = buildWidget(await getRes(), i === 0 ? 'small' : 'medium', now);
+  if (i === 0 || i === 1 || i === 2) {
+    let family = 'small';
+    if (i === 1) family = 'medium';
+    if (i === 2) family = 'large';
+    const w = buildWidget(await getRes(), family, now);
     // iPhone の JavaScript は「await (条件 ? a : b)」を読めないことがあるので、if で分ける
     if (i === 0) await w.presentSmall();
-    else await w.presentMedium();
-  } else if (i === 2) {
+    else if (i === 1) await w.presentMedium();
+    else await w.presentLarge();
+  } else if (i === 3) {
     Keychain.remove(KEY_TOKEN);
     await loginDialog();
-  } else if (i === 3) {
+  } else if (i === 4) {
     Keychain.remove(KEY_TOKEN);
     if (Keychain.contains(KEY_CACHE)) Keychain.remove(KEY_CACHE);
   }

@@ -13,7 +13,7 @@ const ymd = n => { const d = new Date(); d.setDate(d.getDate() + n); return `${d
 const item = (company, title, o = {}) => ({ company, title, kind: 'es', date: '', time: '', end: '', track: '秋冬インターン', color: '#1971c2', link: '#/company/c1/e1', ...o });
 
 // Scriptable の部品の代わり。描いた文字を集めて確かめる
-function makeEnv({ widget = true, family = 'small', keychain = {}, respond, alerts = [] }) {
+function makeEnv({ widget = true, family = 'small', param = null, keychain = {}, respond, alerts = [] }) {
   const kc = new Map(Object.entries(keychain));
   const texts = [];
   const requests = [];
@@ -25,7 +25,7 @@ function makeEnv({ widget = true, family = 'small', keychain = {}, respond, aler
     addSpacer() {}
     layoutHorizontally() {} layoutVertically() {} centerAlignContent() {} setPadding() {}
   }
-  class ListWidget extends Stack { presentSmall() { shown = 'small'; } presentMedium() { shown = 'medium'; } }
+  class ListWidget extends Stack { presentSmall() { shown = 'small'; } presentMedium() { shown = 'medium'; } presentLarge() { shown = 'large'; } }
   class Request {
     constructor(url) { this.url = url; this.method = 'GET'; this.headers = {}; this.body = null; this.response = null; }
     async loadJSON() { requests.push(this); const r = await respond(this); this.response = { statusCode: r.status || 200 }; return r.json; }
@@ -47,6 +47,7 @@ function makeEnv({ widget = true, family = 'small', keychain = {}, respond, aler
     Font: { systemFont: s => ({ s }), boldSystemFont: s => ({ s, b: true }) },
     Size: class { constructor(w, h) { this.w = w; this.h = h; } },
     Script: { setWidget: w => { set = w; }, complete: () => {} },
+    args: { widgetParameter: param },
   };
   return { env, kc, texts, requests, get widget() { return set; }, get shown() { return shown; } };
 }
@@ -58,7 +59,7 @@ async function run(opts) {
   return E;
 }
 // 通信の代わり: ログイン・鍵の更新・中身の読み込み(Realtime Database の REST)
-const server = ({ items = [], empty = false, denied = false, tokenError = '', down = false } = {}) => async req => {
+const server = ({ items = [], companies = [], empty = false, denied = false, tokenError = '', down = false } = {}) => async req => {
   if (down) throw new Error('offline');
   if (req.url.includes('accounts:signInWithPassword')) {
     const b = JSON.parse(req.body);
@@ -67,7 +68,7 @@ const server = ({ items = [], empty = false, denied = false, tokenError = '', do
   if (req.url.includes('securetoken.googleapis.com')) return tokenError ? { status: 400, json: { error: { message: tokenError } } } : { json: { id_token: 'I2', refresh_token: 'R2', user_id: 'u1' } };
   if (req.url.includes('firebasedatabase.app')) {
     if (denied) return { status: 401, json: { error: 'Permission denied' } };
-    return { json: empty ? null : { v: 1, progress: 2, items, updatedAt: new Date().toISOString() } };
+    return { json: empty ? null : { v: 1, progress: companies.length, progressCompanies: companies.length, items, companies, updatedAt: new Date().toISOString() } };
   }
   return { status: 500, json: {} };
 };
@@ -117,13 +118,13 @@ E = await run({ keychain: { shukatsu_widget_refresh_token: 'R1' }, respond: serv
 check('鍵が無効になったら、ログインし直しの案内', E.texts.some(t => t.includes('ログインしてください')) && !E.kc.has('shukatsu_widget_refresh_token'));
 
 console.log('Scriptable の中で開いたとき(ログイン)');
-E = await run({ widget: false, respond: server(), alerts: [{ index: 0, values: ['me@example.com', 'pw123'] }, { index: 4 }] });
+E = await run({ widget: false, respond: server(), alerts: [{ index: 0, values: ['me@example.com', 'pw123'] }, { index: 5 }] });
 check('ログインすると鍵だけを保存する(パスワードは保存しない)', E.kc.get('shukatsu_widget_refresh_token') === 'R1' && ![...E.kc.values()].some(v => String(v).includes('pw123')));
 E = await run({ widget: false, respond: server(), alerts: [{ index: 0, values: ['me@example.com', 'wrong'] }, { index: 0 }] });
 check('パスワードが違うときは保存しない', !E.kc.has('shukatsu_widget_refresh_token'));
 E = await run({ widget: false, keychain: { shukatsu_widget_refresh_token: 'R1' }, respond: server({ items: ITEMS }), alerts: [{ index: 1 }] });
 check('「中の見え方を確かめる」で中を表示', E.shown === 'medium');
-E = await run({ widget: false, keychain: { shukatsu_widget_refresh_token: 'R1', shukatsu_widget_cache: '{}' }, respond: server(), alerts: [{ index: 3 }] });
+E = await run({ widget: false, keychain: { shukatsu_widget_refresh_token: 'R1', shukatsu_widget_cache: '{}' }, respond: server(), alerts: [{ index: 4 }] });
 check('ログアウトで鍵と控えを消す', !E.kc.has('shukatsu_widget_refresh_token') && !E.kc.has('shukatsu_widget_cache'));
 
 console.log('貼り付ける読み込み役');
@@ -164,6 +165,38 @@ L = await runLoader({ down: true });
 check('本体がなく通信もできないときは、案内を出す', L.log.ran === 0 && L.log.shown);
 L = await runLoader({ code: '<html>Not Found</html>' });
 check('本体でないもの(エラーのページなど)は保存しない', !L.fsm.has(MODP) && L.log.ran === 0 && L.log.shown);
+
+console.log('選考中の企業');
+const comp = (company, step, o = {}) => ({ company, track: '早期選考', color: '#7048e8', step, stepState: 'current', done: 1, total: 4, title: '', kind: '', date: '', time: '', end: '', link: '#/company/c9/e9', ...o });
+const COMPANIES = [
+  comp('早期工業', '1次面接', { title: '1次面接', kind: 'interview', date: ymd(1), time: '10:00', link: '#/company/c3/e3' }),
+  comp('秋商事', 'ES提出', { track: '秋冬インターン', color: '#1971c2', title: 'ES締切', kind: 'es', date: ymd(2) }),
+  comp('冬電機', '2次面接', { stepState: 'next' }),
+  comp('本選考銀行', 'GD', { date: ymd(-2) }),
+  comp('五番目', '最終面接'),
+  comp('六番目', '適性検査'),
+  comp('七番目', '面談'),
+];
+E = await run({ family: 'medium', param: '選考', keychain: { shukatsu_widget_refresh_token: 'R1' }, respond: server({ items: ITEMS, companies: COMPANIES }) });
+check('Parameter「選考」の中は選考中の企業の一覧', E.texts.includes('選考中 7社') && E.texts.includes('早期工業') && E.texts.includes('1次面接') && !E.texts.includes('次の予定'), E.texts.join(' / '));
+check('今の段階と次の予定の残り日数', E.texts.includes('明日') && E.texts.includes('あと2日'));
+check('まだ進んでいない段階は「次: 」', E.texts.includes('次: 2次面接'));
+check('終わった予定の日数は出さない', !E.texts.includes('開催中'));
+check('中は5社まで+「ほか」', E.texts.includes('五番目') && !E.texts.includes('六番目') && E.texts.includes('ほか 2社'), E.texts.join(' / '));
+const rowUrls = [];
+(function walk(st) { (st.children || []).forEach(ch => { if (ch.url) rowUrls.push(ch.url); walk(ch); }); })(E.widget);
+check('企業の行を押すとその企業の画面', rowUrls.includes('https://articlemanagerapp.github.io/syuukatu-app/syuukatu-v3.html#/company/c3/e3'), rowUrls.join(' '));
+E = await run({ family: 'small', param: '企業', keychain: { shukatsu_widget_refresh_token: 'R1' }, respond: server({ items: ITEMS, companies: COMPANIES }) });
+check('小は3社(企業名と段階)', E.texts.includes('秋商事') && E.texts.includes('ES提出') && !E.texts.includes('本選考銀行') && E.texts.includes('ほか 4社'), E.texts.join(' / '));
+E = await run({ family: 'medium', param: '選考', keychain: { shukatsu_widget_refresh_token: 'R1' }, respond: server({ items: ITEMS, companies: [] }) });
+check('選考中がないときは「選考中の企業はありません」', E.texts.includes('選考中の企業はありません'));
+E = await run({ family: 'medium', keychain: { shukatsu_widget_refresh_token: 'R1' }, respond: server({ items: ITEMS, companies: COMPANIES }) });
+check('Parameter なしの中は今までどおり予定', E.texts.includes('次の予定') && E.texts.includes('そのあとに') && !E.texts.includes('選考中 7社'));
+E = await run({ family: 'large', keychain: { shukatsu_widget_refresh_token: 'R1' }, respond: server({ items: ITEMS, companies: COMPANIES }) });
+check('大は次の予定と選考中の企業の両方', E.texts.includes('次の予定') && E.texts.includes('秋商事 ES締切') && E.texts.includes('選考中 7社') && E.texts.includes('六番目') && !E.texts.includes('七番目'), E.texts.join(' / '));
+check('大でも終わった予定は出さない', !E.texts.some(t => t.includes('終わった説明会')));
+E = await run({ widget: false, keychain: { shukatsu_widget_refresh_token: 'R1' }, respond: server({ items: ITEMS, companies: COMPANIES }), alerts: [{ index: 2 }] });
+check('「大の見え方を確かめる」で大を表示', E.shown === 'large');
 
 console.log('入れ方のページ');
 {
