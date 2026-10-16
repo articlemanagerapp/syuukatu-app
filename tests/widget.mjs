@@ -165,5 +165,12 @@ check('本体がなく通信もできないときは、案内を出す', L.log.r
 L = await runLoader({ code: '<html>Not Found</html>' });
 check('本体でないもの(エラーのページなど)は保存しない', !L.fsm.has(MODP) && L.log.ran === 0 && L.log.shown);
 
+console.log('入れ方のページ');
+{
+  const page = fs.readFileSync(new URL('../widget/index.html', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+  const m = /<script type="text\/plain" id="loader-src">\n([\s\S]*?)<\/script>/.exec(page);
+  check('ページに埋め込んだスクリプトが shukatsu-widget.js と同じ', !!m && m[1] === loaderSrc.replace(/\r\n/g, '\n'));
+}
+
 console.log(`\n${pass} 件成功 / ${fail} 件失敗`);
 process.exit(fail ? 1 : 0);
