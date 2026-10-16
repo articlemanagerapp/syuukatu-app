@@ -1017,7 +1017,7 @@ function viewSettings() {
           <button type="button" class="btn btn-outline-primary" data-act="install-show">アイコンを追加するには</button>
           <a class="btn btn-outline-primary" href="widget/" target="_blank" rel="noopener">iPhone のウィジェットの入れ方 ↗</a>
         </div>
-        <p class="muted small mt-2 mb-0">ウィジェットには、進行中の区分の次の締切・予定(小)と、そのあとの3件(中)が出ます。無料アプリ「Scriptable」を使います。</p></section>
+        <p class="muted small mt-2 mb-0">ウィジェットには、進行中の区分の次の締切・予定と、選考中の企業の状況(今の段階・次の予定)が出ます(小・中・大)。無料アプリ「Scriptable」を使います。</p></section>
 
       <section class="card-x"><h2>🗂️ 選考区分</h2>
         <p class="muted small">「終了にする」と、上の切り替えでは右端の点線のボタンにまとまり、ホームや予定に出なくなります(データは残ります)。</p>
