@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#14213d">
+  <title>就活管理 ウィジェットの入れ方</title>
+  <style>
+    :root { --bg: #f2f4f3; --sheet: #ffffff; --text: #161d1e; --muted: #4d5859; --line: #dce2e1; --desk: #14213d; --sun: #ffffff; --green: #2c6a39; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.7 system-ui, -apple-system, "Hiragino Sans", "Yu Gothic UI", sans-serif; }
+    header { background: var(--desk); color: #e6eaf3; padding: calc(20px + env(safe-area-inset-top)) 16px 20px; }
+    header h1 { margin: 0; font-size: 22px; }
+    header p { margin: 4px 0 0; color: #a9b3ca; font-size: 14px; }
+    main { max-width: 680px; margin: 0 auto; padding: 16px 16px 48px; }
+    ol.steps { padding: 0; margin: 0; list-style: none; counter-reset: s; }
+    ol.steps > li { counter-increment: s; background: var(--sheet); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px 14px 56px; margin-bottom: 12px; position: relative; }
+    ol.steps > li::before { content: counter(s); position: absolute; left: 14px; top: 14px; width: 28px; height: 28px; border-radius: 50%; background: var(--desk); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 14px; }
+    ol.steps b { font-weight: 700; }
+    .muted { color: var(--muted); font-size: 14px; }
+    button { min-height: 48px; padding: 0 20px; border-radius: 10px; border: 0; background: #1d4ed8; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+    button:focus-visible, a:focus-visible { outline: 3px solid #2d5f9a; outline-offset: 2px; }
+    #msg { margin-left: 8px; font-weight: 700; color: var(--green); }
+    textarea { width: 100%; height: 200px; margin-top: 10px; font: 12px/1.5 ui-monospace, Menlo, monospace; border: 1px solid var(--line); border-radius: 8px; padding: 8px; background: #fafbfa; color: var(--text); }
+    a { color: #2d5f9a; }
+    .note { background: var(--sheet); border-left: 4px solid #1d4ed8; border-radius: 8px; padding: 12px 16px; font-size: 14px; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>就活管理 ウィジェットの入れ方</h1>
+  <p>次の締切・予定を iPhone のホーム画面に出します(小・中)</p>
+</header>
+<main>
+  <ol class="steps">
+    <li><b>App Store で「Scriptable」を入れる</b>(無料)。<br><a href="https://apps.apple.com/app/scriptable/id1405459188">Scriptable を App Store で開く</a></li>
+    <li><b>下の「スクリプトをコピー」を押す</b>
+      <div style="margin-top:8px"><button type="button" id="copy">スクリプトをコピー</button><span id="msg" role="status"></span></div>
+      <textarea id="code" readonly aria-label="ウィジェットのスクリプト">読み込み中…</textarea>
+      <p class="muted">コピーするのは40行ほどの短い「読み込み役」です。ウィジェットの本体は、初めて動かしたときに自動でダウンロードされます(あとで本体が新しくなったときも自動で入れ替わります)。コピーできないときは、上の枠を長押しして「すべてを選択」→「コピー」。</p>
+    </li>
+    <li><b>Scriptable を開き、右上の「＋」</b>で新しいスクリプトを作り、中を長押しして<b>「ペースト」</b>。上の題名を押して<b>「就活管理」</b>に名前を変え、「Done」。</li>
+    <li><b>一覧の「就活管理」を押して実行</b>すると、ログインの画面が出ます。就活管理アプリと同じ<b>メールアドレスとパスワード</b>を入れて「ログイン」。<br><span class="muted">パスワードは保存しません。ログインし続けるための鍵だけを iPhone のキーチェーンに置きます。<br>このとき本体が自動でダウンロードされ、Scriptable の一覧に「shukatsu-widget-module」が増えます。これは消さないでください。</span></li>
+    <li><b>ホーム画面の何もない所を長押し</b> → 左上の「＋」(または「編集」→「ウィジェットを追加」) → <b>「Scriptable」</b> → 小か中を選んで「ウィジェットを追加」。</li>
+    <li>置いたウィジェットを<b>長押し → 「ウィジェットを編集」 → Script を「就活管理」</b>にする。<br><span class="muted">「When Interacting」は「Open URL」のままで大丈夫です(押すと就活管理アプリの、その予定の企業の画面が開きます)。</span></li>
+  </ol>
+  <p class="note">ウィジェットは iPhone の都合で 15分〜1時間おきに新しくなります。アプリで完了にしても、すぐには消えないことがあります。小と中を両方置くこともできます。<br>出るのは「進行中」の区分(秋冬インターン・早期選考など)の、済みにしていない予定です。終了にした区分(夏インターンなど)の予定は出ません。</p>
+  <p class="muted"><a href="../syuukatu-v3.html">← 就活管理アプリに戻る</a></p>
+</main>
+<script>
+  const code = document.getElementById('code'), msg = document.getElementById('msg');
+  fetch('shukatsu-widget.js', { cache: 'no-cache' }).then(r => r.text()).then(t => { code.value = t; }).catch(() => { code.value = '読み込めませんでした。通信を確かめて、もう一度開いてください。'; });
+  document.getElementById('copy').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(code.value); msg.textContent = 'コピーしました'; }
+    catch { code.focus(); code.select(); msg.textContent = '枠の中を長押ししてコピーしてください'; }
+  });
+</script>
+</body>
+</html>

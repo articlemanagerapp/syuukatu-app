@@ -222,6 +222,8 @@ async function saveNow() {
   try {
     await set(ref(rtdb, `users/${S.user.uid}/v3`), payload);
     setSaveState('saved');
+    updateBadge();
+    saveWidget();
   } catch (e) {
     console.error(e);
     setSaveState('error', e.message);
@@ -229,6 +231,42 @@ async function saveNow() {
   }
 }
 window.addEventListener('beforeunload', e => { if (saveTimer) { saveNow(); e.preventDefault(); e.returnValue = ''; } });
+
+// iPhone のウィジェット(Scriptable。widget/ のスクリプト)が読む中身。users/{uid}/widget に置く。
+// 進行中の区分の、済みにしていない「これからの予定」を近い順に最大6件。残り日数は日付が変わると変わるので、
+// 日付(date)だけ渡してウィジェット側で計算する(終わった予定もウィジェット側で外す)
+const WIDGET_N = 6;
+let savedWidget = '';
+function widgetPayload() {
+  const ents = S.db.entries.filter(e => { const t = trackById(e.trackId); return t && !t.archived && companyById(e.companyId); });
+  return {
+    v: 1,
+    progress: ents.filter(e => entryStatus(e).key === 'progress').length,
+    items: upcoming(ents).slice(0, WIDGET_N).map(({ ev, en, c, tr }) => ({
+      title: ev.title || KINDS[ev.kind]?.label || '', kind: ev.kind, company: c.name,
+      date: String(ev.start).slice(0, 10), time: isAllDay(ev.start) ? '' : String(ev.start).slice(11, 16),
+      end: ev.end ? String(ev.end).slice(0, 10) : '',
+      track: tr?.name || '', color: tr?.color || '', link: `#/company/${c.id}/${en.id}`,
+    })),
+  };
+}
+// キーの順に左右されない JSON(サーバーから読んだものと比べるため)
+function canonJson(v) {
+  if (Array.isArray(v)) return '[' + v.map(canonJson).join(',') + ']';
+  if (v && typeof v === 'object') return '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + canonJson(v[k])).join(',') + '}';
+  return JSON.stringify(v);
+}
+const widgetCanon = w => w ? canonJson({ v: w.v || 1, progress: w.progress || 0, items: toArr(w.items) }) : '';
+// 変わったときだけ書く(失敗しても本体の保存には影響させない)
+async function saveWidget() {
+  if (!S.user || !S.db) return;
+  const p = widgetPayload(), j = widgetCanon(p);
+  if (j === savedWidget) return;
+  try {
+    await set(ref(rtdb, `users/${S.user.uid}/widget`), { ...p, updatedAt: new Date().toISOString() });
+    savedWidget = j;
+  } catch (e) { console.error('widget', e); }
+}
 
 async function loadUserData(user) {
   const snap = await get(ref(rtdb, `users/${user.uid}`));
@@ -248,6 +286,7 @@ async function loadUserData(user) {
     }
   }
   S.db = db;
+  savedWidget = widgetCanon(val.widget);
   const reset = checkTodoReset();
   if (!val.v3) await saveNow(); else if (reset) scheduleSave();
   return note;
@@ -955,6 +994,14 @@ function viewSettings() {
       <section class="card-x"><h2>👤 アカウント</h2>
         <div class="d-flex align-items-center gap-3 flex-wrap"><span class="fw-bold">${esc(S.user?.email || '')}</span><button type="button" class="btn btn-outline-danger btn-sm" data-act="logout">ログアウト</button></div></section>
 
+      <section class="card-x"><h2>📱 ホーム画面に追加</h2>
+        <p class="small mb-2">${isStandalone() ? '✅ ホーム画面のアイコンから開いています。' : 'スマホのホーム画面にアイコンを置いて、アプリのように開けます。'}</p>
+        <div class="d-flex flex-wrap gap-2">
+          <button type="button" class="btn btn-outline-primary" data-act="install-show">アイコンを追加するには</button>
+          <a class="btn btn-outline-primary" href="widget/" target="_blank" rel="noopener">iPhone のウィジェットの入れ方 ↗</a>
+        </div>
+        <p class="muted small mt-2 mb-0">ウィジェットには、進行中の区分の次の締切・予定(小)と、そのあとの3件(中)が出ます。無料アプリ「Scriptable」を使います。</p></section>
+
       <section class="card-x"><h2>🗂️ 選考区分</h2>
         <p class="muted small">「終了にする」と、上の切り替えでは右端の点線のボタンにまとまり、ホームや予定に出なくなります(データは残ります)。</p>
         ${trackRows}
@@ -1489,6 +1536,9 @@ onAuthStateChanged(auth, async user => {
     setSaveState('saved');
     render();
     if (note) toast(note, null, 9000);
+    updateBadge();
+    saveWidget();
+    maybeShowInstall();
     if (autoSyncOn()) loadGoogleScripts();
   } catch (e) {
     console.error(e);
@@ -1496,5 +1546,67 @@ onAuthStateChanged(auth, async user => {
   }
 });
 
+/* ========================================================================
+ * ホーム画面への追加(PWA)とアイコンの数字
+ * ====================================================================== */
+const INSTALL_KEY = 'shukatsu_install_dismissed';
+let installEvent = null, installWaiting = false;
+const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const isIOS = () => /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isAndroid = () => /Android/i.test(navigator.userAgent);
+const isInAppBrowser = () => /Line\/|FBAN|FBAV|Instagram|Twitter/i.test(navigator.userAgent);
+const installDismissed = () => { try { return localStorage.getItem(INSTALL_KEY) === '1'; } catch { return false; } };
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => { /* 使えない環境では普通のページとして動く */ });
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault(); installEvent = e;
+  if (installWaiting) { installWaiting = false; openInstallDialog(); }
+});
+window.addEventListener('appinstalled', () => { installEvent = null; try { localStorage.setItem(INSTALL_KEY, '1'); } catch { /* なし */ } toast('ホーム画面に追加しました'); });
+
+function installHelpHtml() {
+  if (isStandalone()) return '<p class="mb-0">✅ ホーム画面のアイコンから開いています(追加済み)。</p>';
+  if (isInAppBrowser()) return '<p class="mb-0">LINE などのアプリの中のブラウザからは追加できません。メニューから「Safari で開く」(Android は「Chrome で開く」)を選び、開き直してください。</p>';
+  if (isIOS()) return `<ol class="mb-0"><li>画面下(iPad は上)の <strong>共有ボタン</strong>(□に↑のマーク)をタップ</li><li>一覧を下にスクロールして <strong>「ホーム画面に追加」</strong> をタップ</li><li>右上の <strong>「追加」</strong> をタップ</li></ol><p class="small muted mt-2 mb-0">iPhone では Safari で開いているときに追加できます。</p>`;
+  if (installEvent) return '<p class="mb-0">下の「ホーム画面に追加」を押すと、アイコンからアプリのように開けるようになります。</p>';
+  return '<p class="mb-0">ブラウザのメニュー(右上の ︙)から <strong>「ホーム画面に追加」</strong> または <strong>「アプリをインストール」</strong> を選んでください。</p>';
+}
+function openInstallDialog() {
+  if (document.querySelector('dialog[open]')) return;
+  const canPrompt = installEvent && !isStandalone();
+  openDialog(`${dlgHead('📱 ホーム画面に追加')}
+    <div class="dlg-body">${installHelpHtml()}
+      <p class="small muted mt-3 mb-0">追加すると、ホーム画面のアイコンから全画面で開けます。Android ではアイコンを長押しすると「予定」「企業一覧」「ES集」へ直接飛べます。${isIOS() ? '<br>次の締切をホーム画面に出す <a href="widget/" target="_blank" rel="noopener">iPhone のウィジェット</a> もあります。' : ''}</p></div>
+    <div class="dlg-foot"><button type="button" class="btn btn-outline-secondary" data-act="install-later">${canPrompt ? '今はしない' : '閉じる'}</button>${canPrompt ? '<button type="button" class="btn btn-primary" data-act="install-accept">ホーム画面に追加</button>' : ''}</div>`);
+}
+// スマホで、まだ追加していない人に一度だけ案内する(閉じたら出さない。設定からいつでも開ける)
+function maybeShowInstall() {
+  if (isStandalone() || installDismissed() || !(isIOS() || isAndroid())) return;
+  if (isAndroid() && !installEvent) {
+    installWaiting = true; // 追加の準備ができた合図(beforeinstallprompt)を待つ
+    setTimeout(() => { if (installWaiting) { installWaiting = false; openInstallDialog(); } }, 8000);
+    return;
+  }
+  setTimeout(openInstallDialog, 1500);
+}
+ACTIONS['install-show'] = () => openInstallDialog();
+ACTIONS['install-later'] = el => { try { localStorage.setItem(INSTALL_KEY, '1'); } catch { /* なし */ } el.closest('dialog')?.close(); };
+ACTIONS['install-accept'] = async el => {
+  el.closest('dialog')?.close();
+  if (!installEvent) return;
+  installEvent.prompt();
+  try { await installEvent.userChoice; } catch { /* なし */ }
+  installEvent = null;
+};
+
+// アイコンの数字(対応している端末のみ): 進行中の区分で、3日以内の締切・予定の件数
+function updateBadge() {
+  if (!S.db || !('setAppBadge' in navigator)) return;
+  const ents = S.db.entries.filter(e => { const t = trackById(e.trackId); return t && !t.archived && companyById(e.companyId); });
+  const n = upcoming(ents).filter(x => daysUntil(x.ev.start) <= 3).length;
+  (n ? navigator.setAppBadge(n) : navigator.clearAppBadge()).catch(() => { /* 許可がない端末では出ない */ });
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') updateBadge(); });
+
 // テスト用(画面からは使わない)
-window.__shukatsu = { S, migrateFromV2, normalizeDb, entryStatus, render };
+window.__shukatsu = { S, migrateFromV2, normalizeDb, entryStatus, render, widgetPayload };

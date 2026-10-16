@@ -7,6 +7,9 @@ GitHub Pages で公開し、データは Firebase(Authentication + Realtime Data
 | --- | --- |
 | `syuukatu-v3.html` / `.css` / `.js` | **新しい版**。選考区分ごとに整理して管理する |
 | `syuukatu-v2.html` | 旧版(夏インターンで使っていたもの)。そのまま残している |
+| `manifest.json` / `sw.js` / `icons/` | スマホのホーム画面にアイコンとして追加するための設定(PWA) |
+| `widget/` | iPhone のウィジェット(Scriptable 用。入れ方のページ https://articlemanagerapp.github.io/syuukatu-app/widget/ ) |
+| `tests/widget.mjs` | ウィジェットのテスト(`node tests/widget.mjs`) |
 
 ## 新しい版(v3)の考え方
 
@@ -24,3 +27,11 @@ GitHub Pages で公開し、データは Firebase(Authentication + Realtime Data
 - 旧版: `users/{uid}/data`・`settings`・`todos`(新しい版はここを読むだけで書き換えない)
 - 新しい版を初めて開くと、旧版のデータから自動で作る(旧版の「夏/秋/冬」の時期で区分を振り分け。秋・冬 → 秋冬インターン、それ以外 → 夏インターン)
 - 保存のたびに、その端末にも控えを残す(サーバー側のデータが消えたときに復元を提案する)
+
+## ホーム画面のアイコンとウィジェット
+
+- アイコン: スマホで開くと「ホーム画面に追加」の案内が一度だけ出る(設定の「📱 ホーム画面に追加」からいつでも)。
+  3日以内の締切・予定の件数を、対応している端末ではアイコンに数字で出す
+- ウィジェット(研究管理アプリと同じ仕組み): アプリが保存のたびに `users/{uid}/widget` に「進行中の区分の、これからの予定(最大6件)」を書き、
+  Scriptable のスクリプトがそれを1件だけ読んで、小(次の予定)・中(次の予定+そのあと3件)に出す。
+  iPhone に貼るのは短い読み込み役 `widget/shukatsu-widget.js` だけで、本体 `widget/shukatsu-widget-module.js` は自動でダウンロード・半日ごとに更新される
