@@ -235,8 +235,10 @@ window.addEventListener('beforeunload', e => { if (saveTimer) { saveNow(); e.pre
 // iPhone のウィジェット(Scriptable。widget/ のスクリプト)が読む中身。users/{uid}/widget に置く。
 // items: 進行中の区分の、済みにしていない「これからの予定」を近い順に最大6件。
 // companies: 落選・辞退・終了を除いた選考(選考中 → 未着手 → 通過)を最大10件(状態・今の段階・次の予定)。
+// agenda: 「今日の予定」ウィジェット(研究管理アプリの widget/today-widget-module.js。研究・日常の予定とまとめて時系列に出す)用。
+//   進行中の区分の、済みにしていない予定を14日後の分まで近い順に(アプリを開かない日が続いても、ウィジェット側で今日の分を選べるように)
 // 残り日数は日付が変わると変わるので、日付(date)だけ渡してウィジェット側で計算する(終わった予定もウィジェット側で外す)
-const WIDGET_N = 6, WIDGET_COMPANIES = 10;
+const WIDGET_N = 6, WIDGET_COMPANIES = 10, AGENDA_DAYS = 14, AGENDA_MAX = 40;
 let savedWidget = '';
 function widgetPayload() {
   const ents = S.db.entries.filter(e => { const t = trackById(e.trackId); return t && !t.archived && companyById(e.companyId); });
@@ -249,15 +251,18 @@ function widgetPayload() {
   const active = ents.map(en => ({ en, st: entryStatus(en), nx: nextEventOf(en) })).filter(x => x.st.key in RANK)
     .sort((a, b) => RANK[a.st.key] - RANK[b.st.key] || (a.nx ? parseD(a.nx.ev.start) : Infinity) - (b.nx ? parseD(b.nx.ev.start) : Infinity) || companyById(a.en.companyId).name.localeCompare(companyById(b.en.companyId).name, 'ja'));
   const prog = active.filter(x => x.st.key === 'progress');
+  const until = today0(); until.setDate(until.getDate() + AGENDA_DAYS + 1);
+  const evOut = x => ({
+    title: x.ev.title || KINDS[x.ev.kind]?.label || '', kind: x.ev.kind, company: x.c.name, ...evItem(x),
+    track: x.tr?.name || '', color: x.tr?.color || '', link: `#/company/${x.c.id}/${x.en.id}`,
+  });
   return {
     v: 1,
+    agenda: upcoming(ents).filter(x => parseD(x.ev.start) < until).slice(0, AGENDA_MAX).map(evOut),
     progress: prog.length,
     progressCompanies: new Set(prog.map(x => x.en.companyId)).size,
     activeCompanies: new Set(active.map(x => x.en.companyId)).size,
-    items: upcoming(ents).slice(0, WIDGET_N).map(x => ({
-      title: x.ev.title || KINDS[x.ev.kind]?.label || '', kind: x.ev.kind, company: x.c.name, ...evItem(x),
-      track: x.tr?.name || '', color: x.tr?.color || '', link: `#/company/${x.c.id}/${x.en.id}`,
-    })),
+    items: upcoming(ents).slice(0, WIDGET_N).map(evOut),
     companies: active.slice(0, WIDGET_COMPANIES).map(({ en, st, nx }) => {
       const c = companyById(en.companyId), tr = trackById(en.trackId), path = flowPath(en.flow || []);
       return {
@@ -280,7 +285,7 @@ function canonJson(v) {
   if (v && typeof v === 'object') return '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + canonJson(v[k])).join(',') + '}';
   return JSON.stringify(v);
 }
-const widgetCanon = w => w ? canonJson({ v: w.v || 1, progress: w.progress || 0, progressCompanies: w.progressCompanies || 0, activeCompanies: w.activeCompanies || 0, items: toArr(w.items), companies: toArr(w.companies) }) : '';
+const widgetCanon = w => w ? canonJson({ v: w.v || 1, progress: w.progress || 0, progressCompanies: w.progressCompanies || 0, activeCompanies: w.activeCompanies || 0, items: toArr(w.items), companies: toArr(w.companies), agenda: toArr(w.agenda) }) : '';
 // 変わったときだけ書く(失敗しても本体の保存には影響させない)
 async function saveWidget() {
   if (!S.user || !S.db) return;

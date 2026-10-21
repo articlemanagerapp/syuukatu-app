@@ -36,3 +36,5 @@ GitHub Pages で公開し、データは Firebase(Authentication + Realtime Data
   Scriptable のスクリプトがそれを1件だけ読んで、小(次の予定)・中(次の予定+そのあと3件)・大(次の予定+選考中の企業)に出す。
   小・中はウィジェットの Parameter に「選考」と入れると、選考中の企業(今の段階・次の予定までの日数)の一覧になる。
   iPhone に貼るのは短い読み込み役 `widget/shukatsu-widget.js` だけで、本体 `widget/shukatsu-widget-module.js` は自動でダウンロード・半日ごとに更新される
+- 「今日の予定」ウィジェット(研究管理アプリの側にある。入れ方 https://research-w7xkv1.web.app/widget/today.html ): 研究・就活・日常(iPhone のカレンダー)の今日の予定を時刻の順に1つにまとめる。
+  そのため `users/{uid}/widget` には、進行中の区分の済んでいない予定を14日後まで(最大40件)入れた `agenda` も書く。形を変えるときは研究管理アプリの `widget/today-widget-module.js` とそろえる
