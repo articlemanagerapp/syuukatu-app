@@ -238,7 +238,8 @@ window.addEventListener('beforeunload', e => { if (saveTimer) { saveNow(); e.pre
 // agenda: 「今日の予定」ウィジェット(研究管理アプリの widget/today-widget-module.js。研究・日常の予定とまとめて時系列に出す)用。
 //   進行中の区分の予定を14日後の分まで近い順に(アプリを開かない日が続いても、ウィジェット側で今日の分を選べるように)。
 //   済みにした予定も done: true で入れる(ウィジェットのチェックリストで、消さずにチェックを付けて出すため)
-// todos: 「今日すること」({text, done})と、その一覧の日付 day(アプリを開かない日が続いたとき、前の日の済みを出さないため)
+// todos: 「今日すること」today・「今週すること」week({text, done})と、それぞれの一覧の日付 day・週 weekKey(isoWeek の形 2026-W43)。
+//   アプリを開かない日が続いたとき、前の日・前の週の済みを出さないため
 // 残り日数は日付が変わると変わるので、日付(date)だけ渡してウィジェット側で計算する(終わった予定もウィジェット側で外す)
 const WIDGET_N = 6, WIDGET_COMPANIES = 10, AGENDA_DAYS = 14, AGENDA_MAX = 40;
 let savedWidget = '';
@@ -261,7 +262,10 @@ function widgetPayload() {
   return {
     v: 1,
     agenda: upcoming(ents, { includeDone: true }).filter(x => parseD(x.ev.start) < until).slice(0, AGENDA_MAX).map(x => ({ ...evOut(x), done: !!x.ev.done })),
-    todos: { day: S.db.settings.lastTodoDay || '', today: S.db.todos.today.map(t => ({ text: t.text || '', done: !!t.done })) },
+    todos: {
+      day: S.db.settings.lastTodoDay || '', weekKey: S.db.settings.lastTodoWeek || '',
+      today: S.db.todos.today.map(t => ({ text: t.text || '', done: !!t.done })), week: S.db.todos.week.map(t => ({ text: t.text || '', done: !!t.done })),
+    },
     progress: prog.length,
     progressCompanies: new Set(prog.map(x => x.en.companyId)).size,
     activeCompanies: new Set(active.map(x => x.en.companyId)).size,
@@ -288,7 +292,7 @@ function canonJson(v) {
   if (v && typeof v === 'object') return '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + canonJson(v[k])).join(',') + '}';
   return JSON.stringify(v);
 }
-const widgetCanon = w => w ? canonJson({ v: w.v || 1, progress: w.progress || 0, progressCompanies: w.progressCompanies || 0, activeCompanies: w.activeCompanies || 0, items: toArr(w.items), companies: toArr(w.companies), agenda: toArr(w.agenda), todos: w.todos ? { day: w.todos.day || '', today: toArr(w.todos.today) } : null }) : '';
+const widgetCanon = w => w ? canonJson({ v: w.v || 1, progress: w.progress || 0, progressCompanies: w.progressCompanies || 0, activeCompanies: w.activeCompanies || 0, items: toArr(w.items), companies: toArr(w.companies), agenda: toArr(w.agenda), todos: w.todos ? { day: w.todos.day || '', weekKey: w.todos.weekKey || '', today: toArr(w.todos.today), week: toArr(w.todos.week) } : null }) : '';
 // 変わったときだけ書く(失敗しても本体の保存には影響させない)
 async function saveWidget() {
   if (!S.user || !S.db) return;
