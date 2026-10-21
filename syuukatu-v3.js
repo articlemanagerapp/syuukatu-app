@@ -248,6 +248,8 @@ function widgetPayload() {
   const evItem = ({ ev }) => ({
     date: String(ev.start).slice(0, 10), time: isAllDay(ev.start) ? '' : String(ev.start).slice(11, 16),
     end: ev.end ? String(ev.end).slice(0, 10) : '',
+    // 終わりの時刻(「今日の予定」ウィジェットの時間軸で、ブロックをその時刻まで描く)。終日の終わりなら空
+    endTime: ev.end && !isAllDay(ev.end) ? String(ev.end).slice(11, 16) : '',
   });
   // 選考状況: 落選・辞退・終了を除いた選考を、選考中 → 未着手 → 通過、同じ中では次の予定が近い順
   const RANK = { progress: 0, todo: 1, passed: 2 };
